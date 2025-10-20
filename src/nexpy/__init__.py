@@ -1,7 +1,207 @@
 """
-nexpy - A Python library for scientific computing and data analysis.
+NexPy — Transitive Synchronization and Shared-State Fusion for Python
+======================================================================
 
-This package provides tools and utilities for various scientific computing tasks.
+NexPy (distributed on PyPI as `nexpylib`) is a reactive synchronization framework
+for Python that provides a universal mechanism for maintaining coherent shared state
+across independent objects through **Nexus fusion** and **internal Hook synchronization**.
+
+Core Concepts
+-------------
+
+Nexus Fusion
+~~~~~~~~~~~~
+Unlike traditional reactive frameworks that propagate changes through dependency graphs,
+NexPy creates **fusion domains** where multiple hooks share a single **Nexus**—a
+centralized synchronization core that holds and propagates state.
+
+When two hooks are **joined**, their respective Nexuses undergo a **fusion process**:
+1. Original Nexuses are destroyed
+2. A new unified Nexus is created to hold the shared value
+3. Both hooks now belong to the same fusion domain
+
+This joining is:
+- **Symmetric** — `A.join(B)` is equivalent to `B.join(A)`
+- **Transitive** — Joining creates equivalence chains across all connected hooks
+- **Non-directional** — There's no "master" or "slave"; all hooks are equal participants
+
+Example: Transitive Synchronization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    >>> import nexpy as nx
+    >>> 
+    >>> # Create four independent hooks
+    >>> A = nx.FloatingHook(1)
+    >>> B = nx.FloatingHook(2)
+    >>> C = nx.FloatingHook(3)
+    >>> D = nx.FloatingHook(4)
+    >>> 
+    >>> # Create first fusion domain
+    >>> A.join(B)  # → Nexus_AB containing A and B
+    >>> 
+    >>> # Create second fusion domain
+    >>> C.join(D)  # → Nexus_CD containing C and D
+    >>> 
+    >>> # Fuse both domains by connecting any pair
+    >>> B.join(C)  # → Nexus_ABCD
+    >>> 
+    >>> # All four hooks now share the same Nexus and value
+    >>> # Even though A and D were never joined directly!
+    >>> A.value = 42
+    >>> print(B.value, C.value, D.value)  # 42 42 42
+
+Internal Synchronization
+~~~~~~~~~~~~~~~~~~~~~~~~
+In addition to global fusion, NexPy maintains **atomic internal synchronization**
+among related hooks within a single object through a **transaction-like validation
+and update protocol**.
+
+When one hook changes (e.g., `key` in `XDictSelect`), NexPy:
+1. Determines which related Nexuses must update (e.g., `value`, `dict`)
+2. Queries each affected Nexus via a readiness check (validation pre-step)
+3. If all Nexuses report readiness, applies all updates atomically
+4. Otherwise rejects the change to maintain global validity
+
+This ensures the system is:
+- **Atomic** — All updates occur together or not at all
+- **Consistent** — Constraints are always satisfied
+- **Isolated** — Concurrent modifications are safely locked
+- **Durable (logical)** — Once accepted, coherence persists
+
+Quick Start
+-----------
+
+Simple Reactive Value
+~~~~~~~~~~~~~~~~~~~~~
+
+    >>> import nexpy as nx
+    >>> 
+    >>> # Create a reactive value
+    >>> temperature = nx.XValue(20.0)
+    >>> 
+    >>> # Read and update
+    >>> print(temperature.value)  # 20.0
+    >>> temperature.value = 25.5
+    >>> print(temperature.value)  # 25.5
+
+Hook Fusion Across Objects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    >>> import nexpy as nx
+    >>> 
+    >>> # Create two independent reactive values
+    >>> sensor = nx.XValue(20.0)
+    >>> display = nx.XValue(0.0)
+    >>> 
+    >>> # Fuse them so they share the same state
+    >>> sensor.hook.join(display.hook)
+    >>> 
+    >>> # Now they're synchronized
+    >>> sensor.value = 25.5
+    >>> print(display.value)  # 25.5
+
+Reactive Collections
+~~~~~~~~~~~~~~~~~~~~
+
+    >>> import nexpy as nx
+    >>> 
+    >>> # Reactive list
+    >>> numbers = nx.XList([1, 2, 3])
+    >>> numbers.append(4)
+    >>> print(numbers.list)  # [1, 2, 3, 4]
+    >>> 
+    >>> # Reactive dict
+    >>> config = nx.XDict({"debug": False})
+    >>> config["debug"] = True
+    >>> print(config.dict)  # {"debug": True}
+
+Selection Objects with Internal Sync
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    >>> import nexpy as nx
+    >>> 
+    >>> # Create a selection from a dictionary
+    >>> options = nx.XDictSelect(
+    ...     {"low": 1, "medium": 5, "high": 10},
+    ...     key="medium"
+    ... )
+    >>> 
+    >>> print(options.value)  # 5
+    >>> 
+    >>> # Change selection → value automatically updated
+    >>> options.key = "high"
+    >>> print(options.value)  # 10
+    >>> 
+    >>> # Change value → dict automatically updated
+    >>> options.value = 15
+    >>> print(options.dict["high"])  # 15
+
+Architecture
+------------
+
+NexPy is organized into four layers:
+
+1. **X Objects Layer** — High-level reactive data structures
+   (XValue, XDict, XList, XSet, XDictSelect, etc.)
+   
+2. **Hook Layer** — Connection points for fusion
+   (FloatingHook, OwnedHook)
+   
+3. **Nexus Layer** — Fusion domain management
+   (Nexus, NexusManager)
+   
+4. **Application Layer** — Your code
+
+Key Features
+------------
+
+- **Transitive Hook Fusion** — Join any hooks to create fusion domains with
+  automatic transitive synchronization
+  
+- **Atomic Internal Synchronization** — ACID-like guarantees for multi-hook objects
+  with transaction-style validation and updates
+  
+- **Reactive Collections** — XList, XSet, XDict with full Python protocol support
+  
+- **Selection Objects** — XDictSelect, XSetSelect with multi-selection variants
+  
+- **Thread-Safe by Design** — All operations protected by reentrant locks
+  
+- **Multiple Notification Philosophies** — Listeners (sync), Publish-Subscribe (async),
+  and Hooks (bidirectional with validation)
+
+Thread Safety
+-------------
+
+All NexPy operations are thread-safe. The NexusManager uses a reentrant lock to
+protect the complete synchronization flow, ensuring safe concurrent access from
+multiple threads without requiring external locks.
+
+Reentrancy protection prevents recursive modifications of the same Nexus while
+allowing independent nested submissions to different Nexuses.
+
+See Also
+--------
+
+Documentation:
+    - Usage Guide: docs/usage.md
+    - Internal Synchronization: docs/internal_sync.md
+    - Architecture: docs/architecture.md
+    - API Reference: docs/api_reference.md
+    - Examples: docs/examples.md
+    - Concepts: docs/concepts.md
+
+Links:
+    - PyPI: https://pypi.org/project/nexpylib/
+    - GitHub: https://github.com/babrandes/nexpylib
+    - Issues: https://github.com/babrandes/nexpylib/issues
+
+License
+-------
+
+Apache License 2.0
+
+Copyright (c) 2025 Benedikt Axel Brandes
 """
 
 from .x_objects.x_any_value import XAnyValue as XValue
@@ -107,7 +307,7 @@ __author__ = 'Benedikt Axel Brandes'
 __year__ = '2025'
 
 # Package description
-__description__ = 'Nexus System - A Python library to manage complex objects in an always valid state'
+__description__ = 'NexPy - Transitive synchronization and shared-state fusion for Python through Nexus fusion and atomic internal synchronization'
 __keywords__ = ['nexus', 'system', 'reactive', 'binding', 'data-binding', 'reactive-programming']
 __url__ = 'https://github.com/babrandes/nexpylib'
 __project_urls__ = {

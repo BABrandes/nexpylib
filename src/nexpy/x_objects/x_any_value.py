@@ -11,6 +11,128 @@ from ..core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
 T = TypeVar("T")
 
 class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
+    """
+    Reactive value wrapper providing seamless integration with NexPy's synchronization system.
+    
+    XAnyValue (aliased as XValue) is a high-level reactive value container that wraps
+    a single value with automatic change notifications, validation, and fusion capabilities.
+    It's the simplest X object and ideal for wrapping primitive values or single objects.
+    
+    Key Features
+    ------------
+    - **Reactive Updates**: Automatic notification on value changes
+    - **Validation**: Optional custom validation for value updates
+    - **Hook Fusion**: Join with other XValue instances or hooks for synchronization
+    - **Thread-Safe**: All operations protected by locks
+    - **Operator Overloading**: Supports comparison, arithmetic (if value type supports it)
+    - **Type-Safe**: Full generic type support with type hints
+    
+    Parameters
+    ----------
+    value_or_hook : T | Hook[T] | ReadOnlyHook[T] | CarriesSingleHookProtocol[T]
+        Initial value, or an existing hook/X object to join with.
+        If a hook or X object is provided, this XValue will join its fusion domain.
+    validator : Optional[Callable[[T], tuple[bool, str]]], optional
+        Validation function called before accepting new values.
+        Should return (True, "message") if valid, (False, "error") if invalid.
+    logger : Optional[Logger], optional
+        Logger instance for debugging operations
+    nexus_manager : NexusManager, optional
+        The NexusManager instance coordinating synchronization.
+        Defaults to DEFAULT_NEXUS_MANAGER (global singleton).
+    
+    Attributes
+    ----------
+    value : T
+        Current value (read/write property)
+    hook : Hook[T]
+        The underlying owned hook for fusion operations
+    
+    Examples
+    --------
+    Create a simple reactive value:
+    
+    >>> import nexpy as nx
+    >>> temperature = nx.XValue(20.0)
+    >>> print(temperature.value)
+    20.0
+    >>> temperature.value = 25.5
+    >>> print(temperature.value)
+    25.5
+    
+    With validation:
+    
+    >>> def validate_range(value):
+    ...     if 0 <= value <= 100:
+    ...         return True, "Valid"
+    ...     return False, "Value must be between 0 and 100"
+    >>> 
+    >>> percentage = nx.XValue(50, validator=validate_range)
+    >>> percentage.value = 75  # OK
+    >>> percentage.value = 150  # Raises SubmissionError
+    
+    With listeners:
+    
+    >>> counter = nx.XValue(0)
+    >>> counter.hook.add_listener(lambda: print(f"Counter: {counter.value}"))
+    >>> counter.value = 1  # Prints: "Counter: 1"
+    >>> counter.value = 2  # Prints: "Counter: 2"
+    
+    Joining XValues:
+    
+    >>> sensor_reading = nx.XValue(20.0)
+    >>> display_value = nx.XValue(0.0)
+    >>> 
+    >>> # Synchronize them via hook fusion
+    >>> sensor_reading.hook.join(display_value.hook)
+    >>> 
+    >>> sensor_reading.value = 25.5
+    >>> print(display_value.value)  # 25.5 (automatically synchronized)
+    
+    Comparison operators:
+    
+    >>> x = nx.XValue(10)
+    >>> y = nx.XValue(20)
+    >>> print(x < y)  # True (compares .value)
+    >>> print(x == y)  # False (compares object identity, not value)
+    
+    Arithmetic operations (if value type supports it):
+    
+    >>> x = nx.XValue(10)
+    >>> print(int(x))     # 10
+    >>> print(float(x))   # 10.0
+    >>> print(abs(x))     # 10
+    
+    See Also
+    --------
+    FloatingHook : Independent hook for simple reactive values
+    XDict : Reactive dictionary
+    XList : Reactive list
+    XDictSelect : Selection from a dictionary with internal synchronization
+    
+    Notes
+    -----
+    Thread Safety:
+        All XValue operations are thread-safe. Multiple threads can safely read
+        and write the value concurrently.
+    
+    Memory Management:
+        XValue stores the value by reference only (no copying). The value itself
+        is stored in the underlying Nexus, and multiple XValue instances can share
+        the same Nexus through hook fusion.
+    
+    Validation:
+        Validation is performed before value updates. If validation fails, the
+        value remains unchanged and a SubmissionError is raised.
+        
+        When XValues are joined, validation from ALL joined XValues must pass
+        for an update to succeed (atomic cross-object validation).
+    
+    Object Identity vs Value Equality:
+        The `==` operator compares object identity (whether two XValue instances
+        are the same object), not their values. To compare values, use:
+        `x.value == y.value`
+    """
 
     def __init__(
         self,
@@ -39,7 +161,7 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
         """
         Get the hook for the value (thread-safe).
         
-        This hook can be used for joining operations with other observables.
+        This hook can be used for joining operations with other x_objects.
         """
         with self._lock:
             return self._get_single_hook()
