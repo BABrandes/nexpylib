@@ -28,8 +28,8 @@ class TestEmitterHooksBasicFunctionality:
         assert obs_list.length == 3
     
     def test_observable_dict_length_secondary_hook(self):
-        """Test that ObservableSelectionDict has a length secondary hook.""" 
-        obs_dict = ObservableSelectionDict({"a": 1, "b": 2}, "a")
+        """Test that XDictSelect has a length secondary hook.""" 
+        obs_dict = XDictSelect({"a": 1, "b": 2}, "a")
         
         # Check that length hook exists
         assert "length" in [key for key in obs_dict._secondary_hooks.keys()] # type: ignore
@@ -112,7 +112,7 @@ class TestEmitterHooksRecomputation:
     
     def test_observable_dict_length_updates_on_modification(self):
         """Test that length secondary hook updates when dict is modified."""
-        obs_dict = ObservableSelectionDict({"a": 1, "b": 2}, "a")
+        obs_dict = XDictSelect({"a": 1, "b": 2}, "a")
         
         # Initial length should be 2
         assert obs_dict.length == 2

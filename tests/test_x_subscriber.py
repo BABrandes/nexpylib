@@ -9,7 +9,7 @@ import pytest
 
 from nexpy import Publisher, XSubscriber
 
-from tests.test_base import ObservableTestCase
+from test_base import ObservableTestCase
 from run_tests import console_logger as logger
 
 class TestXSubscriber(ObservableTestCase):

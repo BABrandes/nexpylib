@@ -57,7 +57,7 @@ class TestWriteReport:
         
         # 2. Task management system
         task_list = XList(["Setup project", "Write documentation", "Run tests"])
-        task_priorities = ObservableSelectionDict({"Setup project": 1, "Write documentation": 2, "Run tests": 3}, "Setup project")
+        task_priorities = XDictSelect({"Setup project": 1, "Write documentation": 2, "Run tests": 3}, "Setup project")
         completed_tasks = XSet({"Write documentation"})
         
         # 3. Multi-selection for task statuses

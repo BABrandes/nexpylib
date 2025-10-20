@@ -1,7 +1,7 @@
 
 from nexpy import XSet
 
-from tests.test_base import ObservableTestCase
+from test_base import ObservableTestCase
 import pytest
 
 class TestXSet(ObservableTestCase):
@@ -280,7 +280,7 @@ class TestXSet(ObservableTestCase):
     
     def test_string_representation(self):
         """Test string and repr methods"""
-        assert "OS(options={1, 2, 3})" == str(self.observable)
+        assert "XSet(options={1, 2, 3})" == str(self.observable)
         assert "XSet({1, 2, 3})" == repr(self.observable)
     
     def test_listener_management(self):

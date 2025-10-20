@@ -179,8 +179,8 @@ class TestXValue:
     
     def test_string_representation(self):
         """Test string representation of the observable."""
-        assert str(self.observable) == "OSV(value=42)"
-        assert repr(self.observable) == "XValue(42)"
+        assert str(self.observable) == "XAV(value=42)"
+        assert repr(self.observable) == "XAnyValue(42)"
     
     def test_listener_management(self):
         """Test listener management methods"""

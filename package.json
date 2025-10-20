@@ -5,9 +5,11 @@
   "scripts": {
     "typecheck": "pyright",
     "typecheck:watch": "pyright --watch",
-    "typecheck:stats": "pyright --stats"
+    "typecheck:stats": "pyright --stats",
+    "typecheck:json": "pyright --outputjson"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "pyright": "^1.1.406"
   }
 }

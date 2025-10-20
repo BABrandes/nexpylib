@@ -225,7 +225,7 @@ class TestScalabilityPerformance:
         # Create a complex scenario with multiple observable types
         obs_single = XValue("single")
         obs_list = XList([1, 2, 3])
-        obs_dict = ObservableSelectionDict({"key": "value"}, "key")
+        obs_dict = XDictSelect({"key": "value"}, "key")
         
         # Create a simpler binding pattern that avoids nexus conflicts
         # Connect obs_single to obs_list.length_hook

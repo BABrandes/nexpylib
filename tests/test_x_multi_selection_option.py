@@ -307,13 +307,13 @@ class TestXSetMultiSelect:
     def test_string_representation(self):
         """Test string and repr methods"""
         str_repr = str(self.observable)
-        assert "OMSO(selected_options=" in str_repr
+        assert "XMSO(selected_options=" in str_repr
         assert "Apple" in str_repr
         assert "Banana" in str_repr
         assert "Cherry" in str_repr
         
         repr_repr = repr(self.observable)
-        assert "OMSO(selected_options=" in repr_repr
+        assert "XMSO(selected_options=" in repr_repr
         assert "Apple" in repr_repr
         assert "Banana" in repr_repr
         assert "Cherry" in repr_repr

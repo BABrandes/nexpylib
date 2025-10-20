@@ -1,5 +1,5 @@
 
-from tests.test_base import ObservableTestCase
+from test_base import ObservableTestCase
 import pytest
 
 from nexpy.x_objects.list_like.x_list import XList

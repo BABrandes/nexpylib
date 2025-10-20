@@ -152,9 +152,9 @@ _value_equality_callbacks = {
 
 # --- united_system integration ---
 try:
-    from united_system import RealUnitedScalar
+    from united_system import RealUnitedScalar # type: ignore
     
-    def _value_equality_callback_real_united_scalar(value1: RealUnitedScalar, value2: RealUnitedScalar) -> bool:
+    def _value_equality_callback_real_united_scalar(value1: RealUnitedScalar, value2: RealUnitedScalar) -> bool: # type: ignore
         """Check equality for RealUnitedScalar values.
         
         Args:
@@ -164,9 +164,9 @@ try:
         Returns:
             True if values have the same dimension and equal canonical values, False otherwise.
         """
-        if value1.dimension != value2.dimension:
+        if value1.dimension != value2.dimension: # type: ignore
             return False
-        return _value_equality_callback_float(value1.value_in_canonical_unit(), value2.value_in_canonical_unit())
+        return _value_equality_callback_float(value1.value_in_canonical_unit(), value2.value_in_canonical_unit()) # type: ignore
     
     _value_equality_callbacks[(RealUnitedScalar, RealUnitedScalar)] = _value_equality_callback_real_united_scalar # type: ignore
 

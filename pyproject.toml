@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nexpylib"
-version = "0.1.0"
+version = "0.0.1"
 description = "A Python library for scientific computing and data analysis"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Benedikt Axel Brandes", email = "benedikt.brandes@me.com"}
 ]
 maintainers = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Benedikt Axel Brandes", email = "benedikt.brandes@me.com"}
 ]
 keywords = ["scientific computing", "data analysis", "python"]
 classifiers = [
@@ -20,15 +20,10 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.13"
 dependencies = [
     "typing-extensions>=4.0.0",
 ]
@@ -49,10 +44,10 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/nexpylib"
+Homepage = "https://github.com/babrandes/nexpylib"
 Documentation = "https://nexpylib.readthedocs.io/"
-Repository = "https://github.com/yourusername/nexpylib.git"
-"Bug Tracker" = "https://github.com/yourusername/nexpylib/issues"
+Repository = "https://github.com/babrandes/nexpylib.git"
+"Bug Tracker" = "https://github.com/babrandes/nexpylib/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -79,7 +74,7 @@ extend-exclude = '''
 '''
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -96,9 +91,6 @@ markers = [
 addopts = [
     "--strict-markers",
     "--strict-config",
-    "--cov=src/nexpy",
-    "--cov-report=term-missing",
-    "--cov-report=html",
 ]
 
 [tool.pyright]
@@ -112,7 +104,7 @@ exclude = [
 ]
 venvPath = "."
 venv = ".venv"
-pythonVersion = "3.8"
+pythonVersion = "3.13"
 pythonPlatform = "All"
 
 # Strict mode settings
@@ -171,3 +163,8 @@ reportUnusedExpression = "warning"
 reportUnnecessaryTypeIgnoreComment = "warning"
 reportMatchNotExhaustive = "warning"
 reportShadowedImports = "error"
+
+# Execution environments - relax rules for test files
+[[tool.pyright.executionEnvironments]]
+root = "tests"
+reportUninitializedInstanceVariable = "none"

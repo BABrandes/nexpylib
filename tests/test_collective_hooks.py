@@ -8,7 +8,7 @@ It covers complex binding scenarios, collective validation, and transitive bindi
 
 import time
 
-from nexpy import XValue, XSet, XSetSelect, XSetOptionalSelect, XSetMultiSelect, XDict, XDictSelect, XDictSelectOptional, XDictSelectDefault, XDictSelectOptionalDefault
+from nexpy import XValue, XSet, XSetSelect, XSetOptionalSelect
 from run_tests import console_logger as logger
 import pytest
 
@@ -33,7 +33,7 @@ class TestCollectiveHooks:
         """Test that collective_hooks property returns the correct hooks."""
         # XSetSelect should have selected_option, available_options, and secondary hooks
         all_hooks = list(self.selector1._primary_hooks.values()) + list(self.selector1._secondary_hooks.values()) # type: ignore
-        assert len(all_hooks) == 3 # type: ignore
+        assert len(all_hooks) == 3
         assert self.selector1._primary_hooks["selected_option"] in all_hooks # type: ignore
         assert self.selector1._primary_hooks["available_options"] in all_hooks # type: ignore
         
