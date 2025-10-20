@@ -83,7 +83,7 @@ class TestXValue:
         obs2 = XValue(20, logger=logger)
         
         # Bind obs1 to obs2
-        obs1.join(obs2.hook, "use_caller_value")  # type: ignore
+        obs1.join(obs2.value_hook, "use_caller_value")  # type: ignore
         
         # Change obs1, obs2 should update
         obs1.value = 30
@@ -99,13 +99,13 @@ class TestXValue:
         obs2 = XValue(200, logger=logger)
         
         # Test USE_CALLER_VALUE mode
-        obs1.join(obs2.hook, "use_caller_value")  # type: ignore
+        obs1.join(obs2.value_hook, "use_caller_value")  # type: ignore
         assert obs2.value == 100  # obs2 gets obs1's value
         
         # Test update_observable_from_self mode
         obs3 = XValue(300, logger=logger)
         obs4 = XValue(400, logger=logger)
-        obs3.join(obs4.hook, "use_target_value")  # type: ignore
+        obs3.join(obs4.value_hook, "use_target_value")  # type: ignore
         assert obs3.value == 400  # obs3 gets updated with obs4's value
     
     def test_unbinding(self):
@@ -113,7 +113,7 @@ class TestXValue:
         obs1 = XValue(10, logger=logger)
         obs2 = XValue(20, logger=logger)
         
-        obs1.join(obs2.hook, "use_caller_value")  # type: ignore
+        obs1.join(obs2.value_hook, "use_caller_value")  # type: ignore
         obs1.isolate()
         
         # Changes should no longer propagate
@@ -125,7 +125,7 @@ class TestXValue:
         obs1 = XValue(10, logger=logger)
         obs2 = XValue(20, logger=logger)
         
-        obs1.join(obs2.hook, "use_target_value")  # type: ignore
+        obs1.join(obs2.value_hook, "use_target_value")  # type: ignore
         obs1.isolate()
         
         # Second unbind should not raise an error (current behavior)
@@ -142,7 +142,7 @@ class TestXValue:
         obs = XValue(10, logger=logger)
         # The new implementation may not prevent self-binding, so we'll test the current behavior
         try:
-            obs.join(obs.hook, "use_caller_value")  # type: ignore
+            obs.join(obs.value_hook, "use_caller_value")  # type: ignore
             # If it doesn't raise an error, that's the current behavior
         except Exception as e:
             assert isinstance(e, ValueError)
@@ -154,8 +154,8 @@ class TestXValue:
         obs3 = XValue(30, logger=logger)
         
         # Create chain: obs1 -> obs2 -> obs3
-        obs1.join(obs2.hook, "use_caller_value")  # type: ignore
-        obs2.join(obs3.hook, "use_caller_value")  # type: ignore
+        obs1.join(obs2.value_hook, "use_caller_value")  # type: ignore
+        obs2.join(obs3.value_hook, "use_caller_value")  # type: ignore
         
         # Verify chain works
         obs1.value = 100
@@ -202,8 +202,8 @@ class TestXValue:
         obs3 = XValue(30, logger=logger)
         
         # Bind obs2 and obs3 to obs1
-        obs2.join(obs1.hook, "use_caller_value")  # type: ignore
-        obs3.join(obs1.hook, "use_caller_value")  # type: ignore
+        obs2.join(obs1.value_hook, "use_caller_value")  # type: ignore
+        obs3.join(obs1.value_hook, "use_caller_value")  # type: ignore
         
         # Change obs1, both should update
         obs1.value = 100
@@ -221,7 +221,7 @@ class TestXValue:
         source = XValue(100, logger=logger)
         
         # Create a new observable initialized with the source
-        target: XValue[int] = XValue[int](source.hook, logger=logger)
+        target: XValue[int] = XValue[int](source.value_hook, logger=logger)
         
         # Check that the target has the same initial value
         assert target.value == 100
@@ -244,7 +244,7 @@ class TestXValue:
         source = XValue(50, validator=validate_positive, logger=logger)
         
         # Create a target observable initialized with the source and validator
-        target = XValue(source.hook, validator=validate_positive, logger=logger)
+        target = XValue(source.value_hook, validator=validate_positive, logger=logger)
         
         # Check that the target has the same initial value
         assert target.value == 50
@@ -264,17 +264,17 @@ class TestXValue:
         """Test initialization with CarriesBindableSingleValue of different types"""
         # Test with string type
         source_str = XValue("hello", logger=logger)
-        target_str = XValue(source_str.hook, logger=logger)
+        target_str = XValue(source_str.value_hook, logger=logger)
         assert target_str.value == "hello"
         
         # Test with float type
         source_float = XValue(3.14, logger=logger)
-        target_float = XValue(source_float.hook, logger=logger)
+        target_float = XValue(source_float.value_hook, logger=logger)
         assert target_float.value == 3.14
         
         # Test with list type (now preserved as list)
         source_list = XValue([1, 2, 3], logger=logger)
-        target_list = XValue(source_list.hook, logger=logger)
+        target_list = XValue(source_list.value_hook, logger=logger)
         # Lists are now preserved as lists
         assert target_list.value == [1, 2, 3]
     
@@ -282,8 +282,8 @@ class TestXValue:
         """Test initialization with CarriesBindableSingleValue in a chain"""
         # Create a chain of observables
         obs1: XValue[int] = XValue(10, logger=logger)
-        obs2: XValue[int] = XValue[int](obs1.hook, logger=logger)
-        obs3: XValue[int] = XValue[int](obs2.hook, logger=logger)
+        obs2: XValue[int] = XValue[int](obs1.value_hook, logger=logger)
+        obs3: XValue[int] = XValue[int](obs2.value_hook, logger=logger)
         
         # Check initial values
         assert obs1.value == 10
@@ -305,7 +305,7 @@ class TestXValue:
     def test_initialization_with_carries_bindable_single_value_unbinding(self):
         """Test that initialization with CarriesBindableSingleValue can be unbound"""
         source: XValue[int] = XValue(100, logger=logger)
-        target: XValue[int] = XValue[int](source.hook, logger=logger)
+        target: XValue[int] = XValue[int](source.value_hook, logger=logger)
         
         # Verify they are bound
         assert target.value == 100
@@ -326,9 +326,9 @@ class TestXValue:
     def test_initialization_with_carries_bindable_single_value_multiple_targets(self):
         """Test multiple targets initialized with the same source"""
         source: XValue[int] = XValue(100, logger=logger)
-        target1: XValue[int] = XValue[int](source.hook, logger=logger)
-        target2: XValue[int] = XValue[int](source.hook, logger=logger)
-        target3: XValue[int] = XValue[int](source.hook, logger=logger)
+        target1: XValue[int] = XValue[int](source.value_hook, logger=logger)
+        target2: XValue[int] = XValue[int](source.value_hook, logger=logger)
+        target3: XValue[int] = XValue[int](source.value_hook, logger=logger)
         
         # Check initial values
         assert target1.value == 100
@@ -351,7 +351,7 @@ class TestXValue:
         """Test edge cases for initialization with CarriesBindableSingleValue"""
         # Test with None value in source
         source_none = XValue(None, logger=logger)
-        target_none = XValue(source_none.hook, logger=logger)
+        target_none = XValue(source_none.value_hook, logger=logger)
         assert target_none.value is None
         
         # Test with zero value
@@ -391,7 +391,7 @@ class TestXValue:
     def test_initialization_with_carries_bindable_single_value_binding_consistency(self):
         """Test binding system consistency when initializing with CarriesBindableSingleValue"""
         source: XValue[int] = XValue(100, logger=logger)
-        target: XValue[int] = XValue[int](source.hook, logger=logger)
+        target: XValue[int] = XValue[int](source.value_hook, logger=logger)
         
         # Check binding consistency - the new system may not have this method
         # We'll test the basic binding functionality instead
@@ -436,14 +436,14 @@ class TestXValue:
         obs2 = XValue(20, logger=logger)
         
         with pytest.raises(ValueError):
-            obs1.join(obs2.hook, "invalid_mode")  # type: ignore
+            obs1.join(obs2.value_hook, "invalid_mode")  # type: ignore
     
     def test_binding_with_same_values(self):
         """Test binding when observables already have the same value"""
         obs1 = XValue(42, logger=logger)
         obs2 = XValue(42, logger=logger)
         
-        obs1.join(obs2.hook, "use_caller_value")  # type: ignore
+        obs1.join(obs2.value_hook, "use_caller_value")  # type: ignore
         # Both should still have the same value
         assert obs1.value == 42
         assert obs2.value == 42

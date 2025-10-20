@@ -24,6 +24,7 @@ class XFunction(ListeningBase, CarriesSomeHooksBase[SHK, SHV, "XFunction"], Gene
         self,
         complete_variables_per_key: Mapping[SHK, Hook[SHV]|ReadOnlyHook[SHV]|SHV],
         completing_function_callable: Callable[[FunctionValues[SHK, SHV]], tuple[bool, dict[SHK, SHV]]],
+        *,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
     ) -> None:

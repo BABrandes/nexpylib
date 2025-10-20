@@ -8,6 +8,8 @@ from ...core.hooks.owned_hook import OwnedHook
 from ...core.hooks.hook_protocols.owned_full_hook_protocol import OwnedFullHookProtocol
 from ...core.nexus_system.nexus import Nexus
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
+from ...core.nexus_system.nexus_manager import NexusManager
+from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
 
 EK = TypeVar("EK", bound=str)
 
@@ -55,7 +57,9 @@ class XRootedPaths(CarriesSomeHooksBase[str, str|Path|None, "XRootedPaths"], XOb
         self,
         root_path_initial_value: Optional[Path] = None,
         rooted_elements_initial_relative_path_values: dict[EK, str|None] = {},
+        *,
         logger: Optional[Logger] = None,
+        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
     ):
 
         self._rooted_element_keys: set[EK] = set(rooted_elements_initial_relative_path_values.keys())

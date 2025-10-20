@@ -70,7 +70,7 @@ class TestThreadSafety:
                     obs2 = XValue(f"worker_{worker_id}_obs2_{i}")
                     
                     # Bind them
-                    obs1.join(obs2.hook, "use_caller_value")
+                    obs1.join(obs2.value_hook, "use_caller_value")
                     
                     # Modify values
                     obs1.value = f"modified_{i}"
@@ -168,13 +168,13 @@ class TestThreadSafety:
                     obs_list.extend([base_value + 1, base_value + 2])
                     
                     # Read operations
-                    _ = len(obs_list.value)
+                    _ = len(obs_list.list)
                     _ = obs_list.length_hook.value
                     
                     # Remove some elements if list is large enough
-                    if len(obs_list.value) > 10:
+                    if len(obs_list.list) > 10:
                         try:
-                            obs_list.remove(obs_list.value[0])
+                            obs_list.remove(obs_list.list[0])
                         except (ValueError, IndexError):
                             pass  # Element might have been removed by another thread
                     
@@ -196,7 +196,7 @@ class TestThreadSafety:
         assert len(errors) == 0, f"XList thread safety issues: {errors}"
         
         # Verify final list is in a consistent state
-        final_list = obs_list.value
+        final_list = obs_list.list
         final_length = obs_list.length_hook.value
         assert len(final_list) == final_length, "List length secondary hook should match actual length"
 
@@ -217,8 +217,8 @@ class TestThreadSafetyEdgeCases:
                     obs3 = XValue(f"value3_{i}")
                     
                     # Create a chain: obs1 -> obs2 -> obs3
-                    obs1.join(obs2.hook, "use_caller_value")
-                    obs2.join(obs3.hook, "use_caller_value")
+                    obs1.join(obs2.value_hook, "use_caller_value")
+                    obs2.join(obs3.value_hook, "use_caller_value")
                     
                     # Modify the chain
                     obs1.value = f"new_value_{i}"
@@ -266,8 +266,8 @@ class TestThreadSafetyEdgeCases:
             try:
                 for i in range(100):
                     obs_list.append(100 + i)
-                    if i % 10 == 0 and len(obs_list.value) > 50:
-                        obs_list.remove(obs_list.value[0])
+                    if i % 10 == 0 and len(obs_list.list) > 50:
+                        obs_list.remove(obs_list.list[0])
                     time.sleep(0.002)
             except Exception as e:
                 errors.append(f"List modifier error: {e}")
@@ -292,7 +292,7 @@ class TestThreadSafetyEdgeCases:
         
         # Verify final consistency
         final_length = obs_list.length_hook.value
-        actual_length = len(obs_list.value)
+        actual_length = len(obs_list.list)
         assert final_length == actual_length, "Final secondary hook value should match actual length"
 
     @pytest.mark.slow
@@ -318,7 +318,7 @@ class TestThreadSafetyEdgeCases:
                     # Perform various operations
                     if i % 4 == 0:
                         # Binding operations
-                        obs1.join(obs2.hook, "use_caller_value") # type: ignore
+                        obs1.join(obs2.value_hook, "use_caller_value") # type: ignore
                         obs1.value = f"worker_{worker_id}_value_{i}"
                         obs1.isolate()
                     elif i % 4 == 1:
@@ -329,7 +329,7 @@ class TestThreadSafetyEdgeCases:
                         obs1.remove_listener(listener)
                     elif i % 4 == 2:
                         # Hook operations
-                        hook = obs1.hook
+                        hook = obs1.value_hook
                         hook.change_value(f"worker_{worker_id}_hook_{i}")
                     else:
                         # Direct value operations

@@ -38,8 +38,9 @@ class XValueBase(ListeningBase, CarriesSomeHooksBase[Literal["value"], T, "XValu
 
     def __init__(
             self,
+            *,
             value_or_hook: T|Hook[T]|ReadOnlyHook[T]|CarriesSingleHookProtocol[T],
-            verification_method: Optional[Callable[[T], tuple[bool, str]]] = None,
+            validation_in_isolation_callback: Optional[Callable[[T], tuple[bool, str]]] = None,
             invalidate_callback: Optional[Callable[[], None]] = None,
             logger: Optional[Logger] = None,
             nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER):
@@ -60,7 +61,7 @@ class XValueBase(ListeningBase, CarriesSomeHooksBase[Literal["value"], T, "XValu
         self._lock = RLock()
         
         # Store configuration
-        self._verification_method = verification_method
+        self._verification_method = validation_in_isolation_callback
         self._invalidate_callback = invalidate_callback
         self._logger = logger
         self._nexus_manager = nexus_manager

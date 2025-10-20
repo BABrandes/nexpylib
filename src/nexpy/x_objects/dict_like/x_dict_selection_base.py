@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
 from ...x_objects_base.x_complex_base import XComplexBase
+from .protocols import XDictProtocol
 from ...core.auxiliary.listening_base import ListeningBase
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.nexus_manager import NexusManager
@@ -15,14 +16,15 @@ V = TypeVar("V")
 KT = TypeVar("KT")  # Key type (can be Optional[K] for optional variants)
 VT = TypeVar("VT")  # Value type (can be Optional[V] for optional variants)
 
-class XDictBase(
+class XDictSelectionBase(
     XComplexBase[
         Literal["dict", "key", "value"], 
         Literal["keys", "values", "length"], 
         Any, 
         set[K]|list[V]|int, 
-        "XDictBase[K, V, KT, VT]"
+        "XDictSelectionBase[K, V, KT, VT]"
     ], 
+    XDictProtocol[K, V],
     ListeningBase, 
     Generic[K, V, KT, VT], 
     ABC
@@ -52,15 +54,16 @@ class XDictBase(
 
     def __init__(
         self,
-        dict_hook: Mapping[K, V] | Hook[Mapping[K, V]] | ReadOnlyHook[Mapping[K, V]],
+        dict_hook: Mapping[K, V] | Hook[Mapping[K, V]] | ReadOnlyHook[Mapping[K, V]] | XDictProtocol[K, V],
         key_hook: KT | Hook[KT] | ReadOnlyHook[KT],
         value_hook: Optional[Hook[VT]] | ReadOnlyHook[VT] = None,
+        *,
         invalidate_callback: Optional[Callable[[], None]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
     ):
         """
-        Initialize the XDictBase.
+        Initialize the XDictSelectionBase.
         
         Args:
             dict_hook: The mapping or hook containing the mapping
@@ -184,7 +187,7 @@ class XDictBase(
             the returned dict will raise TypeError. All modifications should go
             through change_dict() or submit_values().
         """
-        return self._primary_hooks["dict"]  # type: ignore
+        return self._primary_hooks["dict"]
 
     @property
     def dict(self) -> dict[K, V]:

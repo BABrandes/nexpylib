@@ -204,7 +204,7 @@ Apache License 2.0
 Copyright (c) 2025 Benedikt Axel Brandes
 """
 
-from .x_objects.x_any_value import XAnyValue as XValue
+from .x_objects.single_value_like.x_single_value import XSingleValue as XValue
 
 from .x_objects.list_like.x_list import XList
 from .x_objects.set_like.x_set import XSet

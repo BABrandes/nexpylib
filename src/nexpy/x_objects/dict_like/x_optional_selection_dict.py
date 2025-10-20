@@ -1,6 +1,6 @@
 from typing import Literal, TypeVar, Generic, Optional, Mapping, Any, Callable
 
-from .x_dict_base import XDictBase, Hook
+from .x_dict_selection_base import XDictSelectionBase, Hook
 from .protocols import XOptionalSelectionDictProtocol
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.submission_error import SubmissionError
@@ -9,7 +9,7 @@ K = TypeVar("K")
 V = TypeVar("V")
 
 class XOptionalSelectionDict(
-    XDictBase[K, V, Optional[K], Optional[V]], 
+    XDictSelectionBase[K, V, Optional[K], Optional[V]], 
     XOptionalSelectionDictProtocol[K, V], 
     Generic[K, V]
 ):

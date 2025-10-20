@@ -22,27 +22,28 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
 
     def __init__(
         self,
-        observable_or_hook_or_value: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | None = None,
+        observable_or_hook_or_value: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | XSetProtocol[T] | None = None,
+        *,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER) -> None: # type: ignore
+        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER) -> None:
 
         if observable_or_hook_or_value is None:
             initial_value: Iterable[T] = set()
             hook: Optional[ManagedHookProtocol[Iterable[T]]] = None 
         elif isinstance(observable_or_hook_or_value, XSetProtocol):
-            initial_value = observable_or_hook_or_value.value # type: ignore
-            hook = observable_or_hook_or_value.value_hook # type: ignore
+            initial_value = observable_or_hook_or_value.set
+            hook = observable_or_hook_or_value.set_hook
         elif isinstance(observable_or_hook_or_value, ManagedHookProtocol):
-            initial_value = observable_or_hook_or_value.value # type: ignore
-            hook = observable_or_hook_or_value # type: ignore
+            initial_value = observable_or_hook_or_value.value
+            hook = observable_or_hook_or_value
         else:
             # Pass set directly - nexus system will convert to frozenset
-            initial_value = observable_or_hook_or_value # type: ignore
+            initial_value = observable_or_hook_or_value
             hook = None
         
         super().__init__(
-            initial_hook_values={"value": initial_value}, # type: ignore
-            verification_method=lambda x: (True, "Verification method passed") if likely_settable(x["value"]) else (False, "Value cannot be used as a set!"), # type: ignore
+            initial_hook_values={"value": initial_value},
+            verification_method=lambda x: (True, "Verification method passed") if likely_settable(x["value"]) else (False, "Value cannot be used as a set!"),
             secondary_hook_callbacks={"length": lambda x: len(x["value"])}, # type: ignore
             output_value_wrapper={
                 "value": lambda x: set(x) # type: ignore
@@ -61,17 +62,17 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
     #-------------------------------- set value --------------------------------
 
     @property
-    def value_hook(self) -> Hook[Iterable[T]]:
+    def set_hook(self) -> Hook[Iterable[T]]:
         """
         Get the hook for the set.
 
         This hook can be used for linking operations with other observables.
         Returns frozenset for immutability.
         """
-        return self._primary_hooks["value"] # type: ignore
+        return self._primary_hooks["value"]
 
     @property
-    def value(self) -> set[T]: # type: ignore
+    def set(self) -> set[T]:
         """
         Get the current set value.
         
@@ -83,11 +84,11 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         """
         return self._value_wrapped("value") # type: ignore
     
-    @value.setter
-    def value(self, value: Iterable[T]) -> None:
-        self.change_value(value)
+    @set.setter
+    def set(self, value: Iterable[T]) -> None:
+        self.change_set(value)
     
-    def change_value(self, value: Iterable[T]) -> None:
+    def change_set(self, value: Iterable[T]) -> None:
         """
         Set the current value of the set.
         
@@ -130,8 +131,8 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         Args:
             item: The element to add to the set
         """
-        if item not in self._primary_hooks["value"].value: # type: ignore
-            new_set = set(self._primary_hooks["value"].value) | {item} # type: ignore
+        if item not in self._primary_hooks["value"].value:
+            new_set = set(self._primary_hooks["value"].value) | {item}
             success, msg = self._submit_value("value", new_set)
             if not success:
                 raise ValueError(msg)
@@ -148,10 +149,10 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         Raises:
             KeyError: If the item is not in the set
         """
-        if item not in self._primary_hooks["value"].value: # type: ignore
+        if item not in self._primary_hooks["value"].value:
             raise KeyError(item)
         
-        new_set = set(self._primary_hooks["value"].value) - {item} # type: ignore
+        new_set = set(self._primary_hooks["value"].value) - {item}
         success, msg = self._submit_value("value", new_set)
         if not success:
             raise ValueError(msg)
@@ -166,8 +167,8 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         Args:
             item: The element to remove from the set
         """
-        if item in self._primary_hooks["value"].value: # type: ignore
-            new_set = set(self._primary_hooks["value"].value) - {item} # type: ignore
+        if item in self._primary_hooks["value"].value:
+            new_set = set(self._primary_hooks["value"].value) - {item}
             success, msg = self._submit_value("value", new_set)
             if not success:
                 raise ValueError(msg)
@@ -184,11 +185,11 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         Raises:
             KeyError: If the set is empty
         """
-        if not self._primary_hooks["value"].value: # type: ignore
+        if not self._primary_hooks["value"].value:
             raise KeyError("pop from an empty set")
         
-        item: T = next(iter(self._primary_hooks["value"].value)) # type: ignore
-        new_set = set(self._primary_hooks["value"].value) - {item} # type: ignore
+        item: T = next(iter(self._primary_hooks["value"].value))
+        new_set = set(self._primary_hooks["value"].value) - {item}
         success, msg = self._submit_value("value", set(new_set))
         if not success:
             raise ValueError(msg)
@@ -217,7 +218,7 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         """
         new_set: set[T] = self._primary_hooks["value"].value # type: ignore
         for other in others:
-            new_set = new_set | set(other) # type: ignore
+            new_set = new_set | set(other)
         if new_set != self._primary_hooks["value"].value:
             success, msg = self._submit_values({"value": new_set})
             if not success:
@@ -234,7 +235,7 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         """
         new_set: set[T] = self._primary_hooks["value"].value # type: ignore
         for other in others:
-            new_set = new_set & set(other) # type: ignore
+            new_set = new_set & set(other)
         if new_set != self._primary_hooks["value"].value:
             success, msg = self._submit_values({"value": new_set})
             if not success:
@@ -251,7 +252,7 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         """
         new_set: set[T] = self._primary_hooks["value"].value # type: ignore
         for other in others:
-            new_set = new_set - set(other) # type: ignore
+            new_set = new_set - set(other)
         if new_set != self._primary_hooks["value"].value:
             success, msg = self._submit_values({"value": new_set})
             if not success:
@@ -267,7 +268,7 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
             other: An iterable to compute symmetric difference with
         """
         current_set: set[T] = self._primary_hooks["value"].value # type: ignore
-        new_set = current_set ^ set(other) # type: ignore
+        new_set = current_set ^ set(other)
         
         # Only update if there's an actual change
         if new_set != current_set:
@@ -309,7 +310,7 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         Returns:
             An iterator that yields each element in the set
         """
-        return iter(self._primary_hooks["value"].value) # type: ignore
+        return iter(self._primary_hooks["value"].value)
     
     def __eq__(self, other: Any) -> bool:
         """

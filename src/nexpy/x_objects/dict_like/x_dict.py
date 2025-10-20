@@ -15,11 +15,11 @@ class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], M
 
     def __init__(
         self,
-        observable_or_hook_or_value: Mapping[K, V] | Hook[Mapping[K, V]] | ReadOnlyHook[Mapping[K, V]] | None = None,
+        observable_or_hook_or_value: Mapping[K, V] | Hook[Mapping[K, V]] | ReadOnlyHook[Mapping[K, V]] | XDictProtocol[K, V] | None = None,
         *,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
-    ) -> None: # type: ignore
+    ) -> None:
 
         if observable_or_hook_or_value is None:
             initial_dict_value: Mapping[K, V] = {}
@@ -28,11 +28,11 @@ class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], M
             initial_dict_value = observable_or_hook_or_value
             hook = None
         elif isinstance(observable_or_hook_or_value, XDictProtocol):
-            initial_dict_value = observable_or_hook_or_value.dict # type: ignore
-            hook = observable_or_hook_or_value.dict_hook # type: ignore  # For linking
+            initial_dict_value = observable_or_hook_or_value.dict
+            hook = observable_or_hook_or_value.dict_hook
         elif isinstance(observable_or_hook_or_value, ManagedHookProtocol): # type: ignore
-            initial_dict_value = observable_or_hook_or_value.value # type: ignore
-            hook = observable_or_hook_or_value # type: ignore
+            initial_dict_value = observable_or_hook_or_value.value
+            hook = observable_or_hook_or_value
         else:
             raise ValueError("Invalid initial value")
 
@@ -40,12 +40,12 @@ class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], M
             return (True, "Verification method passed") if isinstance(x["dict"], Mapping) else (False, "Value is not a Map")
 
         super().__init__(
-            initial_hook_values={"dict": initial_dict_value}, # type: ignore
+            initial_hook_values={"dict": initial_dict_value},
             verification_method=is_valid_value,
             secondary_hook_callbacks={
-                "length": lambda x: len(x["dict"]), # type: ignore
-                "keys": lambda x: set(x["dict"].keys()), # type: ignore
-                "values": lambda x: list(x["dict"].values()) # type: ignore
+                "length": lambda x: len(x["dict"]),
+                "keys": lambda x: set(x["dict"].keys()),
+                "values": lambda x: list(x["dict"].values())
             },
             output_value_wrapper={
                 "dict": lambda x: dict(x), # type: ignore
@@ -69,7 +69,7 @@ class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], M
     def dict_hook(self) -> Hook[Mapping[K, V]]:
         """Get the dictionary hook."""
         
-        return self._primary_hooks["dict"] # type: ignore
+        return self._primary_hooks["dict"]
     
     @property
     def dict(self) -> dict[K, V]: # type: ignore
@@ -153,7 +153,7 @@ class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], M
         Returns:
             The value associated with the key, or the default value if key not found
         """
-        return self._primary_hooks["dict"].value.get(key, default) # type: ignore
+        return self._primary_hooks["dict"].value.get(key, default)
     
     def has_key(self, key: K) -> bool:
         """
@@ -165,7 +165,7 @@ class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], M
         Returns:
             True if the key exists, False otherwise
         """
-        return key in self._primary_hooks["dict"].value # type: ignore
+        return key in self._primary_hooks["dict"].value
     
     def remove_item(self, key: K) -> None:
         """
@@ -231,7 +231,7 @@ class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], M
         Returns:
             A tuple of tuples, each containing a key-value pair
         """
-        return tuple(self._primary_hooks["dict"].value.items()) # type: ignore
+        return tuple(self._primary_hooks["dict"].value.items())
     
     def __len__(self) -> int:
         """
@@ -240,7 +240,7 @@ class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], M
         Returns:
             The number of key-value pairs
         """
-        return len(self._primary_hooks["dict"].value) # type: ignore
+        return len(self._primary_hooks["dict"].value)
     
     def __contains__(self, key: K) -> bool:
         """
@@ -252,7 +252,7 @@ class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], M
         Returns:
             True if the key exists, False otherwise
         """
-        return key in self._primary_hooks["dict"].value # type: ignore
+        return key in self._primary_hooks["dict"].value
     
     def __getitem__(self, key: K) -> V:
         """
@@ -270,7 +270,7 @@ class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], M
         current = self._primary_hooks["dict"].value
         if key not in current:
             raise KeyError(f"Key '{key}' not found in dictionary")
-        return current[key] # type: ignore
+        return current[key]
     
     def __setitem__(self, key: K, value: V) -> None:
         """

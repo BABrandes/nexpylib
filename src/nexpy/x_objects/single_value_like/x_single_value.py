@@ -1,20 +1,21 @@
 from typing import Any, Callable, Generic, Optional, TypeVar
 from logging import Logger
 
-from ..core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ..x_objects_base.x_single_value_base import XValueBase
-from ..x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol
-from ..core.nexus_system.submission_error import SubmissionError
-from ..core.nexus_system.nexus_manager import NexusManager
-from ..core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
+from ...x_objects_base.x_single_value_base import XValueBase
+from ...x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol
+from ...core.nexus_system.submission_error import SubmissionError
+from ...core.nexus_system.nexus_manager import NexusManager
+from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from .protocols import XSingleValueProtocol
 
 T = TypeVar("T")
 
-class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
+class XSingleValue(XValueBase[T], XSingleValueProtocol[T, Hook[T]], CarriesSingleHookProtocol[T], Generic[T]):
     """
     Reactive value wrapper providing seamless integration with NexPy's synchronization system.
     
-    XAnyValue (aliased as XValue) is a high-level reactive value container that wraps
+    XSingleValue is a high-level reactive value container that wraps
     a single value with automatic change notifications, validation, and fusion capabilities.
     It's the simplest X object and ideal for wrapping primitive values or single objects.
     
@@ -137,16 +138,17 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
     def __init__(
         self,
         value_or_hook: T | Hook[T] | ReadOnlyHook[T] | CarriesSingleHookProtocol[T],
+        *,
         validator: Optional[Callable[[T], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
-    ) -> None: # type: ignore
+    ) -> None:
 
 
         # Initialize the base class
         super().__init__(
             value_or_hook=value_or_hook,
-            verification_method=validator,
+            validation_in_isolation_callback=validator,
             invalidate_callback=None,
             logger=logger,
             nexus_manager=nexus_manager
@@ -157,7 +159,7 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
     #########################################################
 
     @property
-    def hook(self) -> Hook[T]:
+    def value_hook(self) -> Hook[T]:
         """
         Get the hook for the value (thread-safe).
         
@@ -189,7 +191,7 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
         if not success:
             raise SubmissionError(msg, value, "value")
 
-    def change_value(self, new_value: T, *, raise_submission_error_flag: bool = True) -> tuple[bool, str]:
+    def change_value(self, value: T, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> tuple[bool, str]:
         """
         Change the value (lambda-friendly method).
         
@@ -197,14 +199,14 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
         in lambda expressions and other contexts where property assignment isn't suitable.
         
         Args:
-            new_value: The new value to set
+            value: The new value to set
             
         Raises:
             SubmissionError: If the new value fails validation
         """
-        success, msg = self._submit_value("value", new_value)
+        success, msg = self._submit_value("value", value)
         if not success and raise_submission_error_flag:
-            raise SubmissionError(msg, new_value, "value")
+            raise SubmissionError(msg, value, "value")
         return success, msg
 
     #########################################################
@@ -225,7 +227,7 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
     
     def __eq__(self, other: object) -> bool:
         """Check if this X object equals another object."""
-        if isinstance(other, XAnyValue):
+        if isinstance(other, XSingleValue):
             return id(self) == id(other) # type: ignore
         return False
     
@@ -251,7 +253,7 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
         Returns:
             True if this value is less than the other, False otherwise
         """
-        if isinstance(other, XAnyValue):
+        if isinstance(other, XSingleValueProtocol):
             return self.value < other.value # type: ignore
         return self.value < other
     
@@ -265,7 +267,7 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
         Returns:
             True if this value is less than or equal to the other, False otherwise
         """
-        if isinstance(other, XAnyValue):
+        if isinstance(other, XSingleValueProtocol):
             return self.value <= other.value # type: ignore
         return self.value <= other
     
@@ -279,7 +281,7 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
         Returns:
             True if this value is greater than the other, False otherwise
         """
-        if isinstance(other, XAnyValue):
+        if isinstance(other, XSingleValueProtocol):
             return self.value > other.value # type: ignore
         return self.value > other
     
@@ -293,7 +295,7 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
         Returns:
             True if this value is greater than or equal to the other, False otherwise
         """
-        if isinstance(other, XAnyValue):
+        if isinstance(other, XSingleValueProtocol):
             return self.value >= other.value # type: ignore
         return self.value >= other
     

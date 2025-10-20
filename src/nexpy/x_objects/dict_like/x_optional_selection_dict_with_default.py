@@ -3,7 +3,7 @@ from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from .x_dict_base import XDictBase
+from .x_dict_selection_base import XDictSelectionBase
 from .protocols import XOptionalSelectionDictWithDefaultProtocol
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.submission_error import SubmissionError
@@ -12,7 +12,7 @@ K = TypeVar("K")
 V = TypeVar("V")
 
 class XOptionalSelectionDictWithDefault(
-    XDictBase[K, V, Optional[K], Optional[V]], 
+    XDictSelectionBase[K, V, Optional[K], Optional[V]], 
     XOptionalSelectionDictWithDefaultProtocol[K, V], 
     Generic[K, V]
 ):

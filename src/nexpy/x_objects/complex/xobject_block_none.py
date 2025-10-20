@@ -8,6 +8,8 @@ from ...core.hooks.owned_hook import OwnedHook
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.nexus import Nexus
+from ...core.nexus_system.nexus_manager import NexusManager
+from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
 
 T = TypeVar("T")
 
@@ -131,7 +133,9 @@ class XBlockNone(CarriesSomeHooksBase[Literal["value_without_none", "value_with_
         self,
         hook_without_None_or_value: Hook[T] | ReadOnlyHook[T] | None | T,
         hook_with_None: Hook[Optional[T]] | ReadOnlyHook[Optional[T]] | None = None,
-        logger: Optional[Logger] = None
+        *,
+        logger: Optional[Logger] = None,
+        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
         ):
 
         def _add_values_to_be_updated_callback(

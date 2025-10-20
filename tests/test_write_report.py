@@ -82,7 +82,7 @@ class TestWriteReport:
         
         # Bind some observables to demonstrate shared hook nexuses
         task_backup: XList[Any] = XList([])  # Will share nexus with task_list
-        task_backup.join_by_key("value", task_list.value_hook, "use_target_value") # type: ignore
+        task_backup.join_by_key("value", task_list.list_hook, "use_target_value") # type: ignore
         
         # Create another observable that shares the user's age
         min_age_requirement = XValue(18)
@@ -90,11 +90,11 @@ class TestWriteReport:
         
         # Connect age-related observables
         backup_age: XValue[Any] = XValue(0)
-        backup_age.join(user_age.hook, "use_target_value")  # type: ignore
+        backup_age.join(user_age.value_hook, "use_target_value")  # type: ignore
         
         # Create observables that share nexus with the sets
         completed_backup: XSet[Any] = XSet(set())
-        completed_backup.join_by_key("value", completed_tasks.value_hook, "use_target_value") # type: ignore
+        completed_backup.join_by_key("value", completed_tasks.set_hook, "use_target_value") # type: ignore
         
         # Multi-selection backup
         status_backup: XSetMultiSelect[TaskStatus] = XSetMultiSelect(set(), available_statuses)
@@ -191,16 +191,16 @@ class TestWriteReport:
         task_backup: CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"] = observables_dict["task_backup"]
         task_count: CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"] = observables_dict["task_count"]
         
-        print(f"Original task list: {task_list.value}") # type: ignore
-        print(f"Task backup: {task_backup.value}") # type: ignore
+        print(f"Original task list: {task_list.list}") # type: ignore
+        print(f"Task backup: {task_backup.list}") # type: ignore
         print(f"Task count: {task_count.value}") # type: ignore
         
         # Make a change
         print("\n📝 Adding new task...")
         task_list.append("Deploy to production") # type: ignore
         
-        print(f"Updated task list: {task_list.value}") # type: ignore
-        print(f"Task backup: {task_backup.value}") # type: ignore
+        print(f"Updated task list: {task_list.list}") # type: ignore
+        print(f"Task backup: {task_backup.list}") # type: ignore
         print(f"Task count: {task_count.value}") # type: ignore
         
         # Demonstrate user data joining
@@ -226,7 +226,7 @@ class TestWriteReport:
         
         # Create a backup that shares the name
         name_backup: XValue[Any] = XValue[Any]("")
-        name_backup.join(name.hook, "use_target_value")  # type: ignore
+        name_backup.join(name.value_hook, "use_target_value")  # type: ignore
         
         observables: dict[str, CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"]] = {
             "name": name,

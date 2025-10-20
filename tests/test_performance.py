@@ -37,11 +37,11 @@ class TestCachePerformance:
         # Create bound observables to populate the hook nexus
         for i in range(50):
             obs: XValue[Any] = XValue[Any](f"value_{i}")
-            obs.join(main_obs.hook, "use_caller_value")  # type: ignore
+            obs.join(main_obs.value_hook, "use_caller_value")  # type: ignore
             bound_xobjects.append(obs) # type: ignore
         
         # Now main_obs's hook nexus has many hooks
-        hook = main_obs.hook
+        hook = main_obs.value_hook
         
         # Time the first call (should do linear search + populate cache)
         def first_call() -> str:
@@ -110,7 +110,7 @@ class TestCachePerformance:
             return obs.value
         
         def operation2():
-            hook = obs.hook
+            hook = obs.value_hook
             hook.change_value("modified2")
             return hook.value
         
@@ -156,7 +156,7 @@ class TestScalabilityPerformance:
             
             for i in range(scale):
                 obs = XValue(f"value_{i}")
-                obs.join(main_obs.hook, "use_caller_value")  # type: ignore
+                obs.join(main_obs.value_hook, "use_caller_value")  # type: ignore
                 bound_xobjects.append(obs)
             
             binding_time = time.perf_counter() - start_time
@@ -300,7 +300,7 @@ class TestPerformanceRegression:
         start_time = time.perf_counter()
         
         for _ in range(num_operations):
-            hook = obs.hook
+            hook = obs.value_hook
             _ = hook.value
         
         total_time = time.perf_counter() - start_time
@@ -359,7 +359,7 @@ class TestPerformanceRegression:
             
             # Perform various operations
             obs.value = f"modified_{cycle}"
-            hook = obs.hook
+            hook = obs.value_hook
             _ = hook.value
             
             # Add and remove listener

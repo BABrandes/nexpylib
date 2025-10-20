@@ -50,7 +50,7 @@ import nexpy as nx
 
 # XValue internally creates an OwnedHook
 value = nx.XValue(42)
-hook = value.hook  # This is an OwnedHook
+hook = value.value_hook  # This is an OwnedHook
 
 print(type(hook))  # OwnedHook
 print(hook.owner)  # The XValue instance
@@ -272,7 +272,7 @@ temperature = nx.XValue(20.0)
 display = nx.XValue(0.0)
 
 # Join their hooks
-temperature.hook.join(display.hook)
+temperature.value_hook.join(display.value_hook)
 
 # Now synchronized
 temperature.value = 25.5
@@ -296,7 +296,7 @@ sensors = [nx.XValue(20.0) for _ in range(10)]
 # Join them all to the first sensor
 main_sensor = sensors[0]
 for sensor in sensors[1:]:
-    main_sensor.hook.join(sensor.hook)
+    main_sensor.value_hook.join(sensor.value_hook)
 
 # All sensors are now synchronized
 main_sensor.value = 25.0
@@ -376,10 +376,10 @@ import nexpy as nx
 config = nx.XValue({"mode": "default"})
 backup = nx.XValue({})
 
-config.hook.join(backup.hook)  # Sync initial state
+config.value_hook.join(backup.value_hook)  # Sync initial state
 
 # Later, break synchronization for independent evolution
-backup.hook.isolate()
+backup.value_hook.isolate()
 ```
 
 #### 2. Conditional Fusion
@@ -393,9 +393,9 @@ slave = nx.XValue(0)
 # Conditionally join/isolate based on application state
 def set_sync_mode(enabled: bool):
     if enabled:
-        slave.hook.join(master.hook)
+        slave.value_hook.join(master.value_hook)
     else:
-        slave.hook.isolate()
+        slave.value_hook.isolate()
 
 set_sync_mode(True)   # Enable sync
 master.value = 200
@@ -416,11 +416,11 @@ B = nx.XValue(1)
 C = nx.XValue(1)
 
 # Create fusion network
-A.hook.join(B.hook)
-B.hook.join(C.hook)
+A.value_hook.join(B.value_hook)
+B.value_hook.join(C.value_hook)
 
 # Break one connection to prevent unwanted propagation
-B.hook.isolate()
+B.value_hook.isolate()
 
 # A and C still joined, but B is independent
 A.value = 10

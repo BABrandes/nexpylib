@@ -328,14 +328,14 @@ class ManagedHookBase(ManagedHookProtocol[T], Publisher, ListeningBase, Generic[
         
         # Deadlock prevention: Check if hooks are already joined
         # If they share the same nexus, joining again is a no-op (but not an error)
-        if self._hook_nexus is target_hook._get_nexus(): # type: ignore
+        if self._hook_nexus is target_hook._get_nexus():
             log(self, "join", self._logger, True, "Hooks already share the same nexus - no join needed")
             return True, "Hooks already joined"
         
         if initial_sync_mode == "use_caller_value":
-            success, msg = Nexus[T].join_hook_pairs((self, target_hook))  # type: ignore
+            success, msg = Nexus[T].join_hook_pairs((self, target_hook))
         elif initial_sync_mode == "use_target_value":                
-            success, msg = Nexus[T].join_hook_pairs((target_hook, self))  # type: ignore
+            success, msg = Nexus[T].join_hook_pairs((target_hook, self))
         else:
             raise ValueError(f"Invalid sync mode: {initial_sync_mode}")
 

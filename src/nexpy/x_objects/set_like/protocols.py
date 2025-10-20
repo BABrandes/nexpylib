@@ -12,26 +12,30 @@ class XSetProtocol(CarriesSomeHooksProtocol[Any, Any], Protocol[T]):
     #-------------------------------- set value --------------------------------
     
     @property
-    def value_hook(self) -> Hook[Iterable[T]]:
+    def set_hook(self) -> Hook[Iterable[T]]:
         """
         Get the hook for the set - it can contain any iterable as long as it can be converted to a set.
         """
         ...
 
     @property
-    def value(self) -> set[T]:
+    def set(self) -> set[T]:
         """
-        Get the set as a set.
+        Get the current set value.
         """
         ...
     
-    @value.setter
-    def value(self, value: Iterable[T]) -> None:
-        self.change_value(value)
-        
-
+    @set.setter
+    def set(self, value: Iterable[T]) -> None:
+        """
+        Set the set value (accepts any iterable).
+        """
+        self.change_set(value)
     
-    def change_value(self, value: Iterable[T]) -> None:
+    def change_set(self, value: Iterable[T]) -> None:
+        """
+        Change the set value.
+        """
         ...
 
     #-------------------------------- length --------------------------------

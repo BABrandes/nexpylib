@@ -102,7 +102,7 @@ class TestEmitterHooksRecomputation:
         assert obs_list.length == 2
         
         # Directly assign new list
-        obs_list.value = [1, 2, 3, 4, 5]
+        obs_list.list = [1, 2, 3, 4, 5]
         
         # Length should now be 5
         assert obs_list.length == 5, "Length secondary hook should update when list_value is assigned"
@@ -287,7 +287,7 @@ class TestSecondaryHooksEdgeCases:
         target = XValue(0)
         
         # Should be able to attach to secondary hook
-        obs_list.join_by_key("length", target.hook, "use_caller_value") # type: ignore
+        obs_list.join_by_key("length", target.value_hook, "use_caller_value") # type: ignore
         
         # Should sync immediately
         assert target.value == 3

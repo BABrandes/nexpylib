@@ -21,6 +21,7 @@ class XSelectionSet(XComplexBase[Literal["selected_option", "available_options"]
         self,
         selected_option: T | Hook[T] | ReadOnlyHook[T] | XSelectionOptionsProtocol[T],
         available_options: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | None = None,
+        *,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER) -> None:
 

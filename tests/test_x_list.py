@@ -17,12 +17,12 @@ class TestXList(ObservableTestCase):
     
     def test_initial_value(self):
         """Test that initial value is set correctly"""
-        assert self.observable.value == [1, 2, 3]
+        assert self.observable.list == [1, 2, 3]
     
     def test_append(self):
         """Test appending a new value"""
         self.observable.append(4)
-        assert self.observable.value == [1, 2, 3, 4]
+        assert self.observable.list == [1, 2, 3, 4]
     
     def test_listener_notification(self):
         """Test that listeners are notified when value changes"""
@@ -33,7 +33,7 @@ class TestXList(ObservableTestCase):
     def test_no_notification_on_same_value(self):
         """Test that listeners are not notified when value doesn't change"""
         self.observable.add_listener(self.notification_callback)
-        self.observable.value = [1, 2, 3]  # Same value
+        self.observable.list = [1, 2, 3]  # Same value
         assert self.notification_count == 0
     
     def test_remove_listeners(self):
@@ -71,15 +71,15 @@ class TestXList(ObservableTestCase):
         target = XList[int](source)
         
         # Check that the target has the same initial value
-        assert target.value == [1, 2, 3]
+        assert target.list == [1, 2, 3]
         
         # Check that they are bound together
         source.append(4)
-        assert target.value == [1, 2, 3, 4]
+        assert target.list == [1, 2, 3, 4]
         
         # Check bidirectional binding
         target.append(5)
-        assert source.value == [1, 2, 3, 4, 5]
+        assert source.list == [1, 2, 3, 4, 5]
     
     def test_initialization_with_carries_bindable_list_chain(self):
         """Test initialization with CarriesBindableList in a chain"""
@@ -89,21 +89,21 @@ class TestXList(ObservableTestCase):
         obs3 = XList[int](obs2)
         
         # Check initial values
-        assert obs1.value == [10]
-        assert obs2.value == [10]
-        assert obs3.value == [10]
+        assert obs1.list == [10]
+        assert obs2.list == [10]
+        assert obs3.list == [10]
         
         # Change the first observable
         obs1.append(20)
-        assert obs1.value == [10, 20]
-        assert obs2.value == [10, 20]
-        assert obs3.value == [10, 20]     
+        assert obs1.list == [10, 20]
+        assert obs2.list == [10, 20]
+        assert obs3.list == [10, 20]     
         
         # Change the middle observable
         obs2.append(30)
-        assert obs1.value == [10, 20, 30]
-        assert obs2.value == [10, 20, 30]
-        assert obs3.value == [10, 20, 30]
+        assert obs1.list == [10, 20, 30]
+        assert obs2.list == [10, 20, 30]
+        assert obs3.list == [10, 20, 30]
     
     def test_initialization_with_carries_bindable_list_unbinding(self):
         """Test that initialization with CarriesBindableList can be unbound"""
@@ -111,20 +111,20 @@ class TestXList(ObservableTestCase):
         target = XList[int](source)
         
         # Verify they are bound
-        assert target.value == [100]
+        assert target.list == [100]
         source.append(200)
-        assert target.value == [100, 200]
+        assert target.list == [100, 200]
         
         # Unbind them
         target.isolate_by_key("value")
         
         # Change source, target should not update
         source.append(300)
-        assert target.value == [100, 200]  # Should remain unchanged
+        assert target.list == [100, 200]  # Should remain unchanged
         
         # Change target, source should not update
         target.append(400)
-        assert source.value == [100, 200, 300]  # Should remain unchanged
+        assert source.list == [100, 200, 300]  # Should remain unchanged
     
     def test_initialization_with_carries_bindable_list_multiple_targets(self):
         """Test multiple targets initialized with the same source"""
@@ -134,38 +134,38 @@ class TestXList(ObservableTestCase):
         target3 = XList[int](source)
         
         # Check initial values
-        assert target1.value == [100]
-        assert target2.value == [100]
-        assert target3.value == [100]
+        assert target1.list == [100]
+        assert target2.list == [100]
+        assert target3.list == [100]
         
         # Change source, all targets should update
         source.append(200)
-        assert target1.value == [100, 200]
-        assert target2.value == [100, 200]
-        assert target3.value == [100, 200]
+        assert target1.list == [100, 200]
+        assert target2.list == [100, 200]
+        assert target3.list == [100, 200]
         
         # Change one target, source and other targets should update
         target1.append(300)
-        assert source.value == [100, 200, 300]
-        assert target2.value == [100, 200, 300]
-        assert target3.value == [100, 200, 300]
+        assert source.list == [100, 200, 300]
+        assert target2.list == [100, 200, 300]
+        assert target3.list == [100, 200, 300]
     
     def test_initialization_with_carries_bindable_list_edge_cases(self):
         """Test edge cases for initialization with CarriesBindableList"""
         # Test with empty list in source
         source_empty: XList[int] = XList([])
         target_empty = XList[int](source_empty)
-        assert target_empty.value == []
+        assert target_empty.list == []
         
         # Test with None in source
         source_none: XList[int] = XList(None)
         target_none = XList[int](source_none)
-        assert target_none.value == []
+        assert target_none.list == []
         
         # Test with single item
         source_single = XList([42])
         target_single = XList[int](source_single)
-        assert target_single.value == [42]
+        assert target_single.list == [42]
     
     def test_initialization_with_carries_bindable_list_binding_consistency(self):
         """Test binding system consistency when initializing with CarriesBindableList"""
@@ -176,8 +176,8 @@ class TestXList(ObservableTestCase):
         # Binding system consistency is now handled automatically by the hook system
         
         # Check that they are properly bound
-        assert target.value_hook.is_joined_with(source.value_hook)
-        assert source.value_hook.is_joined_with(target.value_hook)
+        assert target.list_hook.is_joined_with(source.list_hook)
+        assert source.list_hook.is_joined_with(target.list_hook)
     
     def test_initialization_with_carries_bindable_list_performance(self):
         """Test performance of initialization with CarriesBindableList"""
@@ -198,7 +198,7 @@ class TestXList(ObservableTestCase):
         # Verify the last target is properly bound
         target = XList[int](source)
         source.append(200)
-        assert target.value == [100, 200]
+        assert target.list == [100, 200]
     
     def test_binding_bidirectional(self):
         """Test bidirectional binding between obs1 and obs2"""
@@ -206,15 +206,15 @@ class TestXList(ObservableTestCase):
         obs2 = XList([20])
         
         # Bind obs1 to obs2
-        obs1.join_by_key("value", obs2.value_hook, "use_caller_value")  # type: ignore
+        obs1.join_by_key("value", obs2.list_hook, "use_caller_value")  # type: ignore
         
         # Change obs1, obs2 should update with obs1's value appended
         obs1.append(30)
-        assert obs2.value == [10, 30]
+        assert obs2.list == [10, 30]
         
         # Change obs2, obs1 should also update (bidirectional)
         obs2.append(40)
-        assert obs1.value == [10, 30, 40]  # obs1 took obs2's initial value [20]
+        assert obs1.list == [10, 30, 40]  # obs1 took obs2's initial value [20]
     
     def test_binding_initial_sync_modes(self):
         """Test different initial sync modes"""
@@ -222,34 +222,34 @@ class TestXList(ObservableTestCase):
         obs2 = XList([200])
         
         # Test USE_CALLER_VALUE: use caller's value → target (obs2) gets caller's value
-        obs1.join_by_key("value", obs2.value_hook, "use_caller_value")  # type: ignore
-        assert obs2.value == [100]
+        obs1.join_by_key("value", obs2.list_hook, "use_caller_value")  # type: ignore
+        assert obs2.list == [100]
         
         # Test update_observable_from_self mode
         obs3 = XList([300])
         obs4 = XList([400])
-        obs3.join_by_key("value", obs4.value_hook, "use_target_value")  # type: ignore
+        obs3.join_by_key("value", obs4.list_hook, "use_target_value")  # type: ignore
         # USE_TARGET_VALUE means caller gets target's value
-        assert obs3.value == [400]
+        assert obs3.list == [400]
     
     def test_unbinding(self):
         """Test unbinding observables"""
         obs1 = XList([10])
         obs2 = XList([20])
         
-        obs1.join_by_key("value", obs2.value_hook, "use_caller_value")  # type: ignore
+        obs1.join_by_key("value", obs2.list_hook, "use_caller_value")  # type: ignore
         obs1.isolate_by_key("value")
         
         # Changes should no longer propagate
         obs1.append(50)
-        assert obs1.value == [10, 50]
-        assert obs2.value == [10]
+        assert obs1.list == [10, 50]
+        assert obs2.list == [10]
     
     def test_binding_to_self(self):
         """Test that binding to self raises an error"""
         obs = XList([10])
         with pytest.raises(ValueError):
-            obs.join_by_key("value", obs.value_hook, "use_caller_value")  # type: ignore
+            obs.join_by_key("value", obs.list_hook, "use_caller_value")  # type: ignore
     
     def test_binding_chain_unbinding(self):
         """Test unbinding in a chain of bindings"""
@@ -258,26 +258,26 @@ class TestXList(ObservableTestCase):
         obs3 = XList([30])
         
         # Create chain: obs1 -> obs2 -> obs3
-        obs1.join_by_key("value", obs2.value_hook, "use_caller_value")  # type: ignore
-        obs2.join_by_key("value", obs3.value_hook, "use_caller_value")  # type: ignore
+        obs1.join_by_key("value", obs2.list_hook, "use_caller_value")  # type: ignore
+        obs2.join_by_key("value", obs3.list_hook, "use_caller_value")  # type: ignore
         
         # Verify chain works: values converge to caller on each bind
         obs1.append(100)
-        assert obs2.value == [10, 100]
-        assert obs3.value == [10, 100]
+        assert obs2.list == [10, 100]
+        assert obs3.list == [10, 100]
         
         # Break the chain by unbinding obs2 from obs3
         obs2.isolate_by_key("value")
         
         # Change obs1, obs2 should NOT update but obs3 should (obs1 and obs3 remain bound)
         obs1.append(200)
-        assert obs2.value == [10, 100]  # obs2 is isolated, should not update
-        assert obs3.value == [10, 100, 200]  # obs3 gets updated since obs1 and obs3 remain bound
+        assert obs2.list == [10, 100]  # obs2 is isolated, should not update
+        assert obs3.list == [10, 100, 200]  # obs3 gets updated since obs1 and obs3 remain bound
         
         # Change obs3, obs1 should update since obs1 and obs3 remain bound after obs2.disconnect()
         obs3.append(300)
-        assert obs1.value == [10, 100, 200, 300]
-        assert obs2.value == [10, 100]
+        assert obs1.list == [10, 100, 200, 300]
+        assert obs2.list == [10, 100]
     
     def test_string_representation(self):
         """Test string and repr methods"""
@@ -304,18 +304,18 @@ class TestXList(ObservableTestCase):
         obs3 = XList([30])
         
         # Bind obs2 and obs3 to obs1
-        obs2.join_by_key("value", obs1.value_hook, "use_caller_value")  # type: ignore
-        obs3.join_by_key("value", obs1.value_hook, "use_caller_value")  # type: ignore
+        obs2.join_by_key("value", obs1.list_hook, "use_caller_value")  # type: ignore
+        obs3.join_by_key("value", obs1.list_hook, "use_caller_value")  # type: ignore
         
         # Change obs1, both should update to obs1's value
         obs1.append(100)
-        assert obs2.value == [30, 100]
-        assert obs3.value == [30, 100]
+        assert obs2.list == [30, 100]
+        assert obs3.list == [30, 100]
         
         # Change obs2, obs1 should also update (bidirectional), obs3 should also update
         obs2.append(200)
-        assert obs1.value == [30, 100, 200]
-        assert obs3.value == [30, 100, 200]
+        assert obs1.list == [30, 100, 200]
+        assert obs3.list == [30, 100, 200]
     
     def test_list_methods(self):
         """Test standard list methods"""
@@ -323,28 +323,28 @@ class TestXList(ObservableTestCase):
         
         # Test append
         obs.append(4)
-        assert obs.value == [1, 2, 3, 4]
+        assert obs.list == [1, 2, 3, 4]
         
         # Test extend
         obs.extend([5, 6])
-        assert obs.value == [1, 2, 3, 4, 5, 6]
+        assert obs.list == [1, 2, 3, 4, 5, 6]
         
         # Test insert
         obs.insert(0, 0)
-        assert obs.value == [0, 1, 2, 3, 4, 5, 6]
+        assert obs.list == [0, 1, 2, 3, 4, 5, 6]
         
         # Test remove
         obs.remove(3)
-        assert obs.value == [0, 1, 2, 4, 5, 6]
+        assert obs.list == [0, 1, 2, 4, 5, 6]
         
         # Test pop
         popped = obs.pop()
         assert popped == 6
-        assert obs.value == [0, 1, 2, 4, 5]
+        assert obs.list == [0, 1, 2, 4, 5]
         
         # Test clear
         obs.clear()
-        assert obs.value == []
+        assert obs.list == []
     
     def test_list_indexing(self):
         """Test list indexing operations"""
@@ -356,15 +356,15 @@ class TestXList(ObservableTestCase):
         
         # Test setitem
         obs[2] = 35
-        assert obs.value == [10, 20, 35, 40, 50]
+        assert obs.list == [10, 20, 35, 40, 50]
         
         # Test delitem
         del obs[1]
-        assert obs.value == [10, 35, 40, 50]
+        assert obs.list == [10, 35, 40, 50]
         
         # Test slice operations
         obs[1:3] = [25, 30] # type: ignore
-        assert obs.value == [10, 25, 30, 50]
+        assert obs.list == [10, 25, 30, 50]
     
     def test_list_comparison(self):
         """Test list comparison operations"""
@@ -377,8 +377,8 @@ class TestXList(ObservableTestCase):
         assert obs1 != obs3
         
         # Test comparison with regular lists (compare values)
-        assert obs1.value == [1, 2, 3]
-        assert obs1.value != [1, 2, 4]
+        assert obs1.list == [1, 2, 3]
+        assert obs1.list != [1, 2, 4]
     
     def test_list_iteration(self):
         """Test list iteration"""
@@ -401,7 +401,7 @@ class TestXList(ObservableTestCase):
         obs = XList([1, 2, 3])
         
         # Get the list value
-        list_value = obs.value
+        list_value = obs.list
         
         # Verify it's a list
         assert isinstance(list_value, list)
@@ -410,39 +410,39 @@ class TestXList(ObservableTestCase):
         # Modifying the returned list should not affect the observable
         list_value.append(4)
         # Original should be unchanged (defensive copy)
-        assert obs.value == [1, 2, 3]
+        assert obs.list == [1, 2, 3]
     
     def test_list_validation(self):
         """Test list validation"""
         # Test with valid list
         obs = XList([1, 2, 3])
-        assert obs.value == [1, 2, 3]
+        assert obs.list == [1, 2, 3]
         
         # Test with None (should create empty list)
         obs_none: XList[int] = XList(None)
-        assert obs_none.value == []
+        assert obs_none.list == []
         
         # Test with empty list
         obs_empty: XList[int] = XList([])
-        assert obs_empty.value == []
+        assert obs_empty.list == []
     
     def test_list_binding_edge_cases(self):
         """Test edge cases for list binding"""
         # Test binding empty lists
         obs1: XList[int] = XList([])
         obs2: XList[int] = XList([])
-        obs1.join_by_key("value", obs2.value_hook, "use_caller_value")  # type: ignore
+        obs1.join_by_key("value", obs2.list_hook, "use_caller_value")  # type: ignore
         
         obs1.append(1)
-        assert obs2.value == [1]
+        assert obs2.list == [1]
         
         # Test binding lists with same initial values
         obs3 = XList([42])
         obs4 = XList([42])
-        obs3.join_by_key("value", obs4.value_hook, "use_caller_value")  # type: ignore
+        obs3.join_by_key("value", obs4.list_hook, "use_caller_value")  # type: ignore
         
         obs3.append(100)
-        assert obs4.value == [42, 100]
+        assert obs4.list == [42, 100]
     
     def test_list_performance(self):
         """Test list performance characteristics"""
@@ -459,7 +459,7 @@ class TestXList(ObservableTestCase):
         
         # Should complete in reasonable time
         assert end_time - start_time < 1.0, "Append operations should be fast"
-        assert len(obs.value) == 1000
+        assert len(obs.list) == 1000
         
         # Test binding performance
         source = XList([1, 2, 3])
@@ -499,8 +499,8 @@ class TestXList(ObservableTestCase):
         # Binding system consistency is now handled automatically by the hook system
         
         # Check that they are properly bound
-        assert target.value_hook.is_joined_with(source.value_hook)
-        assert source.value_hook.is_joined_with(target.value_hook)
+        assert target.list_hook.is_joined_with(source.list_hook)
+        assert source.list_hook.is_joined_with(target.list_hook)
     
     def test_list_binding_none_observable(self):
         """Test that binding to None raises an error"""
@@ -513,10 +513,10 @@ class TestXList(ObservableTestCase):
         obs1 = XList([42])
         obs2 = XList([42])
         
-        obs1.join_by_key("value", obs2.value_hook, "use_caller_value")  # type: ignore
+        obs1.join_by_key("value", obs2.list_hook, "use_caller_value")  # type: ignore
         # Both should still have the same value
-        assert obs1.value == [42]
-        assert obs2.value == [42]
+        assert obs1.list == [42]
+        assert obs2.list == [42]
     
     def test_listener_duplicates(self):
         """Test that duplicate listeners are not added"""
@@ -549,7 +549,7 @@ class TestXList(ObservableTestCase):
         obs[0] = 10
         
         # Store the expected state after step 2
-        expected_list = obs.value  # Tuples are immutable, no copy needed
+        expected_list = obs.list  # Tuples are immutable, no copy needed
         
         # Step 3: Serialize it and get a dict from "get_values_for_serialization"
         serialized_data = obs.get_values_for_serialization()
@@ -566,10 +566,10 @@ class TestXList(ObservableTestCase):
         obs_restored = XList[int]([])
         
         # Verify it starts empty
-        assert obs_restored.value == []
+        assert obs_restored.list == []
         
         # Step 6: Use "set_values_from_serialization"
         obs_restored.set_values_from_serialization(serialized_data)
         
         # Step 7: Check if the object is the same as after step 2
-        assert obs_restored.value == expected_list
+        assert obs_restored.list == expected_list

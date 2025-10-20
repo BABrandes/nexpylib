@@ -35,7 +35,7 @@ temperature.value = 25.5
 print(f"New temperature: {temperature.value}°C")
 
 # Access the underlying hook
-hook = temperature.hook
+hook = temperature.value_hook
 print(f"Hook value: {hook.value}°C")
 ```
 
@@ -194,7 +194,7 @@ model_data = nx.XValue({"user": "Alice", "age": 30})
 cache_data = nx.XValue({})
 
 # Fuse them
-model_data.hook.join(cache_data.hook)
+model_data.value_hook.join(cache_data.value_hook)
 
 print(f"Model: {model_data.value}")
 print(f"Cache: {cache_data.value}")
@@ -648,7 +648,7 @@ counter = nx.XValue(0)
 def on_counter_change():
     print(f"Counter changed to: {counter.value}")
 
-counter.hook.add_listener(on_counter_change)
+counter.value_hook.add_listener(on_counter_change)
 
 # Updates trigger the listener
 print("Incrementing counter...")
@@ -684,9 +684,9 @@ def alert_low():
     if temperature.value < 10:
         print("[ALERT] Low temperature!")
 
-temperature.hook.add_listener(logger)
-temperature.hook.add_listener(alert_high)
-temperature.hook.add_listener(alert_low)
+temperature.value_hook.add_listener(logger)
+temperature.value_hook.add_listener(alert_high)
+temperature.value_hook.add_listener(alert_low)
 
 # Trigger listeners
 print("Setting temperature to 35°C:")
@@ -770,8 +770,8 @@ class TextView:
 
 # Create model and views
 user = UserModel("Alice", "alice@example.com")
-name_widget = TextView("Name Widget", user.name.hook)
-email_widget = TextView("Email Widget", user.email.hook)
+name_widget = TextView("Name Widget", user.name.value_hook)
+email_widget = TextView("Email Widget", user.email.value_hook)
 
 # Update model -> views refresh automatically
 print("\nChanging name to 'Bob':")
@@ -907,7 +907,7 @@ master = nx.XValue(0.0)
 
 # Join all sensors to master
 for sensor in sensors:
-    sensor.hook.join(master.hook)
+    sensor.value_hook.join(master.value_hook)
 
 print("All sensors synchronized:")
 for i, sensor in enumerate(sensors):
@@ -983,7 +983,7 @@ def on_update():
 
 # Create reactive value
 temperature = nx.XValue(20.0)
-temperature.hook.add_listener(on_update)
+temperature.value_hook.add_listener(on_update)
 
 # These don't trigger updates (within tolerance)
 temperature.value = 20.0000000001  # No update
@@ -1019,7 +1019,7 @@ DEFAULT_NEXUS_MANAGER.add_value_equality_callback((int, float), lambda a, b: flo
 # Create value with float
 value = nx.XValue(10.0)
 updates = []
-value.hook.add_listener(lambda: updates.append(value.value))
+value.value_hook.add_listener(lambda: updates.append(value.value))
 
 # These are considered equal
 value.value = 10      # int 10 ≈ float 10.0 (no update)
@@ -1063,8 +1063,8 @@ rough = nx.XValue(1.0, nexus_manager=low_precision_manager)
 precise_updates = []
 rough_updates = []
 
-precise.hook.add_listener(lambda: precise_updates.append(precise.value))
-rough.hook.add_listener(lambda: rough_updates.append(rough.value))
+precise.value_hook.add_listener(lambda: precise_updates.append(precise.value))
+rough.value_hook.add_listener(lambda: rough_updates.append(rough.value))
 
 # Small change
 delta = 1e-9

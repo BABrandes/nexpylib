@@ -22,29 +22,30 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
     """
     def __init__(
         self,
-        observable_or_hook_or_value: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | None = None,
+        observable_or_hook_or_value: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | XListProtocol[T] | None = None,
+        *,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
-        ) -> None: # type: ignore
+        ) -> None:
 
 
         if observable_or_hook_or_value is None:
             initial_value: Sequence[T] = ()
             hook: Optional[ManagedHookProtocol[Iterable[T]]] = None
         elif isinstance(observable_or_hook_or_value, XListProtocol):
-            initial_value = observable_or_hook_or_value.value # type: ignore
-            hook = observable_or_hook_or_value.value_hook # type: ignore
+            initial_value = observable_or_hook_or_value.list
+            hook = observable_or_hook_or_value.list_hook
         elif isinstance(observable_or_hook_or_value, ManagedHookProtocol):
             initial_value = observable_or_hook_or_value.value # type: ignore
-            hook = observable_or_hook_or_value # type: ignore
+            hook = observable_or_hook_or_value
         else:
             # Pass sequence directly - nexus system will convert to tuple
             initial_value = observable_or_hook_or_value # type: ignore
             hook = None
 
         super().__init__(
-            initial_hook_values={"value": initial_value}, # type: ignore
-            verification_method=lambda x: (True, "Verification method passed") if can_be_list(x) else (False, "Value has not been converted to a list!"), # type: ignore
+            initial_hook_values={"value": initial_value},
+            verification_method=lambda x: (True, "Verification method passed") if can_be_list(x) else (False, "Value has not been converted to a list!"),
             secondary_hook_callbacks={"length": lambda x: len(x["value"])}, # type: ignore
             logger=logger,
             output_value_wrapper={
@@ -63,31 +64,39 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
     #-------------------------------- list value --------------------------------   
 
     @property
-    def value_hook(self) -> Hook[Iterable[T]]:
+    def list_hook(self) -> Hook[Iterable[T]]:
         """
         Get the hook for the list (contains Sequence).
         """
-        return self._primary_hooks["value"] # type: ignore
+        return self._primary_hooks["value"]
 
     @property
-    def value(self) -> list[T]: # type: ignore
+    def list(self) -> list[T]:
         """
         Get the list value as mutable list (copied from the hook).
         """
         value = self._primary_hooks["value"].value
         return list(value)
 
-    @value.setter
-    def value(self, value: Iterable[T]) -> None:
-        self.change_value(value)
+    @list.setter
+    def list(self, value: Iterable[T]) -> None:
+        self.change_list(value)
+
+    def change_list(self, value: Iterable[T]) -> None:
+        """
+        Change the list value (lambda-friendly method).
+        """
+        success, msg = self._submit_value("value", list(value))
+        if not success:
+            raise SubmissionError(msg, value, "value")
     
     def change_value(self, new_value: Iterable[T]) -> None:
         """
         Change the list value (lambda-friendly method).
+        
+        Deprecated: Use change_list instead for consistency with XDict.
         """
-        success, msg = self._submit_value("value", list(new_value))
-        if not success:
-            raise SubmissionError(msg, new_value, "value")
+        self.change_list(new_value)
 
     #-------------------------------- length --------------------------------
 
@@ -120,8 +129,8 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
             item: The item to add to the list
         """
         current_value = self._primary_hooks["value"].value
-        new_list: list[T] = list(current_value) + [item] # type: ignore
-        self.change_value(new_list)
+        new_list: list[T] = list(current_value) + [item]
+        self.change_list(new_list)
     
     def extend(self, iterable: Iterable[T]) -> None:
         """
@@ -133,8 +142,8 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
             iterable: The iterable containing elements to add
         """
         current_value = self._primary_hooks["value"].value
-        new_list = list(current_value) + list(iterable) # type: ignore
-        self.change_value(new_list)
+        new_list = list(current_value) + list(iterable)
+        self.change_list(new_list)
     
     def insert(self, index: int, item: T) -> None:
         """
@@ -146,10 +155,10 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
             index: The position to insert the item at
             item: The item to insert
         """
-        current = self._primary_hooks["value"].value # type: ignore
+        current = self._primary_hooks["value"].value
         new_list = list(current)
         new_list.insert(index, item)
-        self.change_value(new_list)
+        self.change_list(new_list)
     
     def remove(self, item: T) -> None:
         """
@@ -163,14 +172,14 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
         Raises:
             ValueError: If the item is not in the list
         """
-        current = self._primary_hooks["value"].value # type: ignore
+        current = self._primary_hooks["value"].value
         if item not in current:
             raise ValueError(f"{item} not in list")
         
         # Create new list without the first occurrence
         new_list = list(current)
         new_list.remove(item)
-        self.change_value(new_list)
+        self.change_list(new_list)
     
     def pop(self, index: int = -1) -> T:
         """
@@ -187,10 +196,10 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
         Raises:
             IndexError: If the index is out of range
         """
-        current = self._primary_hooks["value"].value # type: ignore
+        current = self._primary_hooks["value"].value
         new_list = list(current)
         item: T = new_list.pop(index)
-        self.change_value(new_list)
+        self.change_list(new_list)
         return item
     
     def clear(self) -> None:
@@ -200,7 +209,7 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
         Creates an empty list.
         """
         if self._primary_hooks["value"].value:
-            self.change_value([])
+            self.change_list([])
     
     def sort(self, key: Optional[Callable[[T], Any]] = None, reverse: bool = False) -> None:
         """
@@ -213,7 +222,7 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
             reverse: If True, sort in descending order (default: False)
         """
         current_value = self._primary_hooks["value"].value
-        self.change_value(sorted(current_value, key=key, reverse=reverse)) # type: ignore
+        self.change_list(sorted(current_value, key=key, reverse=reverse)) # type: ignore
     
     def reverse(self) -> None:
         """
@@ -222,7 +231,7 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
         Creates a new tuple with elements in reversed order.
         """
         current_value = self._primary_hooks["value"].value
-        self.change_value(reversed(current_value)) # type: ignore
+        self.change_list(reversed(current_value)) # type: ignore
     
     def count(self, item: T) -> int:
         """
@@ -300,12 +309,12 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
         Raises:
             IndexError: If the index is out of range
         """
-        current = self._primary_hooks["value"].value # type: ignore
+        current = self._primary_hooks["value"].value
         # Modify list
         new_list = list(current)
         new_list[index] = value
-        if new_list != current: # type: ignore
-            self.change_value(new_list)
+        if new_list != current:
+            self.change_list(new_list)
     
     def __delitem__(self, index: int) -> None:
         """
@@ -319,11 +328,11 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
         Raises:
             IndexError: If the index is out of range
         """
-        current = self._primary_hooks["value"].value # type: ignore
+        current = self._primary_hooks["value"].value
         # Create list without the item at index
         new_list = list(current)
         del new_list[index]
-        self.change_value(new_list)
+        self.change_list(new_list)
     
     def __contains__(self, item: T) -> bool:
         """
@@ -483,4 +492,4 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
         Returns:
             Hash value of the tuple
         """
-        return hash(self._primary_hooks["value"].value) # type: ignore
+        return hash(self._primary_hooks["value"].value)

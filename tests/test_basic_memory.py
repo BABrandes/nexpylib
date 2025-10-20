@@ -56,7 +56,7 @@ class TestEssentialMemoryManagement:
         obs2 = XValue("value2")
         
         # Bind them
-        obs1.join(obs2.hook, "use_caller_value")  # type: ignore
+        obs1.join(obs2.value_hook, "use_caller_value")  # type: ignore
         
         # Test binding works
         obs1.value = "new_value"
@@ -129,7 +129,7 @@ class TestEssentialMemoryManagement:
         obs2 = XValue("value2")
         
         # Bind, test, detach
-        obs1.join(obs2.hook, "use_caller_value")
+        obs1.join(obs2.value_hook, "use_caller_value")
         obs1.value = "bound_value"
         assert obs2.value == "bound_value"
         
@@ -176,12 +176,12 @@ class TestEssentialMemoryManagement:
         
         # Test extend
         obs_list.extend([4, 5])
-        assert len(obs_list.value) == 5
+        assert len(obs_list.list) == 5
         assert obs_list.length == 5
         
         # Test insert
         obs_list.insert(0, 0)
-        assert obs_list.value[0] == 0
+        assert obs_list.list[0] == 0
         assert obs_list.length == 6
         
         # Test pop
@@ -209,12 +209,12 @@ class TestEssentialMemoryManagement:
         
         # Test add
         obs_set.add(4)
-        assert 4 in obs_set.value
+        assert 4 in obs_set.set
         assert obs_set.length == 4
         
         # Test discard
         obs_set.discard(2)
-        assert 2 not in obs_set.value
+        assert 2 not in obs_set.set
         assert obs_set.length == 3
         
         # Test remove
@@ -237,7 +237,7 @@ class TestEssentialMemoryManagement:
         obs2 = XValue("value2")
         
         # Bind with use_target_value - obs2's value wins
-        obs1.join(obs2.hook, "use_target_value")  # type: ignore
+        obs1.join(obs2.value_hook, "use_target_value")  # type: ignore
         assert obs1.value == "value2"
         
         # Change obs1, both should update
@@ -391,7 +391,7 @@ class TestMemoryStressScenarios:
             # Create some bindings
             for i in range(len(cycle_xobjects) - 1):
                 cycle_xobjects[i].join(  # type: ignore
-                    cycle_xobjects[i + 1].hook,
+                    cycle_xobjects[i + 1].value_hook,
                     "use_caller_value"
                 )
             
@@ -562,7 +562,7 @@ class TestMemoryStressScenarios:
                 weak_refs.append(weakref.ref(sat))
                 
                 # Bind satellite to center
-                sat.join(center.hook, "use_caller_value")  # type: ignore
+                sat.join(center.value_hook, "use_caller_value")  # type: ignore
             
             # Change center, all satellites should update
             center.value = f"broadcast_{cycle}"

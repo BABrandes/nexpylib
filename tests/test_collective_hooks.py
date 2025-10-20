@@ -52,16 +52,16 @@ class TestCollectiveHooks:
         self.selector1.join_by_key("available_options", self.selector2.available_options_hook, "use_caller_value")  # type: ignore
         
         # Bind value1 to selector1's selected_option
-        self.selector1.join_by_key("selected_option", self.value1.hook, "use_caller_value")  # type: ignore
+        self.selector1.join_by_key("selected_option", self.value1.value_hook, "use_caller_value")  # type: ignore
         
         # Bind set1 to selector1's available_options
-        self.selector1.join_by_key("available_options", self.set1.value_hook, "use_caller_value")  # type: ignore
+        self.selector1.join_by_key("available_options", self.set1.set_hook, "use_caller_value")  # type: ignore
         
         # Bind value2 to selector2's selected_option
-        self.selector2.join_by_key("selected_option", self.value2.hook, "use_caller_value")  # type: ignore
+        self.selector2.join_by_key("selected_option", self.value2.value_hook, "use_caller_value")  # type: ignore
         
         # Bind set2 to selector2's available_options
-        self.selector2.join_by_key("available_options", self.set2.value_hook, "use_caller_value")  # type: ignore
+        self.selector2.join_by_key("available_options", self.set2.set_hook, "use_caller_value")  # type: ignore
         
         # Now change selector1 and verify all propagate
         self.selector1.change_selected_option_and_available_options("Green", {"Green", "Blue", "Purple"})
@@ -70,9 +70,9 @@ class TestCollectiveHooks:
         assert self.selector2.selected_option == "Green"
         assert self.selector2.available_options == {"Green", "Blue", "Purple"}
         assert self.value1.value == "Green"
-        assert self.set1.value == {"Green", "Blue", "Purple"}
+        assert self.set1.set == {"Green", "Blue", "Purple"}
         assert self.value2.value == "Green"
-        assert self.set2.value == {"Green", "Blue", "Purple"}
+        assert self.set2.set == {"Green", "Blue", "Purple"}
 
     def test_binding_removal_and_rebinding(self):
         """Test removing bindings and rebinding differently."""
@@ -134,8 +134,8 @@ class TestCollectiveHooks:
         # Create a chain: selector1 -> selector2 -> value1 -> set1
         self.selector1.join_by_key("selected_option", self.selector2.selected_option_hook, "use_caller_value")  # type: ignore
         self.selector1.join_by_key("available_options", self.selector2.available_options_hook, "use_caller_value")  # type: ignore
-        self.selector2.join_by_key("selected_option", self.value1.hook, "use_caller_value")  # type: ignore
-        self.selector1.join_by_key("available_options", self.set1.value_hook, "use_caller_value")  # type: ignore
+        self.selector2.join_by_key("selected_option", self.value1.value_hook, "use_caller_value")  # type: ignore
+        self.selector1.join_by_key("available_options", self.set1.set_hook, "use_caller_value")  # type: ignore
         
         # Change the source (selector1) - first update available options
         self.selector1.change_selected_option_and_available_options("Purple", {"Purple", "Pink", "Cyan", "Red", "Green", "Blue"})
@@ -144,7 +144,7 @@ class TestCollectiveHooks:
         assert self.selector2.selected_option == "Purple"
         assert self.selector2.available_options == {"Purple", "Pink", "Cyan", "Red", "Green", "Blue"}
         assert self.value1.value == "Purple"
-        assert self.set1.value == {"Purple", "Pink", "Cyan", "Red", "Green", "Blue"}
+        assert self.set1.set == {"Purple", "Pink", "Cyan", "Red", "Green", "Blue"}
         
         # Change from the middle of the chain
         self.selector2.selected_option = "Pink"
@@ -152,7 +152,7 @@ class TestCollectiveHooks:
         # Verify changes propagate in both directions
         assert self.selector1.selected_option == "Pink"
         assert self.value1.value == "Pink"
-        assert self.set1.value == {"Purple", "Pink", "Cyan", "Red", "Green", "Blue"}  # Available options don't change from selected_option change
+        assert self.set1.set == {"Purple", "Pink", "Cyan", "Red", "Green", "Blue"}  # Available options don't change from selected_option change
 
     def test_bidirectional_binding_with_collective_hooks(self):
         """Test bidirectional binding with collective hooks."""
@@ -183,8 +183,8 @@ class TestCollectiveHooks:
         
         # Bind both selectors to the same value
         # InitialSyncMode only affects initial binding - ongoing sync is bidirectional
-        self.selector1.join_by_key("selected_option", self.value1.hook, "use_caller_value")  # type: ignore
-        self.selector2.join_by_key("selected_option", self.value1.hook, "use_caller_value")  # type: ignore
+        self.selector1.join_by_key("selected_option", self.value1.value_hook, "use_caller_value")  # type: ignore
+        self.selector2.join_by_key("selected_option", self.value1.value_hook, "use_caller_value")  # type: ignore
         
         # Change the target value
         self.value1.value = "NewValue"
@@ -215,11 +215,11 @@ class TestCollectiveHooks:
         self.selector2.change_selected_option_and_available_options("Red", {"Red", "Green", "Blue", "Yellow"})
         
         # Bind both selectors' available_options to the shared set
-        self.selector1.join_by_key("available_options", shared_set.value_hook, "use_caller_value")  # type: ignore
-        self.selector2.join_by_key("available_options", shared_set.value_hook, "use_caller_value")  # type: ignore
+        self.selector1.join_by_key("available_options", shared_set.set_hook, "use_caller_value")  # type: ignore
+        self.selector2.join_by_key("available_options", shared_set.set_hook, "use_caller_value")  # type: ignore
         
         # Change the shared set - include "Red" to maintain compatibility with current selected option
-        shared_set.value = {"Purple", "Pink", "Cyan", "Red"}
+        shared_set.set = {"Purple", "Pink", "Cyan", "Red"}
         
         # Verify both selectors get updated
         assert self.selector1.available_options == {"Purple", "Pink", "Cyan", "Red"}
@@ -232,7 +232,7 @@ class TestCollectiveHooks:
         
         # Verify the other selector and shared set get updated
         assert self.selector2.available_options == {"Purple", "Orange", "Yellow", "Red"}
-        assert shared_set.value == {"Purple", "Orange", "Yellow", "Red"}
+        assert shared_set.set == {"Purple", "Orange", "Yellow", "Red"}
 
     def test_binding_available_options_directly(self):
         """Test binding available_options directly between selectors."""
@@ -413,7 +413,7 @@ class TestCollectiveHooks:
         
         # Bind with different sync modes
         selector_a.join_by_key("selected_option", selector_b.selected_option_hook, "use_caller_value")  # type: ignore
-        value_a.join(value_b.hook, "use_target_value")  # type: ignore
+        value_a.join(value_b.value_hook, "use_target_value")  # type: ignore
         
         # Change values and verify behavior
         selector_a.selected_option = "B"
@@ -430,8 +430,8 @@ class TestCollectiveHooks:
         options: XSet[str] = XSet({"Test", "Other"}, logger=logger)
         
         # Bind them together
-        selector.join_by_key("selected_option", value.hook, "use_caller_value") # type: ignore
-        selector.join_by_key("available_options", options.value_hook, "use_caller_value") # type: ignore
+        selector.join_by_key("selected_option", value.value_hook, "use_caller_value") # type: ignore
+        selector.join_by_key("available_options", options.set_hook, "use_caller_value") # type: ignore
         
         # Dislink all
         selector.isolate_all()

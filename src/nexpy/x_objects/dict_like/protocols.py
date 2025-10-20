@@ -24,8 +24,7 @@ class XDictProtocol(Protocol[K, V]):
         Get the immutable dictionary value.
         """
         ...
-    
-    @final
+
     @dict.setter
     def dict(self, value: Mapping[K, V]) -> None:
         self.change_dict(value)

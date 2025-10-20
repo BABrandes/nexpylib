@@ -202,8 +202,8 @@ class TestXFunction:
         assert sync.hook("b").value == 10  # Original value
 
         # Now connect to external observables after initialization
-        sync.hook("a").join(external_a.hook, "use_caller_value")
-        sync.hook("b").join(external_b.hook, "use_caller_value")
+        sync.hook("a").join(external_a.value_hook, "use_caller_value")
+        sync.hook("b").join(external_b.value_hook, "use_caller_value")
 
         # Check that external values are updated to match sync values
         assert external_a.value == 5  # Matches sync value

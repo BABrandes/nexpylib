@@ -515,7 +515,7 @@ class TestXRootedPaths:
         
         # Connect the root path hook to the observable
         root_path_hook: Hook[Path|None] = manager._get_hook_by_key(ROOT_PATH_KEY) # type: ignore
-        root_path_hook.join(root_path_observable.hook, "use_caller_value") # type: ignore
+        root_path_hook.join(root_path_observable.value_hook, "use_caller_value") # type: ignore
         
         # Verify initial state
         assert manager.root_path == self.test_root
@@ -550,7 +550,7 @@ class TestXRootedPaths:
         
         # Connect the relative path hook to the observable
         relative_path_hook: HookWithOwnerProtocol[Optional[str]] = manager.get_relative_path_hook("data")
-        relative_path_hook.join(relative_path_observable.hook, "use_caller_value")
+        relative_path_hook.join(relative_path_observable.value_hook, "use_caller_value")
         
         # Verify initial state
         assert manager.get_relative_path_hook("data").value == "data/"
@@ -583,7 +583,7 @@ class TestXRootedPaths:
         
         # Connect the absolute path hook to the observable
         absolute_path_hook: HookWithOwnerProtocol[Optional[Path]] = manager.get_absolute_path_hook("data")
-        absolute_path_hook.join(absolute_path_observable.hook, "use_caller_value")
+        absolute_path_hook.join(absolute_path_observable.value_hook, "use_caller_value")
         
         # Verify initial state
         assert manager.get_absolute_path_hook("data").value == self.test_root / "data/"
@@ -622,16 +622,16 @@ class TestXRootedPaths:
         
         # Connect hooks to observables
         root_path_hook: Hook[Path|None] = manager._get_hook_by_key(ROOT_PATH_KEY) # type: ignore
-        observable_root_path_hook: Hook[Path|None] = root_observable.hook # type: ignore
+        observable_root_path_hook: Hook[Path|None] = root_observable.value_hook # type: ignore
         root_path_hook.join(observable_root_path_hook, "use_caller_value") # type: ignore
         data_relative_hook: HookWithOwnerProtocol[Optional[str]] = manager.get_relative_path_hook("data")
-        observable_data_relative_hook: Hook[Optional[str]] = data_relative_observable.hook # type: ignore
+        observable_data_relative_hook: Hook[Optional[str]] = data_relative_observable.value_hook # type: ignore
         data_relative_hook.join(observable_data_relative_hook, "use_caller_value")
         config_relative_hook: HookWithOwnerProtocol[Optional[str]] = manager.get_relative_path_hook("config")
-        observable_config_relative_hook: Hook[Optional[str]] = config_relative_observable.hook # type: ignore
+        observable_config_relative_hook: Hook[Optional[str]] = config_relative_observable.value_hook # type: ignore
         config_relative_hook.join(observable_config_relative_hook, "use_caller_value")
         logs_absolute_hook: HookWithOwnerProtocol[Optional[Path]] = manager.get_absolute_path_hook("logs")
-        observable_logs_absolute_hook: Hook[Optional[Path]] = logs_absolute_observable.hook # type: ignore
+        observable_logs_absolute_hook: Hook[Optional[Path]] = logs_absolute_observable.value_hook # type: ignore
         logs_absolute_hook.join(observable_logs_absolute_hook, "use_caller_value")
         
         # Verify initial state
@@ -681,7 +681,7 @@ class TestXRootedPaths:
         
         # Connect bidirectionally
         root_path_hook: Hook[Path|None] = manager._get_hook_by_key(ROOT_PATH_KEY) # type: ignore
-        observable_root_path_hook: Hook[Path|None] = root_path_observable.hook # type: ignore
+        observable_root_path_hook: Hook[Path|None] = root_path_observable.value_hook # type: ignore
         root_path_hook.join(observable_root_path_hook, "use_caller_value") # type: ignore
         
         # Verify initial state
@@ -721,10 +721,10 @@ class TestXRootedPaths:
         
         # Connect in a chain: manager -> observable1 -> observable2 -> observable3
         root_path_hook: Hook[Path|None] = manager._get_hook_by_key(ROOT_PATH_KEY) # type: ignore
-        observable_root_path_hook: Hook[Path|None] = root_observable1.hook # type: ignore
+        observable_root_path_hook: Hook[Path|None] = root_observable1.value_hook # type: ignore
         root_path_hook.join(observable_root_path_hook, "use_caller_value") # type: ignore       
-        root_observable1.hook.join(root_observable2.hook, "use_caller_value") # type: ignore
-        root_observable2.hook.join(root_observable3.hook, "use_caller_value") # type: ignore
+        root_observable1.value_hook.join(root_observable2.value_hook, "use_caller_value") # type: ignore
+        root_observable2.value_hook.join(root_observable3.value_hook, "use_caller_value") # type: ignore
         
         # Verify initial state
         assert manager.root_path == self.test_root
@@ -768,7 +768,7 @@ class TestXRootedPaths:
         
         # Connect the hooks
         root_path_hook: Hook[Path|None] = manager._get_hook_by_key(ROOT_PATH_KEY) # type: ignore
-        observable_root_path_hook: Hook[Path|None] = root_path_observable.hook # type: ignore
+        observable_root_path_hook: Hook[Path|None] = root_path_observable.value_hook # type: ignore
         root_path_hook.join(observable_root_path_hook, "use_caller_value") # type: ignore
         
         # Verify initial state

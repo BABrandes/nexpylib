@@ -164,7 +164,7 @@ print(value.value)  # 100
 def on_change():
     print(f"Value changed to: {value.value}")
 
-value.hook.add_listener(on_change)
+value.value_hook.add_listener(on_change)
 value.value = 200  # Prints: "Value changed to: 200"
 ```
 
@@ -178,7 +178,7 @@ temperature_sensor = nx.XValue(20.0)
 display_value = nx.XValue(0.0)
 
 # Fuse them so they share the same state
-temperature_sensor.hook.join(display_value.hook)
+temperature_sensor.value_hook.join(display_value.value_hook)
 
 # Now they're synchronized
 print(temperature_sensor.value, display_value.value)  # 20.0 20.0
@@ -366,7 +366,7 @@ class TextWidget:
     def refresh(self):
         print(f"Display: {self.hook.value}")
 
-widget = TextWidget(user_name.hook)
+widget = TextWidget(user_name.value_hook)
 
 # Changing model updates view automatically
 user_name.value = "Bob"  # Display: Bob

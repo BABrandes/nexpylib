@@ -27,6 +27,7 @@ class XOneWayFunction(ListeningBase, CarriesSomeHooksBase[IHK|OHK, IHV|OHV, "XOn
         input_variables_per_key: Mapping[IHK, Hook[IHV]|ReadOnlyHook[IHV]],
         one_way_function_callable: Callable[[Mapping[IHK, IHV]], Mapping[OHK, OHV]],
         function_output_hook_keys: set[OHK],
+        *,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
     ) -> None:

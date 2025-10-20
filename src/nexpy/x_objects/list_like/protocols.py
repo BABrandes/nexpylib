@@ -11,29 +11,29 @@ class XListProtocol(Protocol[T]):
     #-------------------------------- list value --------------------------------
 
     @property
-    def value_hook(self) -> Hook[Iterable[T]]:
+    def list_hook(self) -> Hook[Iterable[T]]:
         """
         Get the hook for the list - it can contain any iterable as long as it can be converted to a list.
         """
         ...
 
     @property
-    def value(self) -> list[T]:
+    def list(self) -> list[T]:
         """
-        Get the list value as a list.
+        Get the current list value.
         """
         ...
     
-    @value.setter
-    def value(self, value: Iterable[T]) -> None:
+    @list.setter
+    def list(self, value: Iterable[T]) -> None:
         """
         Set the list value (accepts any iterable).
         """
-        self.change_value(value)
+        self.change_list(value)
 
-    def change_value(self, new_value: Iterable[T]) -> None:
+    def change_list(self, value: Iterable[T]) -> None:
         """
-        Change the list value (lambda-friendly method).
+        Change the list value.
         """
         ...
 

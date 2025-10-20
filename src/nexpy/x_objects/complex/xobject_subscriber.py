@@ -143,6 +143,7 @@ class XSubscriber(XComplexBase[HK, None, HV, None, "XSubscriber"], Subscriber, G
         self,
         publisher: Publisher|set[Publisher],
         on_publication_callback: Callable[[None|Publisher], Mapping[HK, HV]],
+        *,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
     ) -> None:
