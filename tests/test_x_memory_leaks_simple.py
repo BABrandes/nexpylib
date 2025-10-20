@@ -6,7 +6,7 @@ from typing import Any
 import gc
 import weakref
 
-from nexpy import XValue, ObservableSelectionDict
+from nexpy import XValue, XDictSelect
 
 
 def test_simple_observable_gc():
@@ -31,7 +31,7 @@ def test_simple_observable_gc():
 def test_complex_observable_gc():
     """Test that complex observables can be garbage collected."""
     # Create a complex observable
-    obs = ObservableSelectionDict(
+    obs = XDictSelect(
         dict_hook={"a": 1, "b": 2},
         key_hook="a",
         value_hook=None

@@ -3,7 +3,7 @@ from logging import basicConfig, getLogger, DEBUG
 
 import pytest
 
-from nexpy import ObservableSync, XValue, FunctionValues
+from nexpy import XFunction, XValue, FunctionValues
 from nexpy.x_objects_base.carries_some_hooks_base import CarriesSomeHooksBase
 from nexpy.core.hooks.owned_hook import OwnedHook
 
@@ -40,21 +40,21 @@ class MockObservable(CarriesSomeHooksBase[str, int, "MockObservable"]):
         self._hooks[key] = hook
 
 
-class TestObservableSync:
-    """Test ObservableSync functionality."""
+class TestXFunction:
+    """Test XFunction functionality."""
 
     def setup_method(self):
         """Set up test fixtures."""
         self.mock_owner = MockObservable("test_owner")
 
     def test_basic_creation_with_values(self):
-        """Test basic ObservableSync creation with initial values."""
+        """Test basic XFunction creation with initial values."""
         def sync_callback(values: FunctionValues[str, int]) -> tuple[bool, dict[str, int]]:
             """Simple sync callback that passes through valid values."""
             # Just return the submitted values as-is
             return (True, dict(values.submitted))
 
-        sync = ObservableSync[str, int](
+        sync = XFunction[str, int](
             complete_variables_per_key={"a": 5, "b": 3, "c": 0},
             completing_function_callable=sync_callback,
             logger=logger
@@ -69,12 +69,12 @@ class TestObservableSync:
         assert sync.keys() == {"a", "b", "c"}
 
     def test_basic_creation_with_hooks(self):
-        """Test basic ObservableSync creation with initial values (no longer supports hooks)."""
+        """Test basic XFunction creation with initial values (no longer supports hooks)."""
         def sync_callback(values: FunctionValues[str, int]) -> tuple[bool, dict[str, int]]:
             """Simple sync callback that passes through values."""
             return (True, dict(values.submitted))
 
-        sync = ObservableSync[str, int](
+        sync = XFunction[str, int](
             complete_variables_per_key={"a": 10, "b": 20},
             completing_function_callable=sync_callback,
             logger=logger
@@ -89,7 +89,7 @@ class TestObservableSync:
         def sync_callback(values: FunctionValues[str, int]) -> tuple[bool, dict[str, int]]:
             return (True, dict(values.submitted))
 
-        sync = ObservableSync[str, int](
+        sync = XFunction[str, int](
             complete_variables_per_key={"a": 5, "b": 10},
             completing_function_callable=sync_callback,
             logger=logger
@@ -115,11 +115,11 @@ class TestObservableSync:
             sync.value("nonexistent")
 
     def test_basic_sync(self):
-        """Test basic ObservableSync with simple pass-through callback."""
+        """Test basic XFunction with simple pass-through callback."""
         def sync_callback(values: FunctionValues[str, int]) -> tuple[bool, dict[str, int]]:
             return (True, dict(values.submitted))
 
-        sync = ObservableSync[str, int](
+        sync = XFunction[str, int](
             complete_variables_per_key={"a": 5, "b": 10},
             completing_function_callable=sync_callback,
             logger=logger
@@ -135,7 +135,7 @@ class TestObservableSync:
         def sync_callback(values: FunctionValues[str, int]) -> tuple[bool, dict[str, int]]:
             return (True, dict(values.submitted))
 
-        sync = ObservableSync[str, int](
+        sync = XFunction[str, int](
             complete_variables_per_key={},
             completing_function_callable=sync_callback,
             logger=logger
@@ -147,7 +147,7 @@ class TestObservableSync:
         def sync_callback_with_none(values: FunctionValues[str, Optional[int]]) -> tuple[bool, dict[str, Optional[int]]]:
             return (True, dict(values.submitted))
 
-        sync_with_none = ObservableSync[str, Optional[int]](
+        sync_with_none = XFunction[str, Optional[int]](
             complete_variables_per_key={"a": None, "b": 5},
             completing_function_callable=sync_callback_with_none,
             logger=logger
@@ -162,7 +162,7 @@ class TestObservableSync:
         def sync_callback(values: FunctionValues[str, int]) -> tuple[bool, dict[str, int]]:
             return (True, dict(values.submitted))
 
-        sync = ObservableSync[str, int](
+        sync = XFunction[str, int](
             complete_variables_per_key={"a": 5},
             completing_function_callable=sync_callback,
             logger=logger
@@ -191,7 +191,7 @@ class TestObservableSync:
             """Simple sync callback that passes through values."""
             return (True, dict(values.submitted))
 
-        sync = ObservableSync[str, int](
+        sync = XFunction[str, int](
             complete_variables_per_key={"a": 5, "b": 10},
             completing_function_callable=sync_callback,
             logger=logger
@@ -216,7 +216,7 @@ class TestObservableSync:
             return (True, dict(values.submitted))
 
         # This should work - callback handles all combinations correctly
-        sync = ObservableSync[str, int](
+        sync = XFunction[str, int](
             complete_variables_per_key={"a": 1, "b": 2, "c": 3},
             completing_function_callable=valid_sync_callback,
             logger=logger
@@ -228,7 +228,7 @@ class TestObservableSync:
         assert sync.hook("c").value == 3  # Original value
 
     def test_square_root_constraint(self):
-        """Test square root constraint - showcases the power of ObservableSync.
+        """Test square root constraint - showcases the power of XFunction.
         
         This test demonstrates a mathematical constraint where:
         - square_value = root_value²
@@ -299,9 +299,9 @@ class TestObservableSync:
             
             return (True, result)
 
-        # Create ObservableSync with initial valid state
+        # Create XFunction with initial valid state
         # Initial state: √4 = 2 (positive domain)
-        sync = ObservableSync[str, float | str](
+        sync = XFunction[str, float | str](
             complete_variables_per_key= {
                 "square_value": 4.0,
                 "root_value": 2.0,

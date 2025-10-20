@@ -7,8 +7,8 @@ secondary hooks are properly recomputed when component values change.
 
 import pytest
 
-from nexpy import XList, ObservableSelectionDict, XSet
-from nexpy import ObservableSelectionSet as XSetSelect, ObservableOptionalSelectionSet as XSetOptionalSelect, ObservableMultiSelectionSet as XSetMultiSelect
+from nexpy import XList, XDictSelect, XSet
+from nexpy import XSetSelect, XSetOptionalSelect, XSetMultiSelect
 
 
 class TestEmitterHooksBasicFunctionality:

@@ -11,7 +11,7 @@ from typing import Any
 import pytest
 from nexpy import (
     XValue, XList, XSet, XDict,
-    ObservableSelectionDict, ObservableOptionalSelectionDict, ReadOnlyHook
+    XDictSelect, XDictSelectOptional, ReadOnlyHook
 )
 from nexpy.x_objects_base.carries_some_hooks_base import CarriesSomeHooksBase
 
@@ -309,7 +309,7 @@ class TestEssentialMemoryManagement:
 
     def test_selection_dict_cleanup(self):
         """Test cleanup of selection dict observables."""
-        sel_dict = ObservableSelectionDict({"a": 1, "b": 2}, "a")
+        sel_dict = XDictSelect({"a": 1, "b": 2}, "a")
         
         assert sel_dict.key == "a"
         assert sel_dict.value == 1
@@ -325,7 +325,7 @@ class TestEssentialMemoryManagement:
 
     def test_optional_selection_dict_cleanup(self):
         """Test cleanup of optional selection dict."""
-        opt_sel = ObservableOptionalSelectionDict({"x": 10, "y": 20}, None)
+        opt_sel = XDictSelectOptional({"x": 10, "y": 20}, None)
         
         assert opt_sel.key is None
         assert opt_sel.value is None
@@ -486,13 +486,13 @@ class TestMemoryStressScenarios:
 
     def test_selection_dict_stress(self):
         """Stress test with selection dicts."""
-        weak_refs: list[weakref.ref[ObservableSelectionDict[str, int]]] = []
+        weak_refs: list[weakref.ref[XDictSelect[str, int]]] = []
         
         for _ in range(10):
-            sel_dicts: list[ObservableSelectionDict[str, int]] = []
+            sel_dicts: list[XDictSelect[str, int]] = []
             
             for i in range(15):
-                sel_dict = ObservableSelectionDict({"a": i, "b": i * 2, "c": i * 3}, "a")
+                sel_dict = XDictSelect({"a": i, "b": i * 2, "c": i * 3}, "a")
                 sel_dicts.append(sel_dict)
                 weak_refs.append(weakref.ref(sel_dict))
                 

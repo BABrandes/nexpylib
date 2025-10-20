@@ -1,14 +1,14 @@
 from typing import Literal, TypeVar, Generic, Mapping, Any, Callable
 
 from .x_dict_base import XDictBase, Hook
-from .protocols import ObservableSelectionDictProtocol
+from .protocols import XSelectionDictProtocol
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.submission_error import SubmissionError
 
 K = TypeVar("K")
 V = TypeVar("V")
 
-class XSelectionDict(XDictBase[K, V, K, V], ObservableSelectionDictProtocol[K, V], Generic[K, V]):
+class XSelectionDict(XDictBase[K, V, K, V], XSelectionDictProtocol[K, V], Generic[K, V]):
     """
  
     Valid Key Combinations:
@@ -145,7 +145,7 @@ class XSelectionDict(XDictBase[K, V, K, V], ObservableSelectionDictProtocol[K, V
         return initial_dict[initial_key]
 
     #########################################################
-    # ObservableSelectionDictProtocol implementation
+    # XSelectionDictProtocol implementation
     #########################################################
 
     #-------------------------------- Key --------------------------------

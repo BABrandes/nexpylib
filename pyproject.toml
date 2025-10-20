@@ -30,9 +30,7 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 dependencies = [
-    "numpy>=1.20.0",
-    "scipy>=1.7.0",
-    "matplotlib>=3.3.0",
+    "typing-extensions>=4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -91,6 +89,10 @@ testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
 addopts = [
     "--strict-markers",
     "--strict-config",
@@ -98,3 +100,74 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html",
 ]
+
+[tool.pyright]
+include = ["src"]
+exclude = [
+    "**/__pycache__",
+    "**/node_modules",
+    "build",
+    "dist",
+    ".git"
+]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.8"
+pythonPlatform = "All"
+
+# Strict mode settings
+typeCheckingMode = "strict"
+strictListInference = true
+strictDictionaryInference = true
+strictSetInference = true
+strictParameterNoneValue = true
+
+# Additional strict checks
+reportMissingImports = "error"
+reportMissingTypeStubs = "warning"
+reportUnusedImport = "warning"
+reportUnusedClass = "warning"
+reportUnusedFunction = "warning"
+reportUnusedVariable = "warning"
+reportDuplicateImport = "error"
+reportWildcardImportFromLibrary = "error"
+reportOptionalSubscript = "error"
+reportOptionalMemberAccess = "error"
+reportOptionalCall = "error"
+reportOptionalIterable = "error"
+reportOptionalContextManager = "error"
+reportOptionalOperand = "error"
+reportTypedDictNotRequiredAccess = "error"
+reportUntypedFunctionDecorator = "warning"
+reportUntypedClassDecorator = "warning"
+reportUntypedBaseClass = "error"
+reportUntypedNamedTuple = "error"
+reportPrivateUsage = "warning"
+reportConstantRedefinition = "error"
+reportIncompatibleMethodOverride = "error"
+reportIncompatibleVariableOverride = "error"
+reportInconsistentConstructor = "error"
+reportOverlappingOverload = "error"
+reportMissingSuperCall = "warning"
+reportUninitializedInstanceVariable = "error"
+reportInvalidStringEscapeSequence = "error"
+reportUnknownParameterType = "warning"
+reportUnknownArgumentType = "warning"
+reportUnknownLambdaType = "warning"
+reportUnknownVariableType = "warning"
+reportUnknownMemberType = "warning"
+reportMissingParameterType = "error"
+reportMissingTypeArgument = "error"
+reportInvalidTypeVarUse = "error"
+reportCallInDefaultInitializer = "warning"
+reportUnnecessaryIsInstance = "warning"
+reportUnnecessaryCast = "warning"
+reportUnnecessaryComparison = "warning"
+reportUnnecessaryContains = "warning"
+reportImplicitStringConcatenation = "warning"
+reportUnusedCallResult = "warning"
+reportUnusedCoroutine = "error"
+reportUnusedExpression = "warning"
+reportUnnecessaryTypeIgnoreComment = "warning"
+reportMatchNotExhaustive = "warning"
+reportShadowedImports = "error"

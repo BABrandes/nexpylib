@@ -8,7 +8,7 @@ when they are no longer referenced.
 import gc
 import weakref
 
-from nexpy import XValue, ObservableSelectionDict, FloatingHook
+from nexpy import XValue, XDictSelect, FloatingHook
 
 from nexpy.core.nexus_system.nexus import Nexus
 
@@ -135,7 +135,7 @@ class TestMemoryLeaks:
     def test_complex_observable_garbage_collection(self):
         """Test that complex observables can be garbage collected."""
         # Create a complex observable
-        obs = ObservableSelectionDict(
+        obs = XDictSelect(
             dict_hook={"a": 1, "b": 2},
             key_hook="a",
             value_hook=None

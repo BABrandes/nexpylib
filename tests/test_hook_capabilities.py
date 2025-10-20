@@ -2,13 +2,13 @@ from typing import Any, Mapping, Optional
 import threading
 from logging import Logger
 
-from nexpy.core import ComplexObservableBase
+from nexpy.x_objects_base.x_complex_base import XComplexBase
 from nexpy.core.hooks.owned_hook import OwnedHook
 
-from tests.run_tests import console_logger as logger
+from run_tests import console_logger as logger
 import pytest
 
-class MockObservable(ComplexObservableBase[Any, Any, Any, Any, "MockObservable"]):
+class MockObservable(XComplexBase[Any, Any, Any, Any, "MockObservable"]):
     """Mock observable for testing purposes that can handle arbitrary hooks."""
     
     def __init__(self, name: str):

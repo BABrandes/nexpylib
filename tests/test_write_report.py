@@ -8,7 +8,7 @@ from typing import Any
 from enum import Enum
 
 
-from nexpy import XValue, XList, ObservableSelectionDict, XSet, ObservableSelectionSet as XSetSelect, ObservableMultiSelectionSet as XSetMultiSelect, write_report
+from nexpy import XValue, XList, XDictSelect, XSet, XSetSelect, XSetMultiSelect, write_report
 from nexpy.core import CarriesSomeHooksBase
 
 

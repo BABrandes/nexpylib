@@ -1,6 +1,5 @@
 from typing import Mapping, Any, Optional, TYPE_CHECKING, Callable, Literal, Sequence
-
-from immutables import Map
+from types import MappingProxyType
 
 from threading import RLock, local
 from logging import Logger
@@ -260,7 +259,7 @@ class NexusManager:
 
             # Step 2: Get the additional values from the owner method
             current_values_of_owner: Mapping[Any, Any] = owner._get_dict_of_values() # type: ignore
-            update_values = UpdateFunctionValues(current=current_values_of_owner, submitted=Map(value_dict)) # Wrap the value_dict in Map to prevent mutation by the owner function!
+            update_values = UpdateFunctionValues(current=current_values_of_owner, submitted=MappingProxyType(value_dict)) # Wrap the value_dict in MappingProxyType to prevent mutation by the owner function!
 
             try:
                 additional_value_dict: Mapping[Any, Any] = owner._add_values_to_be_updated(update_values) # type: ignore

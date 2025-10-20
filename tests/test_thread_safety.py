@@ -13,7 +13,7 @@ import pytest
 from unittest.mock import Mock
 
 from nexpy import XValue, XList
-from nexpy.core import ComplexObservableBase
+from nexpy.x_objects_base.x_complex_base import XComplexBase
 
 
 
@@ -300,7 +300,7 @@ class TestThreadSafetyEdgeCases:
     def test_stress_test_thread_safety(self):
         """Stress test with many concurrent operations."""
         errors: list[str] = []
-        observables: list[ComplexObservableBase[Any, Any, Any, Any, "ComplexObservableBase[Any, Any, Any, Any, Any]"]] = []
+        observables: list[XComplexBase[Any, Any, Any, Any, "XComplexBase[Any, Any, Any, Any, Any]"]] = []
         
         # Create shared observables
         for i in range(10):

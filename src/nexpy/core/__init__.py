@@ -72,7 +72,8 @@ For normal usage of the library, import from the main package:
 """
 
 from ..x_objects_base.carries_some_hooks_base import CarriesSomeHooksBase
-from ..x_objects_base.x_complex_base import ComplexObservableBase
+from ..x_objects_base.x_complex_base import XComplexBase
+from ..x_objects_base.x_single_value_base import XValueBase as XSingleValueBase
 from .nexus_system.nexus import Nexus
 from ..x_objects_base.carries_some_hooks_protocol import CarriesSomeHooksProtocol
 from ..x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol
@@ -91,7 +92,8 @@ from .nexus_system.update_function_values import UpdateFunctionValues
 DEFAULT_NEXUS_MANAGER = default_nexus_manager.DEFAULT_NEXUS_MANAGER
 
 __all__ = [
-    'ComplexObservableBase',
+    'XComplexBase',
+    'XSingleValueBase',
     'Nexus',
     'CarriesSomeHooksBase',
     'CarriesSomeHooksProtocol',

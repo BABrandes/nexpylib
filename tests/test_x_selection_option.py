@@ -1,5 +1,5 @@
 
-from nexpy import ObservableSelectionSet as XSetSelect, ObservableOptionalSelectionSet as XSetOptionalSelect
+from nexpy import XSetSelect, XSetOptionalSelect
 import pytest
 
 class TestXSetSelect:

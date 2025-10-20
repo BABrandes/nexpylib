@@ -1,4 +1,4 @@
-from nexpy import ObservableMultiSelectionSet as XSetMultiSelect
+from nexpy import XSetMultiSelect
 import pytest
 
 class TestXSetMultiSelect:

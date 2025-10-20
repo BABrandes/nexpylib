@@ -334,7 +334,7 @@ class CarriesSomeHooksBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProt
         self._isolate(None)
 
         # Remove all listeners
-        if isinstance(self, ListeningProtocol): # type: ignore
+        if isinstance(self, ListeningProtocol):
             self.remove_all_listeners() # type: ignore
 
     def _validate_value(self, key: HK, value: HV, *, logger: Optional[Logger] = None) -> tuple[bool, str]:

@@ -12,7 +12,7 @@ from nexpy import Publisher
 from nexpy.core import Subscriber
 
 from tests.test_base import ObservableTestCase
-from tests.run_tests import console_logger as logger
+from run_tests import console_logger as logger
 import pytest
 
 class TestSubscriber(Subscriber):

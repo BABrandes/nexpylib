@@ -9,7 +9,7 @@ It covers complex binding scenarios, collective validation, and transitive bindi
 import time
 
 from nexpy import XValue, XSet, XSetSelect, XSetOptionalSelect, XSetMultiSelect, XDict, XDictSelect, XDictSelectOptional, XDictSelectDefault, XDictSelectOptionalDefault
-from tests.run_tests import console_logger as logger
+from run_tests import console_logger as logger
 import pytest
 
 class TestCollectiveHooks:
@@ -370,13 +370,13 @@ class TestCollectiveHooks:
         # Bind them in a complex network
         start_time = time.time()
         
-        for i in range(0, len(observables) - 1):
+        for i in range(0, len(x_objects) - 1):
             # Bind consecutive selectors together
-            observables[i].join_by_key("selected_option", observables[i + 1].selected_option_hook, "use_caller_value")  # type: ignore
+            x_objects[i].join_by_key("selected_option", x_objects[i + 1].selected_option_hook, "use_caller_value")  # type: ignore
         
         # Change a value and measure propagation time - first update available options
-        observables[0].available_options = {"Common", "Color0", "Option0"} # type: ignore
-        observables[0].selected_option = "Common" # type: ignore
+        x_objects[0].available_options = {"Common", "Color0", "Option0"} # type: ignore
+        x_objects[0].selected_option = "Common" # type: ignore
         
         end_time = time.time()
         

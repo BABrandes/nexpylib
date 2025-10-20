@@ -1,8 +1,8 @@
 from typing import Any, Literal, Mapping, Optional
 from logging import Logger, basicConfig, getLogger, DEBUG
 
-from nexpy import ObservableOptionalDefaultSelectionDict
-from nexpy.core import ComplexObservableBase
+from nexpy import XDictSelectOptionalDefault
+from nexpy.x_objects_base.x_complex_base import XComplexBase
 import pytest
 
 
@@ -10,7 +10,7 @@ import pytest
 basicConfig(level=DEBUG)
 logger = getLogger(__name__)
 
-class MockObservable(ComplexObservableBase[Literal["value"], Any, Any, Any, "MockObservable"]):
+class MockObservable(XComplexBase[Literal["value"], Any, Any, Any, "MockObservable"]):
     """Mock observable for testing purposes."""
     
     def __init__(self, name: str):
@@ -44,7 +44,7 @@ class TestObservableOptionalDefaultSelectionDict:
         default_value = 999
         
         # Create default selection dict
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook=test_key,
             value_hook=None,
@@ -64,7 +64,7 @@ class TestObservableOptionalDefaultSelectionDict:
         default_value = 999
         
         # Create with None key
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook=None,
             value_hook=None,
@@ -83,7 +83,7 @@ class TestObservableOptionalDefaultSelectionDict:
         default_value = 999
         
         # Create with key not in dict
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook="z",  # Not in dict
             value_hook=None,
@@ -102,7 +102,7 @@ class TestObservableOptionalDefaultSelectionDict:
         test_dict = {"a": 1, "b": 2}
         default_value = 999
         
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -129,7 +129,7 @@ class TestObservableOptionalDefaultSelectionDict:
         test_dict = {"a": 1, "b": 2}
         default_value = 999
         
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -148,7 +148,7 @@ class TestObservableOptionalDefaultSelectionDict:
         test_dict = {"a": 1, "b": 2}
         default_value = 999
         
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook=None,
             value_hook=None,
@@ -169,7 +169,7 @@ class TestObservableOptionalDefaultSelectionDict:
         test_dict = {"a": 1, "b": 2}
         default_value = 999
         
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -186,7 +186,7 @@ class TestObservableOptionalDefaultSelectionDict:
         """Test the verification method."""
         test_dict = {"a": 1, "b": 2}
         default_value = 999
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -221,7 +221,7 @@ class TestObservableOptionalDefaultSelectionDict:
         """Test set_dict_and_key method."""
         test_dict = {"a": 1, "b": 2}
         default_value = 999
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -253,7 +253,7 @@ class TestObservableOptionalDefaultSelectionDict:
         # Test with empty dict and None key
         empty_dict: dict[str, int] = {}
         default_value = 999
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=empty_dict,
             key_hook=None,
             value_hook=None,
@@ -266,7 +266,7 @@ class TestObservableOptionalDefaultSelectionDict:
         
         # Test with default value that equals a dict value
         test_dict = {"a": 999, "b": 2}
-        selection_dict2 = ObservableOptionalDefaultSelectionDict(
+        selection_dict2 = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook=None,
             value_hook=None,
@@ -286,7 +286,7 @@ class TestObservableOptionalDefaultSelectionDict:
         """Test property access."""
         test_dict = {"a": 1, "b": 2}
         default_value = 999
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -323,7 +323,7 @@ class TestObservableOptionalDefaultSelectionDict:
         def default_factory(key: str) -> int:
             return len(key) * 100  # Different value based on key length
         
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -360,7 +360,7 @@ class TestObservableOptionalDefaultSelectionDict:
         default_value = 999
         
         # Case 1: key is not None AND key in dict -> ✓
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -371,7 +371,7 @@ class TestObservableOptionalDefaultSelectionDict:
         assert selection_dict.value == 1
         
         # Case 2: key is not None AND key not in dict -> default (auto-create)
-        selection_dict_autocreate = ObservableOptionalDefaultSelectionDict(
+        selection_dict_autocreate = XDictSelectOptionalDefault(
             dict_hook=test_dict.copy(),
             key_hook="z",
             value_hook=None,
@@ -383,7 +383,7 @@ class TestObservableOptionalDefaultSelectionDict:
         assert selection_dict_autocreate.dict_hook.value["z"] == default_value
         
         # Case 3: key is None AND key in dict -> None (value)
-        selection_dict_none = ObservableOptionalDefaultSelectionDict(
+        selection_dict_none = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook=None,
             value_hook=None,
@@ -395,7 +395,7 @@ class TestObservableOptionalDefaultSelectionDict:
         
         # Case 4: key is None AND key not in dict -> None (value)
         empty_dict: dict[str, int] = {}
-        selection_dict_empty = ObservableOptionalDefaultSelectionDict(
+        selection_dict_empty = XDictSelectOptionalDefault(
             dict_hook=empty_dict,
             key_hook=None,
             value_hook=None,
@@ -413,7 +413,7 @@ class TestObservableOptionalDefaultSelectionDict:
             return ord(key[0]) if key else 0  # Use ASCII value of first char
         
         # Create with key not in dict
-        selection_dict = ObservableOptionalDefaultSelectionDict(
+        selection_dict = XDictSelectOptionalDefault(
             dict_hook=test_dict,
             key_hook="z",
             value_hook=None,

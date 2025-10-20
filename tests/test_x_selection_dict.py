@@ -1,8 +1,8 @@
 from typing import Any, Literal, Mapping, Optional
 from logging import Logger, basicConfig, getLogger, DEBUG
 
-from nexpy import ObservableSelectionDict, ObservableOptionalSelectionDict, FloatingHook
-from nexpy.core import ComplexObservableBase
+from nexpy import XDictSelect, XDictSelectOptional, FloatingHook
+from nexpy.x_objects_base.x_complex_base import XComplexBase
 from nexpy.core.hooks.owned_hook import OwnedHook
 import pytest
 
@@ -10,7 +10,7 @@ import pytest
 basicConfig(level=DEBUG)
 logger = getLogger(__name__)
 
-class MockObservable(ComplexObservableBase[Literal["value"], Any, Any, Any, "MockObservable"]):
+class MockObservable(XComplexBase[Literal["value"], Any, Any, Any, "MockObservable"]):
     """Mock observable for testing purposes."""
     
     def __init__(self, name: str):
@@ -43,7 +43,7 @@ class TestObservableSelectionDict:
         test_value = 2
         
         # Create selection dict
-        selection_dict = ObservableSelectionDict(
+        selection_dict = XDictSelect(
             dict_hook=test_dict,
             key_hook=test_key,
             value_hook=None,
@@ -64,7 +64,7 @@ class TestObservableSelectionDict:
         value_hook = FloatingHook(value=10, logger=logger)
         
         # Create selection dict
-        selection_dict = ObservableSelectionDict[str, int](
+        selection_dict = XDictSelect[str, int](
             dict_hook=dict_hook,  # type: ignore[arg-type]
             key_hook=key_hook,
             value_hook=value_hook,
@@ -80,7 +80,7 @@ class TestObservableSelectionDict:
     def test_hook_interface(self):
         """Test CarriesHooks interface implementation."""
         test_dict = {"a": 1, "b": 2}
-        selection_dict = ObservableSelectionDict(
+        selection_dict = XDictSelect(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -120,7 +120,7 @@ class TestObservableSelectionDict:
     def test_value_properties(self):
         """Test value and key properties."""
         test_dict = {"a": 1, "b": 2, "c": 3}
-        selection_dict = ObservableSelectionDict(
+        selection_dict = XDictSelect(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -143,7 +143,7 @@ class TestObservableSelectionDict:
     def test_connect_disconnect(self):
         """Test connect and disconnect functionality."""
         test_dict = {"a": 1, "b": 2}
-        selection_dict = ObservableSelectionDict(
+        selection_dict = XDictSelect(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -165,7 +165,7 @@ class TestObservableSelectionDict:
     def test_verification_method(self):
         """Test the verification method."""
         test_dict = {"a": 1, "b": 2}
-        selection_dict = ObservableSelectionDict(
+        selection_dict = XDictSelect(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -193,7 +193,7 @@ class TestObservableSelectionDict:
         invalidation_called: list[bool] = []
         def invalidate_callback() -> None:
             invalidation_called.append(True)
-        selection_dict = ObservableSelectionDict(
+        selection_dict = XDictSelect(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -209,7 +209,7 @@ class TestObservableSelectionDict:
     def test_dict_key_change_propagation(self):
         """Test that changing dict or key updates the value."""
         test_dict = {"a": 1, "b": 2, "c": 3}
-        selection_dict = ObservableSelectionDict(
+        selection_dict = XDictSelect(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -230,7 +230,7 @@ class TestObservableSelectionDict:
     def test_value_change_propagation(self):
         """Test that changing value updates the dict."""
         test_dict = {"a": 1, "b": 2}
-        selection_dict = ObservableSelectionDict(
+        selection_dict = XDictSelect(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -258,7 +258,7 @@ class TestObservableSelectionDict:
         test_dict = {"a": 1, "b": 2}
         
         # Case 1: key is not None AND key in dict -> ✓
-        selection_dict = ObservableSelectionDict(
+        selection_dict = XDictSelect(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -269,7 +269,7 @@ class TestObservableSelectionDict:
         
         # Case 2: key is not None AND key not in dict -> error
         with pytest.raises(KeyError):
-            ObservableSelectionDict(
+            XDictSelect(
                 dict_hook=test_dict,
                 key_hook="nonexistent",
                 value_hook=None,
@@ -298,7 +298,7 @@ class TestObservableOptionalSelectionDict:
         test_value = 2
         
         # Create selection dict
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook=test_key,
             value_hook=None,
@@ -316,7 +316,7 @@ class TestObservableOptionalSelectionDict:
         test_dict = {"a": 1, "b": 2}
         
         # Create with None key and value
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook=None,
             value_hook=None,
@@ -331,7 +331,7 @@ class TestObservableOptionalSelectionDict:
     def test_optional_behavior(self):
         """Test optional behavior with None values."""
         test_dict = {"a": 1, "b": 2}
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook=None,
             value_hook=None,
@@ -359,7 +359,7 @@ class TestObservableOptionalSelectionDict:
     def test_hook_interface_optional(self):
         """Test CarriesHooks interface with optional values."""
         test_dict = {"a": 1, "b": 2}
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -382,7 +382,7 @@ class TestObservableOptionalSelectionDict:
     def test_verification_method_optional(self):
         """Test verification method with optional values."""
         test_dict = {"a": 1, "b": 2}
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -410,7 +410,7 @@ class TestObservableOptionalSelectionDict:
     def test_optional_value_properties(self):
         """Test value and key properties with optional types."""
         test_dict = {"a": 1, "b": 2}
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -434,7 +434,7 @@ class TestObservableOptionalSelectionDict:
     def test_error_handling_optional(self):
         """Test error handling for invalid optional combinations."""
         test_dict = {"a": 1, "b": 2}
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -452,7 +452,7 @@ class TestObservableOptionalSelectionDict:
     def test_collective_hooks_optional(self):
         """Test CarriesCollectiveHooks interface with optional values."""
         test_dict = {"a": 1, "b": 2}
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -481,7 +481,7 @@ class TestObservableOptionalSelectionDict:
         """Test behavior with empty dictionary."""
         # Test that creation with empty dict and invalid key fails
         with pytest.raises(KeyError):
-            ObservableOptionalSelectionDict(
+            XDictSelectOptional(
                 dict_hook={},
                 key_hook="nonexistent",
                 value_hook=None,
@@ -489,7 +489,7 @@ class TestObservableOptionalSelectionDict:
             )
         
         # Test that None key with empty dict works
-        selection_dict = ObservableOptionalSelectionDict[str, int](
+        selection_dict = XDictSelectOptional[str, int](
             dict_hook={},
             key_hook=None,
             value_hook=None,
@@ -501,7 +501,7 @@ class TestObservableOptionalSelectionDict:
     def test_edge_case_single_item_dict(self):
         """Test behavior with single-item dictionary."""
         test_dict = {"only": 42}
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook="only",
             value_hook=None,
@@ -521,7 +521,7 @@ class TestObservableOptionalSelectionDict:
         # Create a large dictionary
         large_dict = {f"key_{i}": i * 100 for i in range(1000)}
         
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=large_dict,
             key_hook="key_500",
             value_hook=None,
@@ -544,7 +544,7 @@ class TestObservableOptionalSelectionDict:
             "set": {1, 2, 3}
         }
         
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=complex_dict,
             key_hook="list",
             value_hook=None,
@@ -563,7 +563,7 @@ class TestObservableOptionalSelectionDict:
     def test_concurrent_modifications(self):
         """Test that external dict modifications are isolated (immutability)."""
         test_dict = {"a": 1, "b": 2, "c": 3}
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -591,7 +591,7 @@ class TestObservableOptionalSelectionDict:
     def test_set_dict_and_key_method(self):
         """Test the set_dict_and_key method for both classes."""
         # Test ObservableSelectionDict
-        selection_dict = ObservableSelectionDict(
+        selection_dict = XDictSelect(
             dict_hook={"a": 1},
             key_hook="a",
             value_hook=None,
@@ -611,7 +611,7 @@ class TestObservableOptionalSelectionDict:
         assert selection_dict.dict_hook.value == {"x": 100, "y": 200}
         
         # Test ObservableOptionalSelectionDict
-        optional_dict = ObservableOptionalSelectionDict(
+        optional_dict = XDictSelectOptional(
             dict_hook={"a": 1},
             key_hook="a",
             value_hook=None,
@@ -631,7 +631,7 @@ class TestObservableOptionalSelectionDict:
     def test_validation_edge_cases(self):
         """Test edge cases in validation logic."""
         test_dict = {"a": 1, "b": 2}
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -666,7 +666,7 @@ class TestObservableOptionalSelectionDict:
     def test_property_getter_setters_comprehensive(self):
         """Test comprehensive property getter/setter behavior."""
         test_dict = {"a": 1, "b": 2, "c": 3}
-        selection_dict = ObservableOptionalSelectionDict[str, int](
+        selection_dict = XDictSelectOptional[str, int](
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -691,7 +691,7 @@ class TestObservableOptionalSelectionDict:
     def test_error_messages_clarity(self):
         """Test that error messages are clear and helpful."""
         test_dict = {"a": 1, "b": 2}
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -713,7 +713,7 @@ class TestObservableOptionalSelectionDict:
     def test_stress_test_rapid_changes(self):
         """Stress test with rapid changes."""
         test_dict = {f"key_{i}": i for i in range(100)}
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook="key_0",
             value_hook=None,
@@ -740,7 +740,7 @@ class TestObservableOptionalSelectionDict:
         """Test type safety with various edge cases."""
         # Test with string keys and numeric values
         test_dict = {"1": 1, "2": 2, "3": 3}
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook="1",
             value_hook=None,
@@ -757,7 +757,7 @@ class TestObservableOptionalSelectionDict:
     def test_destroy_cleanup(self):
         """Test destroy method properly cleans up resources."""
         test_dict = {"a": 1, "b": 2}
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -793,7 +793,7 @@ class TestObservableOptionalSelectionDict:
         test_dict = {"a": 1, "b": 2}
         
         # Case 1: key is not None AND key in dict -> ✓
-        selection_dict = ObservableOptionalSelectionDict(
+        selection_dict = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook="a",
             value_hook=None,
@@ -804,7 +804,7 @@ class TestObservableOptionalSelectionDict:
         
         # Case 2: key is not None AND key not in dict -> error
         with pytest.raises(KeyError):
-            ObservableOptionalSelectionDict(
+            XDictSelectOptional(
                 dict_hook=test_dict,
                 key_hook="nonexistent",
                 value_hook=None,
@@ -812,7 +812,7 @@ class TestObservableOptionalSelectionDict:
             )
         
         # Case 3: key is None AND key in dict -> None (value)
-        selection_dict_none = ObservableOptionalSelectionDict(
+        selection_dict_none = XDictSelectOptional(
             dict_hook=test_dict,
             key_hook=None,
             value_hook=None,
@@ -823,7 +823,7 @@ class TestObservableOptionalSelectionDict:
         
         # Case 4: key is None AND key not in dict -> None (value)
         empty_dict: dict[str, int] = {}
-        selection_dict_empty = ObservableOptionalSelectionDict(
+        selection_dict_empty = XDictSelectOptional(
             dict_hook=empty_dict,
             key_hook=None,
             value_hook=None,
