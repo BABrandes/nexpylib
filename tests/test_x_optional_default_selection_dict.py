@@ -25,7 +25,7 @@ class MockObservable(ComplexObservableBase[Literal["value"], Any, Any, Any, "Moc
         super().__init__(initial_hook_values=initial_values)
     
     def _act_on_invalidation(self, keys: set[Literal["value"]]) -> None:
-        """Act on invalidation - required by BaseObservable."""
+        """Act on invalidation - required by BaseXObject."""
         pass
 
 

@@ -1,11 +1,11 @@
-from nexpy import ObservableMultiSelectionSet as ObservableMultiSelectionOption
+from nexpy import ObservableMultiSelectionSet as XSetMultiSelect
 import pytest
 
-class TestObservableMultiSelectionOption:
-    """Test cases for ObservableMultiSelectionOption"""
+class TestXSetMultiSelect:
+    """Test cases for XSetMultiSelect"""
     
     def setup_method(self):
-        self.observable = ObservableMultiSelectionOption({"Apple", "Banana"}, {"Apple", "Banana", "Cherry"})
+        self.observable = XSetMultiSelect({"Apple", "Banana"}, {"Apple", "Banana", "Cherry"})
         self.notification_count = 0
     
     def notification_callback(self):
@@ -70,10 +70,10 @@ class TestObservableMultiSelectionOption:
     def test_initialization_with_carries_bindable_multi_selection_option(self):
         """Test initialization with CarriesBindableMultiSelectionOption"""
         # Create a source observable multi-selection option
-        source = ObservableMultiSelectionOption({"Red", "Green"}, {"Red", "Green", "Blue"})
+        source = XSetMultiSelect({"Red", "Green"}, {"Red", "Green", "Blue"})
         
         # Create a new observable multi-selection option initialized with the source
-        target: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption(source)
+        target: XSetMultiSelect[str] = XSetMultiSelect(source)
         
         # Check that the target has the same initial value
         assert target.selected_options == {"Red", "Green"}
@@ -90,9 +90,9 @@ class TestObservableMultiSelectionOption:
     def test_initialization_with_carries_bindable_multi_selection_option_chain(self):
         """Test initialization with CarriesBindableMultiSelectionOption in a chain"""
         # Create a chain of observable multi-selection options
-        obs1: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption({"Small"}, {"Small", "Medium"})
-        obs2: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption(obs1)
-        obs3: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption(obs2)
+        obs1: XSetMultiSelect[str] = XSetMultiSelect({"Small"}, {"Small", "Medium"})
+        obs2: XSetMultiSelect[str] = XSetMultiSelect(obs1)
+        obs3: XSetMultiSelect[str] = XSetMultiSelect(obs2)
         
         # Check initial values
         assert obs1.selected_options == {"Small"}
@@ -113,8 +113,8 @@ class TestObservableMultiSelectionOption:
     
     def test_initialization_with_carries_bindable_multi_selection_option_unbinding(self):
         """Test that initialization with CarriesBindableMultiSelectionOption can be unbound"""
-        source = ObservableMultiSelectionOption({"Red"}, {"Red", "Green"})
-        target: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption(source)
+        source = XSetMultiSelect({"Red"}, {"Red", "Green"})
+        target: XSetMultiSelect[str] = XSetMultiSelect(source)
         
         # Verify they are bound
         assert target.selected_options == {"Red"}
@@ -134,10 +134,10 @@ class TestObservableMultiSelectionOption:
     
     def test_initialization_with_carries_bindable_multi_selection_option_multiple_targets(self):
         """Test multiple targets initialized with the same source"""
-        source = ObservableMultiSelectionOption({"Red"}, {"Red", "Green"})
-        target1: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption(source)
-        target2: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption(source)
-        target3: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption(source)
+        source = XSetMultiSelect({"Red"}, {"Red", "Green"})
+        target1: XSetMultiSelect[str] = XSetMultiSelect(source)
+        target2: XSetMultiSelect[str] = XSetMultiSelect(source)
+        target3: XSetMultiSelect[str] = XSetMultiSelect(source)
         
         # Check initial values
         assert target1.selected_options == {"Red"}
@@ -159,21 +159,21 @@ class TestObservableMultiSelectionOption:
     def test_initialization_with_carries_bindable_multi_selection_option_edge_cases(self):
         """Test edge cases for initialization with CarriesBindableMultiSelectionOption"""
         # Test with empty selected options in source
-        source_empty: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption(set(), {"Red", "Green"})
-        target_empty: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption(source_empty)
+        source_empty: XSetMultiSelect[str] = XSetMultiSelect(set(), {"Red", "Green"})
+        target_empty: XSetMultiSelect[str] = XSetMultiSelect(source_empty)
         assert target_empty.selected_options == set()
         assert target_empty.available_options == {"Red", "Green"}
         
         # Test with single option in source
-        source_single: ObservableMultiSelectionOption[str]   = ObservableMultiSelectionOption({"Red"}, {"Red"})
-        target_single: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption(source_single)
+        source_single: XSetMultiSelect[str]   = XSetMultiSelect({"Red"}, {"Red"})
+        target_single: XSetMultiSelect[str] = XSetMultiSelect(source_single)
         assert target_single.selected_options == {"Red"}
         assert target_single.available_options == {"Red"}
     
     def test_initialization_with_carries_bindable_multi_selection_option_binding_consistency(self):
         """Test binding system consistency when initializing with CarriesBindableMultiSelectionOption"""
-        source = ObservableMultiSelectionOption({"Red"}, {"Red", "Green"})
-        target: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption(source)
+        source = XSetMultiSelect({"Red"}, {"Red", "Green"})
+        target: XSetMultiSelect[str] = XSetMultiSelect(source)
         
         # Check binding consistency
         # Note: check_status_consistency() method no longer exists in new architecture
@@ -188,26 +188,26 @@ class TestObservableMultiSelectionOption:
         import time
         
         # Create source
-        source = ObservableMultiSelectionOption({"Red"}, {"Red", "Green"})
+        source = XSetMultiSelect({"Red"}, {"Red", "Green"})
         
         # Measure initialization time (reduced iterations for reasonable test time)
         start_time = time.time()
         for _ in range(10):  # Reduced from 1000 to 10 for reasonable test time
-            ObservableMultiSelectionOption(source)
+            XSetMultiSelect(source)
         end_time = time.time()
         
         # Should complete in reasonable time (more lenient for complex initialization)
         assert end_time - start_time < 60.0, "Initialization should be fast"
         
         # Verify the last target is properly bound
-        target = ObservableMultiSelectionOption[str](source)
+        target = XSetMultiSelect[str](source)
         source.change_selected_options({"Green"})
         assert target.selected_options == {"Green"}
     
     def test_binding_bidirectional(self):
         """Test bidirectional binding between obs1 and obs2"""
-        obs1 = ObservableMultiSelectionOption({"Red"}, {"Red", "Green", "Yellow"})
-        obs2 = ObservableMultiSelectionOption({"Blue"}, {"Red", "Green", "Blue"})
+        obs1 = XSetMultiSelect({"Red"}, {"Red", "Green", "Yellow"})
+        obs2 = XSetMultiSelect({"Blue"}, {"Red", "Green", "Blue"})
         
         # Bind obs1 to obs2
         obs1.join_many_by_keys({"available_options": obs2.available_options_hook, "selected_options": obs2.selected_options_hook}, "use_target_value") #type: ignore
@@ -230,8 +230,8 @@ class TestObservableMultiSelectionOption:
     
     def test_binding_initial_sync_modes(self):
         """Test different initial sync modes"""
-        obs1 = ObservableMultiSelectionOption({"Red"}, {"Red", "Green", "Yellow"})
-        obs2 = ObservableMultiSelectionOption({"Blue"}, {"Red", "Green", "Blue"})
+        obs1 = XSetMultiSelect({"Red"}, {"Red", "Green", "Yellow"})
+        obs2 = XSetMultiSelect({"Blue"}, {"Red", "Green", "Blue"})
         
         # Test update_observable_from_self mode (obs2 gets updated with obs1's value)
         obs1.join_many_by_keys({"available_options": obs2.available_options_hook, "selected_options": obs2.selected_options_hook}, "use_target_value") #type: ignore
@@ -240,8 +240,8 @@ class TestObservableMultiSelectionOption:
         assert obs1.available_options == {"Red", "Green", "Blue"}
 
         # Test update_self_from_observable mode (obs1 gets updated with obs2's value)
-        obs3 = ObservableMultiSelectionOption({"Small"}, {"Small", "Medium", "Large"})
-        obs4 = ObservableMultiSelectionOption({"Large"}, {"Small", "Medium", "Large"})
+        obs3 = XSetMultiSelect({"Small"}, {"Small", "Medium", "Large"})
+        obs4 = XSetMultiSelect({"Large"}, {"Small", "Medium", "Large"})
         obs3.join_many_by_keys({"available_options": obs4.available_options_hook, "selected_options": obs4.selected_options_hook}, "use_target_value") #type: ignore
         # Current semantics: caller gets target's values
         assert obs3.selected_options == {"Large"}
@@ -249,8 +249,8 @@ class TestObservableMultiSelectionOption:
     
     def test_unbinding(self):
         """Test unbinding observables"""
-        obs1 = ObservableMultiSelectionOption({"Red"}, {"Red", "Green", "Yellow"})
-        obs2 = ObservableMultiSelectionOption({"Blue"}, {"Red", "Green", "Blue"})
+        obs1 = XSetMultiSelect({"Red"}, {"Red", "Green", "Yellow"})
+        obs2 = XSetMultiSelect({"Blue"}, {"Red", "Green", "Blue"})
         
         obs1.join_many_by_keys({"available_options": obs2.available_options_hook, "selected_options": obs2.selected_options_hook}, "use_target_value") #type: ignore
         
@@ -271,15 +271,15 @@ class TestObservableMultiSelectionOption:
     
     def test_binding_to_self(self):
         """Test that binding to self raises an error"""
-        obs = ObservableMultiSelectionOption({"Red"}, {"Red", "Green"})
+        obs = XSetMultiSelect({"Red"}, {"Red", "Green"})
         with pytest.raises(ValueError):
             obs.join_by_key("selected_options", obs.selected_options_hook, "use_target_value") # type: ignore
     
     def test_binding_chain_unbinding(self):
         """Test unbinding in a chain of bindings"""
-        obs1 = ObservableMultiSelectionOption({"Red"}, {"Red", "Green", "Blue"})
-        obs2 = ObservableMultiSelectionOption({"Blue"}, {"Red", "Green", "Blue"})
-        obs3 = ObservableMultiSelectionOption({"Green"}, {"Red", "Green", "Blue"})
+        obs1 = XSetMultiSelect({"Red"}, {"Red", "Green", "Blue"})
+        obs2 = XSetMultiSelect({"Blue"}, {"Red", "Green", "Blue"})
+        obs3 = XSetMultiSelect({"Green"}, {"Red", "Green", "Blue"})
         
         # Create chain: obs1 -> obs2 -> obs3
         obs1.join_by_key("selected_options", obs2.selected_options_hook, "use_target_value") # type: ignore
@@ -320,7 +320,7 @@ class TestObservableMultiSelectionOption:
     
     def test_listener_management(self):
         """Test listener management methods"""
-        obs = ObservableMultiSelectionOption({"Red"}, {"Red", "Green"})
+        obs = XSetMultiSelect({"Red"}, {"Red", "Green"})
         
         # Test is_listening_to
         assert not obs.is_listening_to(self.notification_callback)
@@ -333,9 +333,9 @@ class TestObservableMultiSelectionOption:
     
     def test_multiple_bindings(self):
         """Test multiple bindings to the same observable"""
-        obs1 = ObservableMultiSelectionOption({"Red"}, {"Red", "Green", "Blue"})
-        obs2 = ObservableMultiSelectionOption({"Blue"}, {"Blue", "Green", "Red"})
-        obs3 = ObservableMultiSelectionOption({"Green"}, {"Green", "Blue", "Red"})
+        obs1 = XSetMultiSelect({"Red"}, {"Red", "Green", "Blue"})
+        obs2 = XSetMultiSelect({"Blue"}, {"Blue", "Green", "Red"})
+        obs3 = XSetMultiSelect({"Green"}, {"Green", "Blue", "Red"})
         
         # Bind obs2 and obs3 to obs1
         obs2.join_by_key("selected_options", obs1.selected_options_hook, "use_target_value") # type: ignore
@@ -353,7 +353,7 @@ class TestObservableMultiSelectionOption:
     
     def test_multi_selection_option_methods(self):
         """Test standard multi-selection option methods"""
-        obs = ObservableMultiSelectionOption({"Red", "Green"}, {"Red", "Green", "Blue"})
+        obs = XSetMultiSelect({"Red", "Green"}, {"Red", "Green", "Blue"})
         
         # Test set_selected_options_and_available_options
         obs.change_selected_options_and_available_options({"Blue"}, {"Blue", "Green", "Yellow"})
@@ -370,7 +370,7 @@ class TestObservableMultiSelectionOption:
     
     def test_multi_selection_option_copy_behavior(self):
         """Test that available_options returns an immutable frozenset"""
-        obs = ObservableMultiSelectionOption({"Red", "Green"}, {"Red", "Green", "Blue"})
+        obs = XSetMultiSelect({"Red", "Green"}, {"Red", "Green", "Blue"})
         
         # Get the available options
         options_frozen = obs.available_options
@@ -388,28 +388,28 @@ class TestObservableMultiSelectionOption:
     def test_multi_selection_option_validation(self):
         """Test multi-selection option validation"""
         # Test with valid multi-selection option
-        obs = ObservableMultiSelectionOption({"Red", "Green"}, {"Red", "Green"})
+        obs = XSetMultiSelect({"Red", "Green"}, {"Red", "Green"})
         assert obs.selected_options == {"Red", "Green"}
         assert obs.available_options == {"Red", "Green"}
         
         # Test with empty selected options
-        obs_empty: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption(set(), {"Red", "Green"})
+        obs_empty: XSetMultiSelect[str] = XSetMultiSelect(set(), {"Red", "Green"})
         assert obs_empty.selected_options == set()
         assert obs_empty.available_options == {"Red", "Green"}
     
     def test_multi_selection_option_binding_edge_cases(self):
         """Test edge cases for multi-selection option binding"""
         # Test binding multi-selection options with same initial values
-        obs1 = ObservableMultiSelectionOption({"Red"}, {"Red", "Green"})
-        obs2 = ObservableMultiSelectionOption({"Red"}, {"Red", "Green"})
+        obs1 = XSetMultiSelect({"Red"}, {"Red", "Green"})
+        obs2 = XSetMultiSelect({"Red"}, {"Red", "Green"})
         obs1.join_by_key("selected_options", obs2.selected_options_hook, "use_target_value") # type: ignore
         
         obs1.change_selected_options({"Green"})
         assert obs2.selected_options == {"Green"}
         
         # Test binding multi-selection options with different options
-        obs3 = ObservableMultiSelectionOption({"Red"}, {"Red", "Blue", "Green"})
-        obs4 = ObservableMultiSelectionOption({"Green"}, {"Red", "Blue", "Green"})
+        obs3 = XSetMultiSelect({"Red"}, {"Red", "Blue", "Green"})
+        obs4 = XSetMultiSelect({"Green"}, {"Red", "Blue", "Green"})
         obs3.join_by_key("selected_options", obs4.selected_options_hook, "use_target_value") # type: ignore
         
         obs3.change_selected_options({"Blue"})
@@ -420,7 +420,7 @@ class TestObservableMultiSelectionOption:
         import time
         
         # Test selected_options access performance
-        obs = ObservableMultiSelectionOption({"Red", "Green"}, {"Red", "Green", "Blue"})
+        obs = XSetMultiSelect({"Red", "Green"}, {"Red", "Green", "Blue"})
         start_time = time.time()
         
         for _ in range(10000):
@@ -432,11 +432,11 @@ class TestObservableMultiSelectionOption:
         assert end_time - start_time < 1.0, "Selected options access should be fast"
         
         # Test binding performance
-        source = ObservableMultiSelectionOption({"Red"}, {"Red", "Green"})
+        source = XSetMultiSelect({"Red"}, {"Red", "Green"})
         start_time = time.time()
         
         for _ in range(100):
-            ObservableMultiSelectionOption(source)
+            XSetMultiSelect(source)
         
         end_time = time.time()
         
@@ -445,7 +445,7 @@ class TestObservableMultiSelectionOption:
     
     def test_multi_selection_option_error_handling(self):
         """Test multi-selection option error handling"""
-        obs = ObservableMultiSelectionOption({"Red", "Green"}, {"Red", "Green"})
+        obs = XSetMultiSelect({"Red", "Green"}, {"Red", "Green"})
         
         # Test setting invalid selected options
         with pytest.raises(ValueError):
@@ -457,8 +457,8 @@ class TestObservableMultiSelectionOption:
     
     def test_multi_selection_option_binding_consistency(self):
         """Test binding system consistency"""
-        source = ObservableMultiSelectionOption({"Red"}, {"Red", "Green"})
-        target: ObservableMultiSelectionOption[str] = ObservableMultiSelectionOption(source)
+        source = XSetMultiSelect({"Red"}, {"Red", "Green"})
+        target: XSetMultiSelect[str] = XSetMultiSelect(source)
         
         # Check binding consistency
         # Note: check_status_consistency() method no longer exists in new architecture
@@ -470,14 +470,14 @@ class TestObservableMultiSelectionOption:
     
     def test_multi_selection_option_binding_none_observable(self):
         """Test that binding to None raises an error"""
-        obs = ObservableMultiSelectionOption({"Red"}, {"Red", "Green"})
+        obs = XSetMultiSelect({"Red"}, {"Red", "Green"})
         with pytest.raises(ValueError):
             obs.join_by_key("selected_options", None, "use_target_value")  # type: ignore
     
     def test_multi_selection_option_binding_with_same_values(self):
         """Test binding when observables already have the same value"""
-        obs1 = ObservableMultiSelectionOption({"Red"}, {"Red", "Green", "Yellow"})
-        obs2 = ObservableMultiSelectionOption({"Blue"}, {"Red", "Green", "Blue"})
+        obs1 = XSetMultiSelect({"Red"}, {"Red", "Green", "Yellow"})
+        obs2 = XSetMultiSelect({"Blue"}, {"Red", "Green", "Blue"})
         
         obs1.join_many_by_keys({"available_options": obs2.available_options_hook, "selected_options": obs2.selected_options_hook}, "use_target_value") #type: ignore
         # Use target value for sync → caller gets target's values
@@ -486,7 +486,7 @@ class TestObservableMultiSelectionOption:
     
     def test_listener_duplicates(self):
         """Test that duplicate listeners are not added"""
-        obs = ObservableMultiSelectionOption({"Red"}, {"Red", "Green"})
+        obs = XSetMultiSelect({"Red"}, {"Red", "Green"})
         callback = lambda: None
         
         obs.add_listener(callback, callback)
@@ -497,7 +497,7 @@ class TestObservableMultiSelectionOption:
     
     def test_remove_nonexistent_listener(self):
         """Test removing a listener that doesn't exist"""
-        obs = ObservableMultiSelectionOption({"Red"}, {"Red", "Green"})
+        obs = XSetMultiSelect({"Red"}, {"Red", "Green"})
         callback = lambda: None
         
         # Should not raise an error

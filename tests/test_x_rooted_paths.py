@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Test suite for ObservableRootedPaths.
+Test suite for XRootedPaths.
 
-This module tests the ObservableRootedPaths class which manages a root directory
+This module tests the XRootedPaths class which manages a root directory
 with associated elements and provides observable hooks for path management.
 """
 
@@ -13,14 +13,14 @@ import shutil
 
 from unittest.mock import Mock
 
-from nexpy import ObservableSingleValue, ObservableRootedPaths, Hook
+from nexpy import XValue, XRootedPaths, Hook
 from nexpy.core.hooks.mixin_protocols.hook_with_owner_protocol import HookWithOwnerProtocol
 
 from nexpy.x_objects.complex.xobject_rooted_paths import ROOT_PATH_KEY
 import pytest
 
-class TestObservableRootedPaths:
-    """Test cases for ObservableRootedPaths."""
+class TestXRootedPaths:
+    """Test cases for XRootedPaths."""
 
     def setup_method(self):
         """Set up test fixtures."""
@@ -43,7 +43,7 @@ class TestObservableRootedPaths:
 
     def test_initialization_with_no_values(self):
         """Test initialization with no initial values."""
-        manager = ObservableRootedPaths[str]()
+        manager = XRootedPaths[str]()
         
         # Check that root path is None
         assert manager.root_path is None
@@ -55,7 +55,7 @@ class TestObservableRootedPaths:
 
     def test_initialization_with_root_path_only(self):
         """Test initialization with only root path."""
-        manager = ObservableRootedPaths[str](root_path_initial_value=self.test_root)
+        manager = XRootedPaths[str](root_path_initial_value=self.test_root)
         
         # Check that root path is set correctly
         assert manager.root_path == self.test_root
@@ -73,7 +73,7 @@ class TestObservableRootedPaths:
             "logs": "logs/"
         }
         
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             rooted_elements_initial_relative_path_values=initial_values
         )
         
@@ -96,7 +96,7 @@ class TestObservableRootedPaths:
             "logs": "logs/"
         }
         
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
@@ -122,7 +122,7 @@ class TestObservableRootedPaths:
 
     def test_element_key_conversion_methods(self):
         """Test the element key to path key conversion methods."""
-        manager = ObservableRootedPaths[str]()
+        manager = XRootedPaths[str]()
         
         # Test relative path key conversion
         assert manager.element_key_to_relative_path_key("data") == "data_relative_path"
@@ -134,7 +134,7 @@ class TestObservableRootedPaths:
 
     def test_set_root_path(self):
         """Test setting the root path."""
-        manager = ObservableRootedPaths[str]()
+        manager = XRootedPaths[str]()
         
         # Set root path
         success, _ = manager.set_root_path(self.test_root)
@@ -149,7 +149,7 @@ class TestObservableRootedPaths:
     def test_set_relative_path(self):
         """Test setting relative paths for elements."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             rooted_elements_initial_relative_path_values=initial_values
         )
         
@@ -163,7 +163,7 @@ class TestObservableRootedPaths:
     def test_set_absolute_path(self):
         """Test setting absolute paths for elements (should be automatically calculated)."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
@@ -182,7 +182,7 @@ class TestObservableRootedPaths:
     def test_get_relative_path_hook(self):
         """Test getting relative path hooks."""
         initial_values: dict[str, str|None] = {"data": "data/", "config": "config/"}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             rooted_elements_initial_relative_path_values=initial_values
         )
         
@@ -197,7 +197,7 @@ class TestObservableRootedPaths:
     def test_get_absolute_path_hook(self):
         """Test getting absolute path hooks."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
@@ -214,7 +214,7 @@ class TestObservableRootedPaths:
     def test_validation_with_valid_values(self):
         """Test validation with valid values."""
         initial_values: dict[str, str|None] = {"data": "data/", "config": "config/"}
-        manager = ObservableRootedPaths(
+        manager = XRootedPaths(
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
@@ -230,7 +230,7 @@ class TestObservableRootedPaths:
     def test_validation_with_invalid_root_path(self):
         """Test validation with invalid root path."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             rooted_elements_initial_relative_path_values=initial_values
         )
         
@@ -242,7 +242,7 @@ class TestObservableRootedPaths:
     def test_automatic_absolute_path_calculation(self):
         """Test that absolute paths are automatically calculated when root or relative paths change."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
@@ -273,7 +273,7 @@ class TestObservableRootedPaths:
     def test_hook_keys_retrieval(self):
         """Test getting all hook keys."""
         initial_values: dict[str, str|None] = {"data": "data/", "config": "config/"}
-        manager = ObservableRootedPaths(
+        manager = XRootedPaths(
             rooted_elements_initial_relative_path_values=initial_values
         )
         
@@ -290,7 +290,7 @@ class TestObservableRootedPaths:
     def test_hook_key_retrieval(self):
         """Test getting hook key from hook or nexus."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths(
+        manager = XRootedPaths(
             rooted_elements_initial_relative_path_values=initial_values
         )
         
@@ -306,7 +306,7 @@ class TestObservableRootedPaths:
 
     def test_hook_key_retrieval_with_nonexistent_hook(self):
         """Test getting hook key with nonexistent hook."""
-        manager = ObservableRootedPaths[str]()
+        manager = XRootedPaths[str]()
         
         # Create a mock hook that doesn't exist in the manager
         mock_hook = Mock()
@@ -317,7 +317,7 @@ class TestObservableRootedPaths:
     def test_value_reference_retrieval(self):
         """Test getting value references from hooks."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths(
+        manager = XRootedPaths(
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
@@ -332,14 +332,14 @@ class TestObservableRootedPaths:
 
     def test_value_reference_retrieval_with_nonexistent_key(self):
         """Test getting value reference with nonexistent key."""
-        manager = ObservableRootedPaths[str]()
+        manager = XRootedPaths[str]()
         
         with pytest.raises(ValueError):
             manager._get_value_by_key("nonexistent_key") # type: ignore
 
     def test_serialization_callback(self):
         """Test the complete serialization and deserialization cycle."""
-        # Step 1: Create an ObservableRootedPaths instance
+        # Step 1: Create an XRootedPaths instance
         initial_values: dict[str, str|None] = {
             "data": "data/",
             "config": "config/settings/",
@@ -347,7 +347,7 @@ class TestObservableRootedPaths:
             "cache": None
         }
         
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
@@ -384,8 +384,8 @@ class TestObservableRootedPaths:
         # Step 4: Delete the object
         del manager
         
-        # Step 5: Create a fresh ObservableRootedPaths instance
-        manager_restored = ObservableRootedPaths[str](
+        # Step 5: Create a fresh XRootedPaths instance
+        manager_restored = XRootedPaths[str](
             root_path_initial_value=None,
             rooted_elements_initial_relative_path_values={
                 "data": None,
@@ -426,7 +426,7 @@ class TestObservableRootedPaths:
             "temp": "temp/"
         }
         
-        manager = ObservableRootedPaths(
+        manager = XRootedPaths(
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
@@ -467,7 +467,7 @@ class TestObservableRootedPaths:
         """Test edge cases and error conditions."""
         # Test with empty string relative paths
         initial_values = {"data": "", "config": None}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
@@ -489,7 +489,7 @@ class TestObservableRootedPaths:
     def test_type_safety(self):
         """Test type safety with different path types."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
@@ -503,15 +503,15 @@ class TestObservableRootedPaths:
         assert manager.get_absolute_path_hook("data").value == expected_abs_path
 
     def test_binding_with_observable_single_value_root_path(self):
-        """Test binding root path hook to ObservableSingleValue and changing it."""
+        """Test binding root path hook to XValue and changing it."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
         
-        # Create ObservableSingleValue for root path
-        root_path_observable = ObservableSingleValue[Path|None](self.test_root)
+        # Create XValue for root path
+        root_path_observable = XValue[Path|None](self.test_root)
         
         # Connect the root path hook to the observable
         root_path_hook: Hook[Path|None] = manager._get_hook_by_key(ROOT_PATH_KEY) # type: ignore
@@ -526,27 +526,27 @@ class TestObservableRootedPaths:
         new_root.mkdir()
         root_path_observable.value = new_root
         
-        # Verify that ObservableRootedPaths updated
+        # Verify that XRootedPaths updated
         assert manager.root_path == new_root
         assert manager.get_absolute_path_hook("data").value == new_root / "data/"
         
         # Change back to None
         root_path_observable.value = None # type: ignore
         
-        # Verify that ObservableRootedPaths updated
+        # Verify that XRootedPaths updated
         assert manager.root_path is None
         assert manager.get_absolute_path_hook("data").value is None
 
     def test_binding_with_observable_single_value_relative_path(self):
-        """Test binding relative path hook to ObservableSingleValue and changing it."""
+        """Test binding relative path hook to XValue and changing it."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
         
-        # Create ObservableSingleValue for relative path
-        relative_path_observable = ObservableSingleValue[str|None]("data/")
+        # Create XValue for relative path
+        relative_path_observable = XValue[str|None]("data/")
         
         # Connect the relative path hook to the observable
         relative_path_hook: HookWithOwnerProtocol[Optional[str]] = manager.get_relative_path_hook("data")
@@ -559,27 +559,27 @@ class TestObservableRootedPaths:
         # Change the relative path through the observable
         relative_path_observable.value = "new_data/"
         
-        # Verify that ObservableRootedPaths updated
+        # Verify that XRootedPaths updated
         assert manager.get_relative_path_hook("data").value == "new_data/"
         assert manager.get_absolute_path_hook("data").value == self.test_root / "new_data/"
         
         # Change to empty string (None would violate validation since root path is set)
         relative_path_observable.value = ""
         
-        # Verify that ObservableRootedPaths updated
+        # Verify that XRootedPaths updated
         assert manager.get_relative_path_hook("data").value == ""
         assert manager.get_absolute_path_hook("data").value == self.test_root / ""
 
     def test_binding_with_observable_single_value_absolute_path(self):
-        """Test binding absolute path hook to ObservableSingleValue and changing it."""
+        """Test binding absolute path hook to XValue and changing it."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
         
-        # Create ObservableSingleValue for absolute path
-        absolute_path_observable = ObservableSingleValue[Path|None](self.test_root / "data/")
+        # Create XValue for absolute path
+        absolute_path_observable = XValue[Path|None](self.test_root / "data/")
         
         # Connect the absolute path hook to the observable
         absolute_path_hook: HookWithOwnerProtocol[Optional[Path]] = manager.get_absolute_path_hook("data")
@@ -592,33 +592,33 @@ class TestObservableRootedPaths:
         new_absolute_path = self.test_root / "data/"  # Keep it consistent with relative path
         absolute_path_observable.value = new_absolute_path
         
-        # Verify that ObservableRootedPaths updated
+        # Verify that XRootedPaths updated
         assert manager.get_absolute_path_hook("data").value == new_absolute_path
         
         # Change to a different valid absolute path (must match root + relative)
         different_absolute_path = self.test_root / "data/"  # Keep it consistent
         absolute_path_observable.value = different_absolute_path
         
-        # Verify that ObservableRootedPaths updated
+        # Verify that XRootedPaths updated
         assert manager.get_absolute_path_hook("data").value == different_absolute_path
 
     def test_binding_multiple_hooks_to_observable_single_values(self):
-        """Test binding multiple hooks to different ObservableSingleValue instances."""
+        """Test binding multiple hooks to different XValue instances."""
         initial_values: dict[str, str|None] = {
             "data": "data/",
             "config": "config/",
             "logs": "logs/"
         }
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
         
-        # Create ObservableSingleValue instances for different paths
-        root_observable = ObservableSingleValue(self.test_root)
-        data_relative_observable = ObservableSingleValue("data/")
-        config_relative_observable = ObservableSingleValue("config/")
-        logs_absolute_observable = ObservableSingleValue(self.test_root / "logs/")
+        # Create XValue instances for different paths
+        root_observable = XValue(self.test_root)
+        data_relative_observable = XValue("data/")
+        config_relative_observable = XValue("config/")
+        logs_absolute_observable = XValue(self.test_root / "logs/")
         
         # Connect hooks to observables
         root_path_hook: Hook[Path|None] = manager._get_hook_by_key(ROOT_PATH_KEY) # type: ignore
@@ -669,15 +669,15 @@ class TestObservableRootedPaths:
         assert manager.get_absolute_path_hook("logs").value == new_logs_path
 
     def test_bidirectional_binding_with_observable_single_value(self):
-        """Test bidirectional binding between ObservableRootedPaths and ObservableSingleValue."""
+        """Test bidirectional binding between XRootedPaths and XValue."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
         
-        # Create ObservableSingleValue for root path
-        root_path_observable = ObservableSingleValue(self.test_root)
+        # Create XValue for root path
+        root_path_observable = XValue(self.test_root)
         
         # Connect bidirectionally
         root_path_hook: Hook[Path|None] = manager._get_hook_by_key(ROOT_PATH_KEY) # type: ignore
@@ -688,36 +688,36 @@ class TestObservableRootedPaths:
         assert manager.root_path == self.test_root
         assert root_path_observable.value == self.test_root
         
-        # Change through ObservableRootedPaths
+        # Change through XRootedPaths
         new_root = Path(self.temp_dir) / "new_project"
         new_root.mkdir()
         manager.set_root_path(new_root)
         
-        # Verify that ObservableSingleValue updated
+        # Verify that XValue updated
         assert manager.root_path == new_root
         assert root_path_observable.value == new_root
         
-        # Change through ObservableSingleValue
+        # Change through XValue
         another_root = Path(self.temp_dir) / "another_project"
         another_root.mkdir()
         root_path_observable.value = another_root
         
-        # Verify that ObservableRootedPaths updated
+        # Verify that XRootedPaths updated
         assert manager.root_path == another_root
         assert root_path_observable.value == another_root
 
     def test_binding_chain_with_observable_single_values(self):
-        """Test a chain of bindings through multiple ObservableSingleValue instances."""
+        """Test a chain of bindings through multiple XValue instances."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
         
-        # Create a chain of ObservableSingleValue instances
-        root_observable1 = ObservableSingleValue(self.test_root)
-        root_observable2 = ObservableSingleValue(self.test_root)
-        root_observable3 = ObservableSingleValue(self.test_root)
+        # Create a chain of XValue instances
+        root_observable1 = XValue(self.test_root)
+        root_observable2 = XValue(self.test_root)
+        root_observable3 = XValue(self.test_root)
         
         # Connect in a chain: manager -> observable1 -> observable2 -> observable3
         root_path_hook: Hook[Path|None] = manager._get_hook_by_key(ROOT_PATH_KEY) # type: ignore
@@ -747,14 +747,14 @@ class TestObservableRootedPaths:
         assert manager.get_absolute_path_hook("data").value == new_root / "data/"
 
     def test_binding_with_validation_and_observable_single_value(self):
-        """Test that validation works correctly when binding to ObservableSingleValue."""
+        """Test that validation works correctly when binding to XValue."""
         initial_values: dict[str, str|None] = {"data": "data/"}
-        manager = ObservableRootedPaths[str](
+        manager = XRootedPaths[str](
             root_path_initial_value=self.test_root,
             rooted_elements_initial_relative_path_values=initial_values
         )
         
-        # Create ObservableSingleValue with validation
+        # Create XValue with validation
         def validate_path(path: Path|None) -> tuple[bool, str]:
             if path is None:
                 return True, "None is valid"
@@ -764,7 +764,7 @@ class TestObservableRootedPaths:
                 return False, "Path must exist"
             return True, "Valid path"
         
-        root_path_observable = ObservableSingleValue(self.test_root, validator=validate_path)
+        root_path_observable = XValue(self.test_root, validator=validate_path)
         
         # Connect the hooks
         root_path_hook: Hook[Path|None] = manager._get_hook_by_key(ROOT_PATH_KEY) # type: ignore

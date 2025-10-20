@@ -11,7 +11,7 @@ from logging import basicConfig, getLogger, DEBUG
 import time
 import pytest   
 
-from nexpy import ObservableSingleValue, ObservableList, ObservableSelectionDict
+from nexpy import XValue, XList, ObservableSelectionDict
 from nexpy.core import ComplexObservableBase
 
 basicConfig(level=DEBUG)
@@ -31,12 +31,12 @@ class TestCachePerformance:
     def test_get_key_cache_performance(self):
         """Test that get_key operations use O(1) cache after first access."""
         # Create an observable with a moderate number of hooks via binding
-        main_obs: ObservableSingleValue[Any] = ObservableSingleValue("main")
+        main_obs: XValue[Any] = XValue("main")
         bound_xobjects: list[ComplexObservableBase[Any, Any, Any, Any, "ComplexObservableBase[Any, Any, Any, Any, Any]"]] = []
         
         # Create bound observables to populate the hook nexus
         for i in range(50):
-            obs: ObservableSingleValue[Any] = ObservableSingleValue[Any](f"value_{i}")
+            obs: XValue[Any] = XValue[Any](f"value_{i}")
             obs.join(main_obs.hook, "use_caller_value")  # type: ignore
             bound_xobjects.append(obs) # type: ignore
         
@@ -72,7 +72,7 @@ class TestCachePerformance:
 
     def test_secondary_hook_cache_performance(self):
         """Test that secondary hook lookups are cached."""
-        obs_list: ObservableList[Any] = ObservableList[Any](list(range(100)))
+        obs_list: XList[Any] = XList[Any](list(range(100)))
         
         # Get the length secondary hook
         length_hook = obs_list.length_hook
@@ -100,7 +100,7 @@ class TestCachePerformance:
 
     def test_cache_effectiveness_across_operations(self):
         """Test that cache is effective across different operations that use get_key."""
-        obs = ObservableSingleValue("test")
+        obs = XValue("test")
         
         # Perform operations that internally use get_key
         operations: list[tuple[int, float, str]] = []
@@ -148,14 +148,14 @@ class TestScalabilityPerformance:
         
         for scale in scales:
             # Create observables
-            main_obs = ObservableSingleValue(f"main_{scale}")
-            bound_xobjects: list[ObservableSingleValue[Any]] = []
+            main_obs = XValue(f"main_{scale}")
+            bound_xobjects: list[XValue[Any]] = []
             
             # Time the binding operations
             start_time = time.perf_counter()
             
             for i in range(scale):
-                obs = ObservableSingleValue(f"value_{i}")
+                obs = XValue(f"value_{i}")
                 obs.join(main_obs.hook, "use_caller_value")  # type: ignore
                 bound_xobjects.append(obs)
             
@@ -191,7 +191,7 @@ class TestScalabilityPerformance:
         update_times: list[tuple[int, float]] = []
         
         for scale in scales:
-            obs_list = ObservableList(list(range(scale)))
+            obs_list = XList(list(range(scale)))
             
             # Time operations that trigger secondary hook updates
             start_time = time.perf_counter()
@@ -223,8 +223,8 @@ class TestScalabilityPerformance:
     def test_complex_operation_performance(self):
         """Test performance of complex operations involving multiple observables."""
         # Create a complex scenario with multiple observable types
-        obs_single = ObservableSingleValue("single")
-        obs_list = ObservableList([1, 2, 3])
+        obs_single = XValue("single")
+        obs_list = XList([1, 2, 3])
         obs_dict = ObservableSelectionDict({"key": "value"}, "key")
         
         # Create a simpler binding pattern that avoids nexus conflicts
@@ -233,7 +233,7 @@ class TestScalabilityPerformance:
         
         # Create a separate binding for obs_dict to avoid conflicts
         # Use a different approach: bind obs_dict.length_hook to a new observable
-        obs_dict_tracker = ObservableSingleValue(1)
+        obs_dict_tracker = XValue(1)
         obs_dict_tracker.join(obs_dict.length_hook, "use_target_value")  # type: ignore
         
         # Time complex operations
@@ -276,7 +276,7 @@ class TestPerformanceRegression:
 
     def test_value_setting_performance(self):
         """Test that basic value setting operations are fast."""
-        obs = ObservableSingleValue("initial")
+        obs = XValue("initial")
         
         # Time many value setting operations
         num_operations = 1000
@@ -293,7 +293,7 @@ class TestPerformanceRegression:
 
     def test_hook_access_performance(self):
         """Test that hook access operations are fast."""
-        obs = ObservableSingleValue("test")
+        obs = XValue("test")
         
         # Time many hook access operations
         num_operations = 1000
@@ -311,7 +311,7 @@ class TestPerformanceRegression:
 
     def test_listener_notification_performance(self):
         """Test that listener notifications don't cause performance regression."""
-        obs = ObservableSingleValue("initial")
+        obs = XValue("initial")
         
         # Add multiple listeners
         call_counts: list[list[int]] = []
@@ -355,7 +355,7 @@ class TestPerformanceRegression:
         
         # Perform many operations that should not accumulate memory
         for cycle in range(100):
-            obs = ObservableSingleValue(f"cycle_{cycle}")
+            obs = XValue(f"cycle_{cycle}")
             
             # Perform various operations
             obs.value = f"modified_{cycle}"

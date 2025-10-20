@@ -6,14 +6,14 @@ secondary hooks are properly recomputed when component values change.
 """
 
 import pytest
-from nexpy import ObservableList, ObservableSelectionDict, ObservableSet, ObservableSingleValue, ObservableSelectionSet as ObservableSelectionOption, ObservableOptionalSelectionSet as ObservableOptionalSelectionOption, ObservableMultiSelectionSet as ObservableMultiSelectionOption
+from nexpy import XList, ObservableSelectionDict, XSet, XValue, ObservableSelectionSet as XSetSelect, ObservableOptionalSelectionSet as XSetOptionalSelect, ObservableMultiSelectionSet as XSetMultiSelect
 
 class TestEmitterHooksBasicFunctionality:
     """Test basic secondary hook functionality."""
     
     def test_x_list_length_secondary_hook(self):
-        """Test that ObservableList has a length secondary hook."""
-        obs_list = ObservableList([1, 2, 3])
+        """Test that XList has a length secondary hook."""
+        obs_list = XList([1, 2, 3])
         
         # Check that length hook exists
         assert "length" in [key for key in obs_list._secondary_hooks.keys()] # type: ignore
@@ -38,8 +38,8 @@ class TestEmitterHooksBasicFunctionality:
         assert obs_dict.length == 2
     
     def test_observable_set_length_secondary_hook(self):
-        """Test that ObservableSet has a length secondary hook."""
-        obs_set = ObservableSet({1, 2, 3, 4})
+        """Test that XSet has a length secondary hook."""
+        obs_set = XSet({1, 2, 3, 4})
         
         # Check that length hook exists
         assert "length" in [key for key in obs_set._secondary_hooks.keys()] # type: ignore
@@ -51,8 +51,8 @@ class TestEmitterHooksBasicFunctionality:
         assert obs_set.length == 4
     
     def test_observable_tuple_length_secondary_hook(self):
-        """Test that ObservableList has a length secondary hook."""
-        obs_tuple = ObservableList((1, 2, 3, 4, 5))
+        """Test that XList has a length secondary hook."""
+        obs_tuple = XList((1, 2, 3, 4, 5))
         
         # Check that length hook exists
         assert "length" in [key for key in obs_tuple._secondary_hooks.keys()] # type: ignore
@@ -69,7 +69,7 @@ class TestEmitterHooksRecomputation:
     
     def test_x_list_length_updates_on_append(self):
         """Test that length secondary hook updates when list is modified."""
-        obs_list = ObservableList([1, 2])
+        obs_list = XList([1, 2])
         
         # Initial length should be 2
         assert obs_list.length == 2
@@ -83,7 +83,7 @@ class TestEmitterHooksRecomputation:
     
     def test_x_list_length_updates_on_clear(self):
         """Test that length secondary hook updates when list is cleared."""
-        obs_list = ObservableList([1, 2, 3, 4])
+        obs_list = XList([1, 2, 3, 4])
         
         # Initial length should be 4
         assert obs_list.length == 4
@@ -96,7 +96,7 @@ class TestEmitterHooksRecomputation:
     
     def test_x_list_length_updates_on_direct_assignment(self):
         """Test that length secondary hook updates when list_value is directly assigned."""
-        obs_list = ObservableList([1, 2])
+        obs_list = XList([1, 2])
         
         # Initial length should be 2
         assert obs_list.length == 2
@@ -122,7 +122,7 @@ class TestEmitterHooksRecomputation:
     
     def test_observable_set_length_updates_on_modification(self):
         """Test that length secondary hook updates when set is modified."""
-        obs_set = ObservableSet({1, 2, 3})
+        obs_set = XSet({1, 2, 3})
         
         # Initial length should be 3
         assert obs_set.length == 3
@@ -135,7 +135,7 @@ class TestEmitterHooksRecomputation:
     
     def test_observable_tuple_length_updates_on_modification(self):
         """Test that length secondary hook updates when tuple is modified."""
-        obs_tuple = ObservableList((1, 2, 3))
+        obs_tuple = XList((1, 2, 3))
         
         # Initial length should be 3
         assert obs_tuple.length == 3
@@ -151,8 +151,8 @@ class TestEmitterHooksSelection:
     """Test secondary hooks for selection observables."""
     
     def test_selection_option_number_of_available_options(self):
-        """Test that ObservableSelectionOption has number_of_available_options secondary hook."""
-        obs = ObservableSelectionOption("a", {"a", "b", "c"})
+        """Test that XSetSelect has number_of_available_options secondary hook."""
+        obs = XSetSelect("a", {"a", "b", "c"})
         
         # Check that hook exists
         assert "number_of_available_options" in [key for key in obs._secondary_hooks.keys()] # type: ignore
@@ -167,8 +167,8 @@ class TestEmitterHooksSelection:
         assert obs.number_of_available_options == 5, "Emitter hook should update when available options change"
     
     def test_optional_selection_option_number_of_available_options(self):
-        """Test that ObservableOptionalSelectionOption has number_of_available_options secondary hook."""
-        obs = ObservableOptionalSelectionOption(None, {"a", "b", "c"})
+        """Test that XSetOptionalSelect has number_of_available_options secondary hook."""
+        obs = XSetOptionalSelect(None, {"a", "b", "c"})
         
         # Check that hook exists  
         assert "number_of_available_options" in [key for key in obs._secondary_hooks.keys()] # type: ignore
@@ -183,8 +183,8 @@ class TestEmitterHooksSelection:
         assert obs.number_of_available_options == 2, "Emitter hook should update when available options change"
     
     def test_multi_selection_option_secondary_hooks(self):
-        """Test that ObservableMultiSelectionOption has multiple secondary hooks."""
-        obs = ObservableMultiSelectionOption({"a", "b"}, {"a", "b", "c", "d"})
+        """Test that XSetMultiSelect has multiple secondary hooks."""
+        obs = XSetMultiSelect({"a", "b"}, {"a", "b", "c", "d"})
         
         # Check that hooks exist
         assert "number_of_selected_options" in [key for key in obs._secondary_hooks.keys()] # type: ignore
@@ -212,7 +212,7 @@ class TestEmitterHooksListeners:
     
     def test_secondary_hook_listener_notification(self):
         """Test that listeners are notified when secondary hooks change."""
-        obs_list = ObservableList([1, 2])
+        obs_list = XList([1, 2])
         
         # Track listener calls
         listener_calls: list[int] = []
@@ -235,10 +235,10 @@ class TestEmitterHooksListeners:
     
     def test_secondary_hook_binding(self):
         """Test that secondary hooks can be bound to other observables."""
-        obs_list = ObservableList([1, 2, 3])
+        obs_list = XList([1, 2, 3])
         
         # Create another observable to bind to the length
-        length_tracker = ObservableSingleValue(0)
+        length_tracker = XValue(0)
         
         # Bind the length hook to the single value (reverse direction)
         length_hook = obs_list.length_hook
@@ -259,32 +259,32 @@ class TestSecondaryHooksEdgeCases:
     
     def test_empty_secondary_hooks(self):
         """Test observables with no secondary hooks."""
-        obs = ObservableSingleValue(42)
+        obs = XValue(42)
         
-        # ObservableSingleValue doesn't have secondary hooks
+        # XValue doesn't have secondary hooks
         assert not hasattr(obs, '_secondary_hooks')
         assert not hasattr(obs, '_secondary_hook_callbacks')
     
     def test_get_value_of_hook_with_invalid_key(self):
         """Test _get_value_by_key with invalid secondary hook key."""
-        obs_list = ObservableList([1, 2, 3])
+        obs_list = XList([1, 2, 3])
         
         with pytest.raises(ValueError, match="Key nonexistent not found"):
             obs_list._get_value_by_key("nonexistent") # type: ignore
     
     def test_get_hook_with_invalid_key(self):
         """Test _get_hook_by_key with invalid secondary hook key."""
-        obs_list = ObservableList([1, 2, 3])
+        obs_list = XList([1, 2, 3])
         
         with pytest.raises(ValueError, match="Key nonexistent not found"):
             obs_list._get_hook_by_key("nonexistent") # type: ignore
     
     def test_attach_to_secondary_hook(self):
         """Test attaching to secondary hooks."""
-        obs_list = ObservableList([1, 2, 3])
+        obs_list = XList([1, 2, 3])
         
-        from nexpy import ObservableSingleValue
-        target = ObservableSingleValue(0)
+        from nexpy import XValue
+        target = XValue(0)
         
         # Should be able to attach to secondary hook
         obs_list.join_by_key("length", target.hook, "use_caller_value") # type: ignore

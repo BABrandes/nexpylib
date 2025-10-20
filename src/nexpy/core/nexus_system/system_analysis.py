@@ -133,7 +133,7 @@ def _get_hook_info(carries_hook: CarriesSomeHooksProtocol[Any, Any], hook: Hook[
             hook_key = "unknown"
             hook_type = "unknown"
     
-    # Check if this is a BaseObservable to get more specific info
+    # Check if this is a BaseXObject to get more specific info
     observable_type = "Unknown"
     if hasattr(carries_hook, '__class__'):
         observable_type = carries_hook.__class__.__name__
@@ -141,7 +141,7 @@ def _get_hook_info(carries_hook: CarriesSomeHooksProtocol[Any, Any], hook: Hook[
     # Format the hook information
     hook_info = f"key='{hook_key}' ({hook_type})"
     
-    # Add additional info for BaseObservable instances
+    # Add additional info for BaseXObject instances
     if hasattr(carries_hook, '_primary_hooks') and hasattr(carries_hook, '_secondary_hooks'):
         if hook_type == "primary":
             hook_info += f" [Primary Hook]"

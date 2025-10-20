@@ -16,12 +16,12 @@ ROOT_PATH_KEY: str = "root_path"
 class XRootedPaths(CarriesSomeHooksBase[str, str|Path|None, "XRootedPaths"], XObjectSerializableMixin[str, str|Path|None], Generic[EK]):
     """
     Manages a root directory with associated elements (files or directories) and provides
-    observable hooks for path management.
+    X object hooks for path management.
 
     This class maintains a root directory path and a set of elements that are relative
     to this root. It automatically computes absolute paths for each element based on the
     root directory and the element's relative path. All paths are exposed through
-    observable hooks that can be linked to UI components or other systems.
+    X object hooks that can be linked to UI components or other systems.
 
     The class provides three types of hooks:
     1. Root directory hook: Exposes the root directory path (Path or None)
@@ -38,7 +38,7 @@ class XRootedPaths(CarriesSomeHooksBase[str, str|Path|None, "XRootedPaths"], XOb
         logger: Optional logger for debugging and error reporting.
 
     Example:
-        >>> manager = ObservableRootedPaths(Path("/project"), {"data": "data/", "config": "config/"})
+        >>> manager = XRootedPaths(Path("/project"), {"data": "data/", "config": "config/"})
         >>> manager.get_relative_path_hook("data").submit_single_value("data/")
         >>> # Absolute path for "data" will automatically be "/project/data/"
 

@@ -6,7 +6,7 @@ from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_complex_base import ComplexObservableBase
+from ...x_objects_base.x_complex_base import XComplexBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
@@ -15,7 +15,7 @@ from .utils import likely_settable
 
 T = TypeVar("T")
 
-class XSelectionSet(ComplexObservableBase[Literal["selected_option", "available_options"], Literal["number_of_available_options"], T | Iterable[T], int, "XSelectionSet[T]"], XSelectionOptionsProtocol[T], Generic[T]):
+class XSelectionSet(XComplexBase[Literal["selected_option", "available_options"], Literal["number_of_available_options"], T | Iterable[T], int, "XSelectionSet[T]"], XSelectionOptionsProtocol[T], Generic[T]):
 
     def __init__(
         self,

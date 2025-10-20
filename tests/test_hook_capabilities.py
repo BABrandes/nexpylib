@@ -25,7 +25,7 @@ class MockObservable(ComplexObservableBase[Any, Any, Any, Any, "MockObservable"]
         super().__init__(initial_hook_values=initial_values)
     
     def _act_on_invalidation(self, keys: set[Any]) -> None:
-        """Act on invalidation - required by BaseObservable."""
+        """Act on invalidation - required by BaseXObject."""
         pass
     
     def _get_key_by_hook_or_nexus(self, hook_or_nexus: Any) -> Any:

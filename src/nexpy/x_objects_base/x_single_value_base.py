@@ -21,9 +21,9 @@ class XValueBase(ListeningBase, CarriesSomeHooksBase[Literal["value"], T, "XValu
     """
     Base class for single-value observables with transitive synchronization via Nexus fusion.
     
-    This class provides the core implementation for observables that wrap a single value,
+    This class provides the core implementation for X objects that wrap a single value,
     including hook management, validation, and synchronization. It serves as the foundation
-    for ObservableSingleValue and similar single-value observable types.
+    for XValue and similar single-value X object types.
     
     The class handles:
     - Hook creation and management

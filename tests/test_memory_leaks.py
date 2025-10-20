@@ -8,7 +8,7 @@ when they are no longer referenced.
 import gc
 import weakref
 
-from nexpy import ObservableSingleValue, ObservableSelectionDict, FloatingHook
+from nexpy import XValue, ObservableSelectionDict, FloatingHook
 
 from nexpy.core.nexus_system.nexus import Nexus
 
@@ -117,7 +117,7 @@ class TestMemoryLeaks:
     def test_observable_garbage_collection(self):
         """Test that observables and their hooks can be garbage collected."""
         # Create an observable
-        obs = ObservableSingleValue("test_value")
+        obs = XValue("test_value")
         obs_ref = weakref.ref(obs)
         
         # Verify the observable exists
@@ -208,7 +208,7 @@ class TestMemoryLeaks:
     def test_listener_memory_leaks(self):
         """Test that listeners don't prevent garbage collection."""
         # Create an observable
-        obs = ObservableSingleValue("test_value")
+        obs = XValue("test_value")
         obs_ref = weakref.ref(obs)
         
         # Add a listener
@@ -230,7 +230,7 @@ class TestMemoryLeaks:
         """Test that callbacks don't prevent garbage collection."""
         # Create an observable with callbacks
         
-        obs = ObservableSingleValue("test_value")
+        obs = XValue("test_value")
         obs_ref = weakref.ref(obs)
         
         # Delete the observable

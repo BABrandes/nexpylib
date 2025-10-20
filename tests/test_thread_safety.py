@@ -12,7 +12,7 @@ import pytest
 
 from unittest.mock import Mock
 
-from nexpy import ObservableSingleValue, ObservableList
+from nexpy import XValue, XList
 from nexpy.core import ComplexObservableBase
 
 
@@ -22,7 +22,7 @@ class TestThreadSafety:
 
     def test_concurrent_value_modifications(self):
         """Test that concurrent value modifications are thread-safe."""
-        obs = ObservableSingleValue("initial")
+        obs = XValue("initial")
         errors: list[str] = []
         num_threads = 5
         iterations_per_thread = 100
@@ -66,8 +66,8 @@ class TestThreadSafety:
             """Worker that creates and destroys bindings."""
             try:
                 for i in range(50):
-                    obs1 = ObservableSingleValue(f"worker_{worker_id}_obs1_{i}")
-                    obs2 = ObservableSingleValue(f"worker_{worker_id}_obs2_{i}")
+                    obs1 = XValue(f"worker_{worker_id}_obs1_{i}")
+                    obs2 = XValue(f"worker_{worker_id}_obs2_{i}")
                     
                     # Bind them
                     obs1.join(obs2.hook, "use_caller_value")
@@ -103,7 +103,7 @@ class TestThreadSafety:
 
     def test_listener_thread_safety(self):
         """Test thread safety of listener notifications."""
-        obs = ObservableSingleValue("initial")
+        obs = XValue("initial")
         listener_calls: list[str] = []
         errors: list[str] = []
         listener_lock = threading.Lock()
@@ -155,8 +155,8 @@ class TestThreadSafety:
         assert len(listener_calls) > 0, "Listeners should have been called"
 
     def test_x_list_thread_safety(self):
-        """Test thread safety specific to ObservableList operations."""
-        obs_list = ObservableList([1, 2, 3])
+        """Test thread safety specific to XList operations."""
+        obs_list = XList([1, 2, 3])
         errors: list[str] = []
         
         def list_modifier(thread_id: int):
@@ -193,7 +193,7 @@ class TestThreadSafety:
         for thread in threads:
             thread.join()
         
-        assert len(errors) == 0, f"ObservableList thread safety issues: {errors}"
+        assert len(errors) == 0, f"XList thread safety issues: {errors}"
         
         # Verify final list is in a consistent state
         final_list = obs_list.value
@@ -212,9 +212,9 @@ class TestThreadSafetyEdgeCases:
             """Rapidly create and destroy bindings."""
             try:
                 for i in range(100):
-                    obs1 = ObservableSingleValue(f"value1_{i}")
-                    obs2 = ObservableSingleValue(f"value2_{i}")
-                    obs3 = ObservableSingleValue(f"value3_{i}")
+                    obs1 = XValue(f"value1_{i}")
+                    obs2 = XValue(f"value2_{i}")
+                    obs3 = XValue(f"value3_{i}")
                     
                     # Create a chain: obs1 -> obs2 -> obs3
                     obs1.join(obs2.hook, "use_caller_value")
@@ -245,7 +245,7 @@ class TestThreadSafetyEdgeCases:
 
     def test_concurrent_secondary_hook_access(self):
         """Test concurrent access to secondary hooks."""
-        obs_list = ObservableList(list(range(100)))
+        obs_list = XList(list(range(100)))
         errors: list[str] = []
         length_values: list[int] = []
         length_lock = threading.Lock()
@@ -304,7 +304,7 @@ class TestThreadSafetyEdgeCases:
         
         # Create shared observables
         for i in range(10):
-            obs: ObservableSingleValue[Any] = ObservableSingleValue[Any](f"initial_{i}")
+            obs: XValue[Any] = XValue[Any](f"initial_{i}")
             observables.append(obs) # type: ignore
         
         def stress_worker(worker_id: int):
@@ -312,7 +312,7 @@ class TestThreadSafetyEdgeCases:
             try:
                 for i in range(100):
                     # Pick random observables
-                    obs1: ObservableSingleValue[Any] = observables[i % len(observables)] # type: ignore
+                    obs1: XValue[Any] = observables[i % len(observables)] # type: ignore
                     obs2 = observables[(i + 1) % len(observables)]
                     
                     # Perform various operations

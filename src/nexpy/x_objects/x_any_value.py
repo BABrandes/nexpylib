@@ -94,25 +94,25 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
         return f"XAV(value={self.value})"
     
     def __repr__(self) -> str:
-        """Return a string representation of the observable."""
+        """Return a string representation of the X object."""
         return f"XAnyValue({self.value!r})"
     
     def __hash__(self) -> int:
-        """Make the observable hashable for use in sets and as dictionary keys."""
+        """Make the X object hashable for use in sets and as dictionary keys."""
         return hash(id(self))
     
     def __eq__(self, other: object) -> bool:
-        """Check if this observable equals another object."""
+        """Check if this X object equals another object."""
         if isinstance(other, XAnyValue):
             return id(self) == id(other) # type: ignore
         return False
     
     def __ne__(self, other: Any) -> bool:
         """
-        Compare inequality with another value or observable.
+        Compare inequality with another value or X object.
         
         Args:
-            other: Value or ObservableSingleValue to compare with
+            other: Value or XAnyValue to compare with
             
         Returns:
             True if values are not equal, False otherwise
@@ -121,10 +121,10 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
     
     def __lt__(self, other: Any) -> bool:
         """
-        Compare if this value is less than another value or observable.
+        Compare if this value is less than another value or X object.
         
         Args:
-            other: Value or ObservableSingleValue to compare with
+            other: Value or XAnyValue to compare with
             
         Returns:
             True if this value is less than the other, False otherwise
@@ -135,10 +135,10 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
     
     def __le__(self, other: Any) -> bool:
         """
-        Compare if this value is less than or equal to another value or observable.
+        Compare if this value is less than or equal to another value or X object.
         
         Args:
-            other: Value or ObservableSingleValue to compare with
+            other: Value or XAnyValue to compare with
             
         Returns:
             True if this value is less than or equal to the other, False otherwise
@@ -149,10 +149,10 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
     
     def __gt__(self, other: Any) -> bool:
         """
-        Compare if this value is greater than another value or observable.
+        Compare if this value is greater than another value or X object.
         
         Args:
-            other: Value or ObservableSingleValue to compare with
+            other: Value or XAnyValue to compare with
             
         Returns:
             True if this value is greater than the other, False otherwise
@@ -163,10 +163,10 @@ class XAnyValue(XValueBase[T], CarriesSingleHookProtocol[T], Generic[T]):
     
     def __ge__(self, other: Any) -> bool:
         """
-        Compare if this value is greater than or equal to another value or observable.
+        Compare if this value is greater than or equal to another value or X object.
         
         Args:
-            other: Value or ObservableSingleValue to compare with
+            other: Value or XAnyValue to compare with
             
         Returns:
             True if this value is greater than or equal to the other, False otherwise

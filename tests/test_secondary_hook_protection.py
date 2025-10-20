@@ -7,7 +7,7 @@ Secondary values should only be changed through primary value updates.
 
 import pytest
 
-from nexpy import ObservableList, ObservableSingleValue
+from nexpy import XList, XValue
 
 class TestSecondaryHookProtection:
     """Tests for preventing external modification of secondary hooks."""
@@ -15,7 +15,7 @@ class TestSecondaryHookProtection:
     def test_cannot_directly_modify_length_hook_on_x_list(self):
         """Test that attempting to modify a list's length hook directly fails."""
         # Create an observable list with some items
-        obs_list = ObservableList([1, 2, 3])
+        obs_list = XList([1, 2, 3])
         
         # Get the length hook
         length_hook = obs_list.length_hook
@@ -37,10 +37,10 @@ class TestSecondaryHookProtection:
     def test_cannot_modify_length_through_connected_hook(self):
         """Test that connecting to a length hook and trying to modify it fails."""
         # Create an observable list
-        obs_list = ObservableList([1, 2, 3])
+        obs_list = XList([1, 2, 3])
         
         # Create a single value observable and connect it to the length hook
-        length_observer = ObservableSingleValue[int](obs_list.length_hook)
+        length_observer = XValue[int](obs_list.length_hook)
         
         # Verify initial state
         assert obs_list.length == 3
@@ -58,10 +58,10 @@ class TestSecondaryHookProtection:
     def test_length_updates_when_list_changes(self):
         """Test that length hook updates correctly when the list is modified through primary values."""
         # Create an observable list
-        obs_list = ObservableList([1, 2, 3])
+        obs_list = XList([1, 2, 3])
         
         # Create a connected observer for length
-        length_observer = ObservableSingleValue[int](obs_list.length_hook)
+        length_observer = XValue[int](obs_list.length_hook)
         
         # Track changes
         changes: list[int] = []
@@ -84,10 +84,10 @@ class TestSecondaryHookProtection:
     def test_multiple_secondary_hooks_protection(self):
         """Test protection works when there are multiple secondary hooks."""
         # Create an observable list with multiple observers on secondary values
-        obs_list = ObservableList([10, 20, 30])
+        obs_list = XList([10, 20, 30])
         
         # Connect to length hook
-        _ = ObservableSingleValue(obs_list.length_hook)
+        _ = XValue(obs_list.length_hook)
         
         # Try to submit both primary and wrong secondary value
         success, msg = obs_list.submit_values_by_keys({"value": (1, 2), "length": 5}, raise_submission_error_flag=False) # type: ignore
@@ -101,7 +101,7 @@ class TestSecondaryHookProtection:
     def test_correct_secondary_value_submission_allowed(self):
         """Test that submitting the correct secondary value (matching internal) is allowed."""
         # Create an observable list
-        obs_list = ObservableList([1, 2, 3])
+        obs_list = XList([1, 2, 3])
         
         # Submit values where the secondary value matches what it should be
         # When submitting value=(1, 2), length should be 2
@@ -115,7 +115,7 @@ class TestSecondaryHookProtection:
     def test_secondary_value_equality_check_uses_nexus_manager(self):
         """Test that secondary value comparison respects nexus manager equality."""
         # Create an observable list
-        obs_list = ObservableList([1, 2, 3])
+        obs_list = XList([1, 2, 3])
         
         # Try to submit with a float that equals the int length
         # The nexus manager should handle this based on its equality rules
@@ -129,10 +129,10 @@ class TestSecondaryHookProtection:
     def test_length_hook_bidirectional_binding_blocked(self):
         """Test that bidirectional binding to a secondary hook doesn't allow reverse modification."""
         # Create two observable lists
-        list1 = ObservableList([1, 2, 3])
+        list1 = XList([1, 2, 3])
         
         # Create a single value that's bound to the length
-        length_copy = ObservableSingleValue[int](list1.length_hook)
+        length_copy = XValue[int](list1.length_hook)
         
         # Verify initial state
         assert list1.length == 3
@@ -153,7 +153,7 @@ class TestSecondaryHookProtection:
 
     def test_secondary_hook_listener_notifications(self):
         """Test that listeners on secondary hooks receive notifications correctly."""
-        obs_list = ObservableList([1, 2])
+        obs_list = XList([1, 2])
         
         # Add listener to length hook
         length_changes: list[int] = []
@@ -172,7 +172,7 @@ class TestSecondaryHookProtection:
 
     def test_empty_list_secondary_value_protection(self):
         """Test secondary value protection with empty lists."""
-        obs_list = ObservableList[int]([])
+        obs_list = XList[int]([])
         
         assert obs_list.length == 0
         
@@ -189,8 +189,8 @@ class TestSecondaryHookProtection:
 
     def test_list_operations_maintain_secondary_consistency(self):
         """Test that all list operations maintain secondary value consistency."""
-        obs_list = ObservableList([1, 2, 3])
-        length_obs = ObservableSingleValue(obs_list.length_hook)
+        obs_list = XList([1, 2, 3])
+        length_obs = XValue(obs_list.length_hook)
         
         # Test various operations
         operations = [

@@ -10,7 +10,7 @@ import weakref
 from typing import Any
 import pytest
 from nexpy import (
-    ObservableSingleValue, ObservableList, ObservableSet, ObservableDict,
+    XValue, XList, XSet, XDict,
     ObservableSelectionDict, ObservableOptionalSelectionDict, ReadOnlyHook
 )
 from nexpy.x_objects_base.carries_some_hooks_base import CarriesSomeHooksBase
@@ -21,7 +21,7 @@ class TestEssentialMemoryManagement:
 
     def test_simple_observable_cleanup(self):
         """Test that simple observables are cleaned up."""
-        obs = ObservableSingleValue("test")
+        obs = XValue("test")
         obs_ref = weakref.ref(obs)
         
         del obs
@@ -31,7 +31,7 @@ class TestEssentialMemoryManagement:
 
     def test_observable_with_simple_listeners(self):
         """Test cleanup with simple listeners."""
-        obs = ObservableSingleValue("test")
+        obs = XValue("test")
         
         call_count = [0]
         def listener():
@@ -52,8 +52,8 @@ class TestEssentialMemoryManagement:
 
     def test_simple_binding_cleanup(self):
         """Test cleanup of simply bound observables."""
-        obs1 = ObservableSingleValue("value1")
-        obs2 = ObservableSingleValue("value2")
+        obs1 = XValue("value1")
+        obs2 = XValue("value2")
         
         # Bind them
         obs1.join(obs2.hook, "use_caller_value")  # type: ignore
@@ -73,7 +73,7 @@ class TestEssentialMemoryManagement:
 
     def test_secondary_hook_basic_cleanup(self):
         """Test basic cleanup of observables with secondary hooks."""
-        obs_list = ObservableList([1, 2, 3])
+        obs_list = XList([1, 2, 3])
         
         # Access secondary hook
         length_hook = obs_list._get_hook_by_key("length")  # type: ignore
@@ -99,9 +99,9 @@ class TestEssentialMemoryManagement:
         
         # Create and destroy many observables
         for batch in range(5):
-            observables: list[ObservableSingleValue[Any]] = []
+            observables: list[XValue[Any]] = []
             for i in range(100):
-                obs = ObservableSingleValue(f"value_{batch}_{i}")
+                obs = XValue(f"value_{batch}_{i}")
                 observables.append(obs)
             
             # Use the observables
@@ -125,8 +125,8 @@ class TestEssentialMemoryManagement:
 
     def test_detached_xobjects_cleanup(self):
         """Test cleanup after detaching bindings."""
-        obs1 = ObservableSingleValue("value1")
-        obs2 = ObservableSingleValue("value2")
+        obs1 = XValue("value1")
+        obs2 = XValue("value2")
         
         # Bind, test, detach
         obs1.join(obs2.hook, "use_caller_value")
@@ -147,8 +147,8 @@ class TestEssentialMemoryManagement:
         assert obs2_ref() is None, "Detached observable 2 was not cleaned up"
 
     def test_observable_dict_operations(self):
-        """Test ObservableDict operations and cleanup."""
-        obs_dict = ObservableDict({"a": 1, "b": 2, "c": 3})
+        """Test XDict operations and cleanup."""
+        obs_dict = XDict({"a": 1, "b": 2, "c": 3})
         
         # Test basic operations
         assert obs_dict.dict["a"] == 1
@@ -168,11 +168,11 @@ class TestEssentialMemoryManagement:
         del obs_dict
         gc.collect()
         
-        assert obs_ref() is None, "ObservableDict was not cleaned up"
+        assert obs_ref() is None, "XDict was not cleaned up"
 
     def test_x_list_comprehensive_operations(self):
-        """Test various ObservableList operations."""
-        obs_list = ObservableList([1, 2, 3])
+        """Test various XList operations."""
+        obs_list = XList([1, 2, 3])
         
         # Test extend
         obs_list.extend([4, 5])
@@ -201,11 +201,11 @@ class TestEssentialMemoryManagement:
         del obs_list
         gc.collect()
         
-        assert obs_ref() is None, "ObservableList was not cleaned up"
+        assert obs_ref() is None, "XList was not cleaned up"
 
     def test_observable_set_comprehensive_operations(self):
-        """Test various ObservableSet operations."""
-        obs_set = ObservableSet({1, 2, 3})
+        """Test various XSet operations."""
+        obs_set = XSet({1, 2, 3})
         
         # Test add
         obs_set.add(4)
@@ -229,12 +229,12 @@ class TestEssentialMemoryManagement:
         del obs_set
         gc.collect()
         
-        assert obs_ref() is None, "ObservableSet was not cleaned up"
+        assert obs_ref() is None, "XSet was not cleaned up"
 
     def test_binding_with_target_value_mode(self):
         """Test binding with use_target_value mode."""
-        obs1 = ObservableSingleValue("value1")
-        obs2 = ObservableSingleValue("value2")
+        obs1 = XValue("value1")
+        obs2 = XValue("value2")
         
         # Bind with use_target_value - obs2's value wins
         obs1.join(obs2.hook, "use_target_value")  # type: ignore
@@ -255,7 +255,7 @@ class TestEssentialMemoryManagement:
 
     def test_multiple_listeners_cleanup(self):
         """Test cleanup with multiple listeners."""
-        obs = ObservableSingleValue("test")
+        obs = XValue("test")
         
         call_counts = [0, 0, 0]
         
@@ -286,8 +286,8 @@ class TestEssentialMemoryManagement:
             assert ref() is None
 
     def test_secondary_hooks_with_dict(self):
-        """Test secondary hooks with ObservableDict."""
-        obs_dict = ObservableDict({"x": 1, "y": 2})
+        """Test secondary hooks with XDict."""
+        obs_dict = XDict({"x": 1, "y": 2})
         
         # Access secondary hooks
         length_hook = obs_dict._get_hook_by_key("length")  # type: ignore
@@ -341,9 +341,9 @@ class TestEssentialMemoryManagement:
 
     def test_cross_type_secondary_hooks(self):
         """Test that secondary hooks from different types work correctly."""
-        obs_list = ObservableList([1, 2])
-        obs_set = ObservableSet({1, 2})
-        obs_dict = ObservableDict({"a": 1})
+        obs_list = XList([1, 2])
+        obs_set = XSet({1, 2})
+        obs_dict = XDict({"a": 1})
         
         # Get all length hooks
         list_length = obs_list._get_hook_by_key("length")  # type: ignore
@@ -378,13 +378,13 @@ class TestMemoryStressScenarios:
     @pytest.mark.slow
     def test_binding_memory_stress(self):
         """Stress test memory with many binding operations."""
-        weak_refs: list[weakref.ref[ObservableSingleValue[Any]]] = []
+        weak_refs: list[weakref.ref[XValue[Any]]] = []
         
         for cycle in range(20):
             # Create observables for this cycle
-            cycle_xobjects: list[ObservableSingleValue[Any]] = []
+            cycle_xobjects: list[XValue[Any]] = []
             for i in range(10):
-                obs = ObservableSingleValue(f"cycle_{cycle}_value_{i}")
+                obs = XValue(f"cycle_{cycle}_value_{i}")
                 cycle_xobjects.append(obs)
                 weak_refs.append(weakref.ref(obs))
             
@@ -424,9 +424,9 @@ class TestMemoryStressScenarios:
         
         # Create mixed observable types
         for i in range(20):
-            obs_single = ObservableSingleValue(f"single_{i}")
-            obs_list = ObservableList([i, i+1])
-            obs_set = ObservableSet({i, i+1})
+            obs_single = XValue(f"single_{i}")
+            obs_list = XList([i, i+1])
+            obs_set = XSet({i, i+1})
             
             observables.extend([obs_single, obs_list, obs_set])
             weak_refs.extend([
@@ -455,12 +455,12 @@ class TestMemoryStressScenarios:
 
     def test_dict_operations_stress(self):
         """Stress test with many dict operations."""
-        weak_refs: list[weakref.ref[ObservableDict[str, int]]] = []
+        weak_refs: list[weakref.ref[XDict[str, int]]] = []
         
         for cycle in range(15):
-            dicts: list[ObservableDict[str, int]] = []
+            dicts: list[XDict[str, int]] = []
             for i in range(10):
-                obs_dict = ObservableDict({"x": i, "y": i * 2})
+                obs_dict = XDict({"x": i, "y": i * 2})
                 dicts.append(obs_dict)
                 weak_refs.append(weakref.ref(obs_dict))
                 
@@ -520,10 +520,10 @@ class TestMemoryStressScenarios:
         def counter_listener():
             notification_count[0] += 1
         
-        observables: list[ObservableSingleValue[int]] = []
+        observables: list[XValue[int]] = []
         
         for i in range(50):
-            obs = ObservableSingleValue(i)
+            obs = XValue(i)
             obs.add_listener(counter_listener)
             observables.append(obs)
             
@@ -547,17 +547,17 @@ class TestMemoryStressScenarios:
 
     def test_complex_binding_chains(self):
         """Test complex binding chains cleanup."""
-        weak_refs: list[weakref.ref[ObservableSingleValue[str]]] = []
+        weak_refs: list[weakref.ref[XValue[str]]] = []
         
         for cycle in range(10):
             # Create a star topology of bindings
-            center = ObservableSingleValue(f"center_{cycle}")
-            satellites: list[ObservableSingleValue[str]] = []
+            center = XValue(f"center_{cycle}")
+            satellites: list[XValue[str]] = []
             
             weak_refs.append(weakref.ref(center))
             
             for i in range(10):
-                sat = ObservableSingleValue(f"sat_{cycle}_{i}")
+                sat = XValue(f"sat_{cycle}_{i}")
                 satellites.append(sat)
                 weak_refs.append(weakref.ref(sat))
                 

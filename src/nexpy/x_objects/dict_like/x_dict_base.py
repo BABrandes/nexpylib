@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_complex_base import ComplexObservableBase
+from ...x_objects_base.x_complex_base import XComplexBase
 from ...core.auxiliary.listening_base import ListeningBase
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.nexus_manager import NexusManager
@@ -16,7 +16,7 @@ KT = TypeVar("KT")  # Key type (can be Optional[K] for optional variants)
 VT = TypeVar("VT")  # Value type (can be Optional[V] for optional variants)
 
 class XDictBase(
-    ComplexObservableBase[
+    XComplexBase[
         Literal["dict", "key", "value"], 
         Literal["keys", "values", "length"], 
         Any, 
@@ -32,10 +32,10 @@ class XDictBase(
     ┌────────────────────────────────────┬───────────────┬────────────────────┐
     │ Variant                            │ if key is None│ if key not in dict │
     ├────────────────────────────────────┼───────────────┼────────────────────┤
-    │ ObservableSelectionDict            │     error     │       error        │
-    │ ObservableOptionalSelectionDict    │     None      │       error        │
-    │ ObservableDefaultSelectionDict     │     error     │      default       │
-    │ ObservableOptionalDefaultSelection │     None      │      default       │
+    │ XSelectionDict                     │     error     │       error        │
+    │ XOptionalSelectionDict             │     None      │       error        │
+    │ XSelectionDictWithDefault          │     error     │      default       │
+    │ XOptionalSelectionDictWithDefault  │     None      │      default       │
     └────────────────────────────────────┴───────────────┴────────────────────┘
     
     Type Parameters:
@@ -96,8 +96,8 @@ class XDictBase(
         # Initialize ListeningBase
         ListeningBase.__init__(self, logger)
         
-        # Initialize ComplexObservableBase
-        ComplexObservableBase.__init__(  # type: ignore
+        # Initialize XComplexBase
+        XComplexBase.__init__(  # type: ignore
             self,
             initial_hook_values={
                 "dict": dict_hook if isinstance(dict_hook, ManagedHookProtocol) else _initial_dict_value,
@@ -125,7 +125,7 @@ class XDictBase(
         Mapping[Literal["dict", "key", "value"], Any]
     ]:
         """
-        Create the add_values_to_be_updated_callback for this observable.
+        Create the add_values_to_be_updated_callback for this X object.
         
         This callback is responsible for completing partial value submissions.
         Each subclass implements its own logic for handling different combinations
@@ -143,7 +143,7 @@ class XDictBase(
         tuple[bool, str]
     ]:
         """
-        Create the validate_complete_values_in_isolation_callback for this observable.
+        Create the validate_complete_values_in_isolation_callback for this X object.
         
         This callback validates that a complete set of values (dict, key, value)
         represents a valid state. Each subclass can implement its own validation logic.

@@ -36,7 +36,7 @@ class XObjectSerializableMixin(Generic[HK, HV]):
     The serialization lifecycle follows these steps:
     
     1. **Create and use an observable:**
-       >>> obs = ObservableSingleValue(42)
+       >>> obs = XValue(42)
        >>> obs.value = 100
     
     2. **Serialize to get state:**
@@ -51,7 +51,7 @@ class XObjectSerializableMixin(Generic[HK, HV]):
        >>> serialized_data = json.load(file)
     
     5. **Create fresh observable:**
-       >>> obs_restored = ObservableSingleValue(0)  # Initial value doesn't matter
+       >>> obs_restored = XValue(0)  # Initial value doesn't matter
     
     6. **Restore state:**
        >>> obs_restored.set_values_from_serialization(serialized_data)
@@ -140,9 +140,9 @@ class XObjectSerializableMixin(Generic[HK, HV]):
     
     See Also:
     --------
-    - ObservableSingleValue: Simple serialization example
-    - ObservableList, ObservableDict, ObservableSet: Collection serialization
-    - ObservableRootedPaths: Complex multi-value serialization
+    - XValue: Simple serialization example
+    - XList, XDict, XSet: Collection serialization
+    - XRootedPaths: Complex multi-value serialization
     - ObservableSelectionEnum: Enum-based serialization
     """
 
@@ -159,7 +159,7 @@ class XObjectSerializableMixin(Generic[HK, HV]):
                             Only primary (non-computed) values are included.
         
         Example:
-            >>> obs = ObservableSingleValue(42)
+            >>> obs = XValue(42)
             >>> obs.value = 100
             >>> data = obs.get_values_for_serialization()
             >>> data

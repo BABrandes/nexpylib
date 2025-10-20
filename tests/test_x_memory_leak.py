@@ -6,13 +6,13 @@ from typing import Any
 import gc
 import weakref
 
-from nexpy import ObservableSingleValue
+from nexpy import XValue
 
 
 def test_observable_without_validator():
     """Test observable without validator."""
     # Create an observable without validator
-    obs = ObservableSingleValue("test_value")
+    obs = XValue("test_value")
     obs_ref = weakref.ref(obs)
     
     # Verify it exists
@@ -35,7 +35,7 @@ def test_observable_with_validator():
         return True, "Valid"
     
     # Create an observable with validator
-    obs = ObservableSingleValue("test_value", validator=validator)
+    obs = XValue("test_value", validator=validator)
     obs_ref = weakref.ref(obs)
     
     # Verify it exists

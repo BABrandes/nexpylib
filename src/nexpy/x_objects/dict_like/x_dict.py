@@ -3,7 +3,7 @@ from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_complex_base import ComplexObservableBase
+from ...x_objects_base.x_complex_base import XComplexBase
 from .protocols import XDictProtocol
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
@@ -11,7 +11,7 @@ from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
 K = TypeVar("K")
 V = TypeVar("V")
     
-class XDict(ComplexObservableBase[Literal["dict"], Literal["length", "keys", "values"], Mapping[K, V], int|set[K]|list[V], "XDict"], XDictProtocol[K, V], Generic[K, V]):
+class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], Mapping[K, V], int|set[K]|list[V], "XDict"], XDictProtocol[K, V], Generic[K, V]):
 
     def __init__(
         self,
@@ -60,7 +60,7 @@ class XDict(ComplexObservableBase[Literal["dict"], Literal["length", "keys", "va
             self._join("dict", hook, "use_target_value") # type: ignore
 
     #########################################################
-    # ObservableDictProtocol implementation
+    # XDictProtocol implementation
     #########################################################
 
     #-------------------------------- Dict --------------------------------
@@ -312,7 +312,7 @@ class XDict(ComplexObservableBase[Literal["dict"], Literal["length", "keys", "va
         return f"OD(dict={dict(self._primary_hooks['dict'].value)})"
     
     def __repr__(self) -> str:
-        return f"ObservableDict({dict(self._primary_hooks['dict'].value)})"
+        return f"XDict({dict(self._primary_hooks['dict'].value)})"
 
     #### ObservableSerializable implementation ####
 

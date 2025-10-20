@@ -3,7 +3,7 @@ from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_complex_base import ComplexObservableBase
+from ...x_objects_base.x_complex_base import XComplexBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
@@ -13,7 +13,7 @@ from .utils import likely_settable
 
 T = TypeVar("T")
    
-class XSet(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[T], int, "XSet"], XSetProtocol[T], Set[T], Generic[T]):
+class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "XSet"], XSetProtocol[T], Set[T], Generic[T]):
     """
     Acting like a set.
 
@@ -316,7 +316,7 @@ class XSet(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[T
         Check equality with another set or observable set.
         
         Args:
-            other: Another set or ObservableSet to compare with
+            other: Another set or XSet to compare with
             
         Returns:
             True if the sets contain the same elements, False otherwise
@@ -330,7 +330,7 @@ class XSet(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[T
         Check inequality with another set or observable set.
         
         Args:
-            other: Another set or ObservableSet to compare with
+            other: Another set or XSet to compare with
             
         Returns:
             True if the sets are not equal, False otherwise
@@ -342,7 +342,7 @@ class XSet(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[T
         Check if this set is a subset of another set or observable set.
         
         Args:
-            other: Another set or ObservableSet to check against
+            other: Another set or XSet to check against
             
         Returns:
             True if this set is a subset of the other, False otherwise
@@ -356,7 +356,7 @@ class XSet(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[T
         Check if this set is a proper subset of another set or observable set.
         
         Args:
-            other: Another set or ObservableSet to check against
+            other: Another set or XSet to check against
             
         Returns:
             True if this set is a proper subset of the other, False otherwise
@@ -370,7 +370,7 @@ class XSet(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[T
         Check if this set is a superset of another set or observable set.
         
         Args:
-            other: Another set or ObservableSet to check against
+            other: Another set or XSet to check against
             
         Returns:
             True if this set is a superset of the other, False otherwise
@@ -384,7 +384,7 @@ class XSet(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[T
         Check if this set is a proper superset of another set or observable set.
         
         Args:
-            other: Another set or ObservableSet to check against
+            other: Another set or XSet to check against
             
         Returns:
             True if this set is a proper superset of the other, False otherwise
@@ -398,7 +398,7 @@ class XSet(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[T
         Compute the intersection with another set or observable set.
         
         Args:
-            other: Another iterable or ObservableSet to intersect with
+            other: Another iterable or XSet to intersect with
             
         Returns:
             A new set containing elements common to both sets
@@ -412,7 +412,7 @@ class XSet(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[T
         Compute the union with another set or observable set.
         
         Args:
-            other: Another iterable or ObservableSet to union with
+            other: Another iterable or XSet to union with
             
         Returns:
             A new set containing all elements from both sets
@@ -426,7 +426,7 @@ class XSet(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[T
         Compute the difference with another set or observable set.
         
         Args:
-            other: Another iterable or ObservableSet to subtract from this set
+            other: Another iterable or XSet to subtract from this set
             
         Returns:
             A new set containing elements in this set but not in the other
@@ -440,7 +440,7 @@ class XSet(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[T
         Compute the symmetric difference with another set or observable set.
         
         Args:
-            other: Another iterable or ObservableSet to compute symmetric difference with
+            other: Another iterable or XSet to compute symmetric difference with
             
         Returns:
             A new set containing elements in either set but not in both

@@ -13,19 +13,18 @@ T = TypeVar("T")
 
 class XBlockNone(CarriesSomeHooksBase[Literal["value_without_none", "value_with_none"], T, "XBlockNone[T]"], Generic[T]):
     """
-    An observable that maintains two synchronized hooks and raises errors when None values are submitted.
-    
-    This observable is useful when you have code paths where types suggest Optional[T] but you know 
+    An X object that maintains two synchronized hooks and raises errors when None values are submitted.
+
+    This X object is useful when you have code paths where types suggest Optional[T] but you know 
     the value will never actually be None in practice. It provides runtime enforcement while maintaining 
     type safety and minimizing linter errors.
     
-    The observable manages two internal hooks that are always kept in sync:
+    The X object manages two internal hooks that are always kept in sync:
     - `hook_with_None`: Typed as Optional[T], can be connected to external hooks that allow None
     - `hook_without_None`: Typed as T, guarantees non-None values
     
-    Any attempt to submit None to either hook will raise a ValueError, ensuring your assumption
-    about non-None values is enforced at runtime.
-    
+    Any attempt to submit None to either hook will be rejected.
+
     Parameters
     ----------
     hook_without_None_or_value : HookProtocol[T] | None | T
@@ -66,7 +65,7 @@ class XBlockNone(CarriesSomeHooksBase[Literal["value_without_none", "value_with_
     --------
     Basic usage with an initial value:
     
-    >>> obs = ObservableBlockNone[int](
+    >>> obs = XBlockNone[int](
     ...     hook_without_None_or_value=42,
     ...     hook_with_None=None
     ... )
@@ -94,7 +93,7 @@ class XBlockNone(CarriesSomeHooksBase[Literal["value_without_none", "value_with_
     Connecting to external hooks:
     
     >>> external_hook = FloatingHook[int | None](50)
-    >>> obs = ObservableBlockNone[int](
+    >>> obs = XBlockNone[int](
     ...     hook_without_None_or_value=None,
     ...     hook_with_None=external_hook
     ... )
@@ -106,7 +105,7 @@ class XBlockNone(CarriesSomeHooksBase[Literal["value_without_none", "value_with_
     
     Use with listeners:
     
-    >>> obs = ObservableBlockNone[str](
+    >>> obs = XBlockNone[str](
     ...     hook_without_None_or_value="hello",
     ...     hook_with_None=None
     ... )
@@ -119,14 +118,14 @@ class XBlockNone(CarriesSomeHooksBase[Literal["value_without_none", "value_with_
     Notes
     -----
     - Both internal hooks are always kept synchronized
-    - The observable uses the sync system to propagate changes between hooks
+    - The X object uses the sync system to propagate changes between hooks
     - External hooks can be connected but should have matching initial values
     - The validation ensures both hooks always contain the same non-None value
     
     See Also
     --------
-    ObservableSingleValue : For simple single-value observables
-    ObservableSync : For custom synchronization logic between multiple values
+    XAnyValue/XValue : For simple single-value X objects
+    XSync : For custom synchronization logic between multiple values
     """
     def __init__(
         self,

@@ -4,7 +4,7 @@ from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_complex_base import ComplexObservableBase
+from ...x_objects_base.x_complex_base import XComplexBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
@@ -14,7 +14,7 @@ from .utils import can_be_list
 T = TypeVar("T")
   
 
-class XList(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[T], int, "XList"], XListProtocol[T], Generic[T]):
+class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "XList"], XListProtocol[T], Generic[T]):
     """
     Acting like a list.
 
@@ -57,7 +57,7 @@ class XList(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[
             self._join("value", hook, "use_target_value") # type: ignore
 
     #########################################################
-    # ObservableListProtocol implementation
+    # XListProtocol implementation
     #########################################################
 
     #-------------------------------- list value --------------------------------   
@@ -261,7 +261,7 @@ class XList(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[
         return f"OL(value={self._primary_hooks['value'].value})"
     
     def __repr__(self) -> str:
-        return f"ObservableList({self._primary_hooks['value'].value})"
+        return f"XList({self._primary_hooks['value'].value})"
     
     def __len__(self) -> int:
         """
@@ -360,7 +360,7 @@ class XList(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[
         Check equality with another list or observable list.
         
         Args:
-            other: Another list or ObservableList to compare with
+            other: Another list or XList to compare with
             
         Returns:
             True if the lists contain the same items in the same order, False otherwise
@@ -374,7 +374,7 @@ class XList(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[
         Check inequality with another list or observable list.
         
         Args:
-            other: Another list or ObservableList to compare with
+            other: Another list or XList to compare with
             
         Returns:
             True if the lists are not equal, False otherwise
@@ -386,7 +386,7 @@ class XList(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[
         Check if this list is less than another list or observable list.
         
         Args:
-            other: Another list or ObservableList to compare with
+            other: Another list or XList to compare with
             
         Returns:
             True if this list is lexicographically less than the other, False otherwise
@@ -400,7 +400,7 @@ class XList(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[
         Check if this list is less than or equal to another list or observable list.
         
         Args:
-            other: Another list or ObservableList to compare with
+            other: Another list or XList to compare with
             
         Returns:
             True if this list is lexicographically less than or equal to the other, False otherwise
@@ -414,7 +414,7 @@ class XList(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[
         Check if this list is greater than another list or observable list.
         
         Args:
-            other: Another list or ObservableList to compare with
+            other: Another list or XList to compare with
             
         Returns:
             True if this list is lexicographically greater than the other, False otherwise
@@ -428,7 +428,7 @@ class XList(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[
         Check if this list is greater than or equal to another list or observable list.
         
         Args:
-            other: Another list or ObservableList to compare with
+            other: Another list or XList to compare with
             
         Returns:
             True if this list is lexicographically greater than or equal to the other, False otherwise
@@ -442,7 +442,7 @@ class XList(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[
         Concatenate this list with another list or observable list.
         
         Args:
-            other: Another iterable or ObservableList to concatenate with
+            other: Another iterable or XList to concatenate with
             
         Returns:
             A new tuple containing all items from both collections

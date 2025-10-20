@@ -6,13 +6,13 @@ from typing import Any
 import gc
 import weakref
 
-from nexpy import ObservableSingleValue, ObservableSelectionDict
+from nexpy import XValue, ObservableSelectionDict
 
 
 def test_simple_observable_gc():
     """Test that simple observables can be garbage collected."""
     # Create an observable
-    obs = ObservableSingleValue("test_value")
+    obs = XValue("test_value")
     obs_ref = weakref.ref(obs)
     
     # Verify it exists
@@ -54,7 +54,7 @@ def test_complex_observable_gc():
 def test_observable_with_listeners_gc():
     """Test that observables with listeners can be garbage collected."""
     # Create an observable
-    obs = ObservableSingleValue("test_value")
+    obs = XValue("test_value")
     obs_ref = weakref.ref(obs)
     
     # Add a listener
@@ -79,7 +79,7 @@ def test_observable_with_validator_gc():
         return True, "Valid"
     
     # Create an observable with validator
-    obs = ObservableSingleValue("test_value", validator=validator)
+    obs = XValue("test_value", validator=validator)
     obs_ref = weakref.ref(obs)
     
     # Delete the observable

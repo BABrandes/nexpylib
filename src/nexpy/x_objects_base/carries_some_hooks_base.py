@@ -325,7 +325,7 @@ class CarriesSomeHooksBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProt
         should not be used anymore as it will be in an invalid state.
         
         Example:
-            >>> obs = ObservableSingleValue("test")
+            >>> obs = XValue("test")
             >>> obs.cleanup()  # Properly clean up before deletion
             >>> del obs
         """

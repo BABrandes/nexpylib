@@ -1,15 +1,15 @@
 
-from nexpy import ObservableSet
+from nexpy import XSet
 
 from tests.test_base import ObservableTestCase
 import pytest
 
-class TestObservableSet(ObservableTestCase):
-    """Test cases for ObservableSet"""
+class TestXSet(ObservableTestCase):
+    """Test cases for XSet"""
     
     def setup_method(self):
         super().setup_method()
-        self.observable = ObservableSet({1, 2, 3})
+        self.observable = XSet({1, 2, 3})
         self.notification_count = 0
     
     def notification_callback(self):
@@ -65,10 +65,10 @@ class TestObservableSet(ObservableTestCase):
     def test_initialization_with_carries_bindable_set(self):
         """Test initialization with CarriesBindableSet"""
         # Create a source observable set
-        source = ObservableSet({1, 2, 3})
+        source = XSet({1, 2, 3})
         
         # Create a new observable set initialized with the source
-        target = ObservableSet(source.value_hook)
+        target = XSet(source.value_hook)
         
         # Check that the target has the same initial value
         assert target.value == {1, 2, 3}
@@ -84,9 +84,9 @@ class TestObservableSet(ObservableTestCase):
     def test_initialization_with_carries_bindable_set_chain(self):
         """Test initialization with CarriesBindableSet in a chain"""
         # Create a chain of observable sets
-        obs1 = ObservableSet({10})
-        obs2 = ObservableSet(obs1.value_hook)
-        obs3 = ObservableSet(obs2.value_hook)
+        obs1 = XSet({10})
+        obs2 = XSet(obs1.value_hook)
+        obs3 = XSet(obs2.value_hook)
         
         # Check initial values
         assert obs1.value == {10}
@@ -107,8 +107,8 @@ class TestObservableSet(ObservableTestCase):
     
     def test_initialization_with_carries_bindable_set_unbinding(self):
         """Test that initialization with CarriesBindableSet can be unbound"""
-        source = ObservableSet({100})
-        target = ObservableSet(source.value_hook)
+        source = XSet({100})
+        target = XSet(source.value_hook)
         
         # Verify they are bound
         assert target.value == {100}
@@ -128,10 +128,10 @@ class TestObservableSet(ObservableTestCase):
     
     def test_initialization_with_carries_bindable_set_multiple_targets(self):
         """Test multiple targets initialized with the same source"""
-        source = ObservableSet({100})
-        target1 = ObservableSet(source.value_hook)
-        target2 = ObservableSet(source.value_hook)
-        target3 = ObservableSet(source.value_hook)
+        source = XSet({100})
+        target1 = XSet(source.value_hook)
+        target2 = XSet(source.value_hook)
+        target3 = XSet(source.value_hook)
         
         # Check initial values
         assert target1.value == {100}
@@ -153,24 +153,24 @@ class TestObservableSet(ObservableTestCase):
     def test_initialization_with_carries_bindable_set_edge_cases(self):
         """Test edge cases for initialization with CarriesBindableSet"""
         # Test with empty set in source
-        source_empty: ObservableSet[int] = ObservableSet(set())
-        target_empty = ObservableSet(source_empty.value_hook)
+        source_empty: XSet[int] = XSet(set())
+        target_empty = XSet(source_empty.value_hook)
         assert target_empty.value == set()
         
         # Test with None in source
-        source_none: ObservableSet[int] = ObservableSet(None)
-        target_none = ObservableSet(source_none.value_hook)
+        source_none: XSet[int] = XSet(None)
+        target_none = XSet(source_none.value_hook)
         assert target_none.value == set()
         
         # Test with single item
-        source_single = ObservableSet({42})
-        target_single = ObservableSet(source_single.value_hook)
+        source_single = XSet({42})
+        target_single = XSet(source_single.value_hook)
         assert target_single.value == {42}
     
     def test_initialization_with_carries_bindable_set_binding_consistency(self):
         """Test binding system consistency when initializing with CarriesBindableSet"""
-        source = ObservableSet({100})
-        target = ObservableSet(source.value_hook)
+        source = XSet({100})
+        target = XSet(source.value_hook)
         
         # Check binding consistency
         
@@ -183,26 +183,26 @@ class TestObservableSet(ObservableTestCase):
         import time
         
         # Create source
-        source = ObservableSet({100})
+        source = XSet({100})
         
         # Measure initialization time
         start_time = time.time()
         for _ in range(1000):
-            target = ObservableSet(source.value_hook)
+            target = XSet(source.value_hook)
         end_time = time.time()
         
         # Should complete in reasonable time (less than 6 seconds)
         assert end_time - start_time < 6.0, "Initialization should be fast"
         
         # Verify the last target is properly bound
-        target = ObservableSet(source.value_hook)
+        target = XSet(source.value_hook)
         source.add(200)
         assert target.value == {100, 200}
     
     def test_binding_bidirectional(self):
         """Test bidirectional binding between obs1 and obs2"""
-        obs1 = ObservableSet({10})
-        obs2 = ObservableSet({20})
+        obs1 = XSet({10})
+        obs2 = XSet({20})
         
         # Bind obs1 to obs2
         obs1.join_by_key("value", obs2.value_hook, "use_caller_value")  # type: ignore
@@ -217,24 +217,24 @@ class TestObservableSet(ObservableTestCase):
     
     def test_binding_initial_sync_modes(self):
         """Test different initial sync modes"""
-        obs1 = ObservableSet({100})
-        obs2 = ObservableSet({200})
+        obs1 = XSet({100})
+        obs2 = XSet({200})
         
         # USE_CALLER_VALUE: target (obs2) gets caller's value
         obs1.join_by_key("value", obs2.value_hook, "use_caller_value")  # type: ignore
         assert obs2.value == {100}
         
         # Test update_observable_from_self mode
-        obs3 = ObservableSet({300})
-        obs4 = ObservableSet({400})
+        obs3 = XSet({300})
+        obs4 = XSet({400})
         obs3.join_by_key("value", obs4.value_hook, "use_target_value")  # type: ignore
         # USE_TARGET_VALUE means caller gets target's value
         assert obs3.value == {400}
     
     def test_unbinding(self):
         """Test unbinding observables"""
-        obs1 = ObservableSet({10})
-        obs2 = ObservableSet({20})
+        obs1 = XSet({10})
+        obs2 = XSet({20})
         
         obs1.join_by_key("value", obs2.value_hook, "use_caller_value")  # type: ignore
         obs1.isolate_by_key("value")
@@ -246,15 +246,15 @@ class TestObservableSet(ObservableTestCase):
     
     def test_binding_to_self(self):
         """Test that binding to self raises an error"""
-        obs = ObservableSet({10})
+        obs = XSet({10})
         with pytest.raises(ValueError):
             obs.join_by_key("value", obs.value_hook, "use_caller_value")  # type: ignore
     
     def test_binding_chain_unbinding(self):
         """Test unbinding in a chain of bindings"""
-        obs1 = ObservableSet({10})
-        obs2 = ObservableSet({20})
-        obs3 = ObservableSet({30})
+        obs1 = XSet({10})
+        obs2 = XSet({20})
+        obs3 = XSet({30})
         
         # Create chain: obs1 -> obs2 -> obs3
         obs1.join_by_key("value", obs2.value_hook, "use_caller_value")  # type: ignore
@@ -281,11 +281,11 @@ class TestObservableSet(ObservableTestCase):
     def test_string_representation(self):
         """Test string and repr methods"""
         assert "OS(options={1, 2, 3})" == str(self.observable)
-        assert "ObservableSet({1, 2, 3})" == repr(self.observable)
+        assert "XSet({1, 2, 3})" == repr(self.observable)
     
     def test_listener_management(self):
         """Test listener management methods"""
-        obs = ObservableSet({10})
+        obs = XSet({10})
         
         # Test is_listening_to
         assert not obs.is_listening_to(self.notification_callback)
@@ -298,9 +298,9 @@ class TestObservableSet(ObservableTestCase):
     
     def test_multiple_bindings(self):
         """Test multiple bindings to the same observable"""
-        obs1 = ObservableSet({10})
-        obs2 = ObservableSet({20})
-        obs3 = ObservableSet({30})
+        obs1 = XSet({10})
+        obs2 = XSet({20})
+        obs3 = XSet({30})
         
         # Bind obs2 and obs3 to obs1
         obs2.join_by_key("value", obs1.value_hook, "use_caller_value")  # type: ignore
@@ -318,7 +318,7 @@ class TestObservableSet(ObservableTestCase):
     
     def test_set_methods(self):
         """Test standard set methods"""
-        obs = ObservableSet({1, 2, 3})
+        obs = XSet({1, 2, 3})
         
         # Test add
         obs.add(4)
@@ -338,7 +338,7 @@ class TestObservableSet(ObservableTestCase):
     
     def test_set_copy_behavior(self):
         """Test that value returns immutable frozenset"""
-        obs = ObservableSet({1, 2, 3})
+        obs = XSet({1, 2, 3})
         
         # Get the set value
         set_value = obs.value
@@ -356,30 +356,30 @@ class TestObservableSet(ObservableTestCase):
     def test_set_validation(self):
         """Test set validation"""
         # Test with valid set
-        obs = ObservableSet({1, 2, 3})
+        obs = XSet({1, 2, 3})
         assert obs.value == {1, 2, 3}
         
         # Test with None (should create empty set)
-        obs_none: ObservableSet[int] = ObservableSet(None)
+        obs_none: XSet[int] = XSet(None)
         assert obs_none.value == set()
         
         # Test with empty set
-        obs_empty: ObservableSet[int] = ObservableSet(set())
+        obs_empty: XSet[int] = XSet(set())
         assert obs_empty.value == set()
     
     def test_set_binding_edge_cases(self):
         """Test edge cases for set binding"""
         # Test binding empty sets
-        obs1: ObservableSet[int] = ObservableSet(set())
-        obs2: ObservableSet[int] = ObservableSet(set())
+        obs1: XSet[int] = XSet(set())
+        obs2: XSet[int] = XSet(set())
         obs1.join_by_key("value", obs2.value_hook, "use_caller_value")  # type: ignore
         
         obs1.add(1)
         assert obs2.value == {1}
         
         # Test binding sets with same initial values
-        obs3 = ObservableSet({42})
-        obs4 = ObservableSet({42})
+        obs3 = XSet({42})
+        obs4 = XSet({42})
         obs3.join_by_key("value", obs4.value_hook, "use_caller_value")  # type: ignore
         
         obs3.add(100)
@@ -390,7 +390,7 @@ class TestObservableSet(ObservableTestCase):
         import time
         
         # Test add performance
-        obs: ObservableSet[int] = ObservableSet(set())
+        obs: XSet[int] = XSet(set())
         start_time = time.time()
         
         for i in range(1000):
@@ -403,11 +403,11 @@ class TestObservableSet(ObservableTestCase):
         assert len(obs.value) == 1000
         
         # Test binding performance
-        source = ObservableSet({1, 2, 3})
+        source = XSet({1, 2, 3})
         start_time = time.time()
         
         for _ in range(100):
-            ObservableSet(source.value_hook)
+            XSet(source.value_hook)
         
         end_time = time.time()
         
@@ -416,7 +416,7 @@ class TestObservableSet(ObservableTestCase):
     
     def test_set_error_handling(self):
         """Test set error handling"""
-        obs = ObservableSet({1, 2, 3})
+        obs = XSet({1, 2, 3})
         
         # Test remove non-existent item
         with pytest.raises(KeyError):
@@ -428,8 +428,8 @@ class TestObservableSet(ObservableTestCase):
     
     def test_set_binding_consistency(self):
         """Test binding system consistency"""
-        source = ObservableSet({100})
-        target = ObservableSet(source.value_hook)
+        source = XSet({100})
+        target = XSet(source.value_hook)
         
         # Check binding consistency
         
@@ -439,14 +439,14 @@ class TestObservableSet(ObservableTestCase):
     
     def test_set_binding_none_observable(self):
         """Test that binding to None raises an error"""
-        obs = ObservableSet({10})
+        obs = XSet({10})
         with pytest.raises(ValueError):
             obs.join_by_key("value", None, "use_caller_value")  # type: ignore
     
     def test_set_binding_with_same_values(self):
         """Test binding when observables already have the same value"""
-        obs1 = ObservableSet({42})
-        obs2 = ObservableSet({42})
+        obs1 = XSet({42})
+        obs2 = XSet({42})
         
         obs1.join_by_key("value", obs2.value_hook, "use_caller_value")  # type: ignore
         # Both should still have the same value
@@ -455,7 +455,7 @@ class TestObservableSet(ObservableTestCase):
     
     def test_listener_duplicates(self):
         """Test that duplicate listeners are not added"""
-        obs = ObservableSet({10})
+        obs = XSet({10})
         callback = lambda: None
         
         obs.add_listener(callback)
@@ -466,7 +466,7 @@ class TestObservableSet(ObservableTestCase):
     
     def test_remove_nonexistent_listener(self):
         """Test removing a listener that doesn't exist"""
-        obs = ObservableSet({10})
+        obs = XSet({10})
         callback = lambda: None
         
         # Should not raise an error
@@ -475,8 +475,8 @@ class TestObservableSet(ObservableTestCase):
 
     def test_serialization(self):
         """Test the complete serialization and deserialization cycle."""
-        # Step 1: Create an ObservableSet instance
-        obs = ObservableSet({1, 2, 3})
+        # Step 1: Create an XSet instance
+        obs = XSet({1, 2, 3})
         
         # Step 2: Fill it (modify the set)
         obs.add(4)
@@ -497,8 +497,8 @@ class TestObservableSet(ObservableTestCase):
         # Step 4: Delete the object
         del obs
         
-        # Step 5: Create a fresh ObservableSet instance
-        obs_restored = ObservableSet[int](set())
+        # Step 5: Create a fresh XSet instance
+        obs_restored = XSet[int](set())
         
         # Verify it starts empty
         assert obs_restored.value == set()

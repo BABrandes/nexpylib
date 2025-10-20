@@ -23,11 +23,11 @@ PHK = TypeVar("PHK")
 SHK = TypeVar("SHK")
 PHV = TypeVar("PHV", covariant=True)
 SHV = TypeVar("SHV", covariant=True)
-O = TypeVar("O", bound="ComplexObservableBase[Any, Any, Any, Any, Any]")
+O = TypeVar("O", bound="XComplexBase[Any, Any, Any, Any, Any]")
 
-class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XObjectSerializableMixin[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV, O]):
+class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XObjectSerializableMixin[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV, O]):
     """
-    Base class for all observable objects in the hook-based architecture.
+    Base class for all X objects in the hook-based architecture.
 
     This class combines BaseListening and BaseCarriesHooks to provide the complete
     interface for observables. It implements a flexible hook-based system that replaces
@@ -35,9 +35,9 @@ class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV
     
     **Architecture Overview:**
     
-    The BaseObservable uses a dual-hook system:
+    The BaseXObject uses a dual-hook system:
     
-    1. **Primary Hooks (PHK -> PHV)**: Represent the core state of the observable.
+    1. **Primary Hooks (PHK -> PHV)**: Represent the core state of the X object.
        These are the main data components that can be directly modified and validated.
        
     2. **Secondary Hooks (SHK -> SHV)**: Represent derived/computed values calculated
@@ -71,22 +71,22 @@ class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV
     - `SHK`: Type of secondary hook keys  
     - `PHV`: Type of primary hook values
     - `SHV`: Type of secondary hook values
-    - `O`: The observable class type (for self-referential typing)
+    - `O`: The X object class type (for self-referential typing)
     
     **Usage Examples:**
     
     1. **Basic Observable Creation:**
         ```python
-        from observables import BaseObservable
+        from observables import BaseXObject
         
         # Create observable with primary hooks
-        obs = BaseObservable({
+        obs = BaseXObject({
             'name': 'John',
             'age': 30
         })
         
         # Add secondary hooks
-        obs = BaseObservable(
+        obs = BaseXObject(
             initial_component_values_or_hooks={'name': 'John', 'age': 30},
             secondary_hook_callbacks={
                 'greeting': lambda values: f"Hello, {values['name']}!"
@@ -101,7 +101,7 @@ class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV
                 return False, "Age cannot be negative"
             return True, "Valid person"
         
-        obs = BaseObservable(
+        obs = BaseXObject(
             initial_component_values_or_hooks={'name': 'John', 'age': 30},
             verification_method=validate_person
         )
@@ -117,7 +117,7 @@ class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV
                 additional['dict'] = new_dict
             return additional
         
-        obs = BaseObservable(
+        obs = BaseXObject(
             initial_component_values_or_hooks={'dict': {}, 'dict_value': 'test'},
             add_values_to_be_updated_callback=complete_dict_updates
         )
@@ -144,13 +144,13 @@ class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV
     - Minimal memory overhead for hook management
     
     **Related Classes:**
-    - ObservableEnum: Observable wrapper for enum values
-    - ObservableDict: Observable wrapper for dictionaries
-    - ObservableBlockNone: Observable wrapper for blocks of none and non-none values
-    - ObservableList: Observable wrapper for lists
-    - ObservableSet: Observable wrapper for sets
-    - ObservableSingleValue: Observable wrapper for single values
-    - ObservableSelectionOption: Observable wrapper for selection options
+    - XEnum: X object wrapper for enum values
+    - XDict: X object wrapper for dictionaries
+    - XBlockNone: X object wrapper for blocks of none and non-none values
+    - XList: X object wrapper for lists
+    - XSet: X object wrapper for sets
+    - XAnyValue/XValue: X object wrapper for single values
+    - XSelectionSet/XSetSelect: X object wrapper for selection options
     """
 
     def __init__(
@@ -165,14 +165,14 @@ class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV
             logger: Optional[Logger] = None,
             nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER):
         """
-        Initialize the BaseObservable with hook-based architecture.
+        Initialize the BaseXObject with hook-based architecture.
 
         Parameters
         ----------
         initial_hook_values : Mapping[PHK, PHV|HookProtocol[PHV]]
             Initial values or hooks for primary hooks.
             Can contain either direct values (PHV) or HookProtocol objects that will be connected.
-            These represent the primary state of the observable.
+            These represent the primary state of the X object.
             
         verification_method : Callable[[Mapping[PHK, PHV]], tuple[bool, str]], optional
             Optional validation function that verifies all primary values together
@@ -243,7 +243,7 @@ class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV
             Parameters
             ----------
             self : O
-                The observable instance (for accessing current state)
+                The X object instance (for accessing current state)
             current_values : Mapping[PHK, PHV]
                 Current values of all primary hooks
             submitted_values : Mapping[PHK, PHV]
@@ -295,7 +295,7 @@ class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV
             ...     # Update UI
             ...     ui.refresh()
             ...     # Log state change
-            ...     logger.info("Observable state changed")
+            ...     logger.info("X object state changed")
             
         logger : Logger, optional
             Optional logger instance for debugging and error reporting.
@@ -309,7 +309,7 @@ class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV
         Notes
         -----
         Implementation Notes:
-        - Primary hooks represent the core state of the observable
+        - Primary hooks represent the core state of the X object
         - Secondary hooks are derived values calculated from primary hooks
         - All value changes go through the nexus manager for coordination
         - Validation occurs before any state changes are applied
@@ -719,7 +719,7 @@ class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV
 
     def submit_values_by_keys(self, values: Mapping[PHK, PHV], *, raise_submission_error_flag: bool = True) -> tuple[bool, str]:
         """
-        This method submits the provided values to the observable.
+        This method submits the provided values to the X object.
 
         ** Thread-safe **
 
@@ -742,7 +742,7 @@ class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV
 
     def submit_value_by_key(self, key: PHK, value: PHV, *, raise_submission_error_flag: bool = True) -> tuple[bool, str]: # type: ignore
         """
-        This method submits the provided value to the observable.
+        This method submits the provided value to the X object.
 
         Args:
             key: The key of the hook to submit the value to
@@ -833,7 +833,7 @@ class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV
     @property
     def primary_hooks(self) -> dict[PHK, OwnedFullHookProtocol[PHV]]:
         """
-        Get the primary hooks of the observable.
+        Get the primary hooks of the X object.
         
         Returns
         -------
@@ -850,7 +850,7 @@ class ComplexObservableBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV
     @property
     def secondary_hooks(self) -> dict[SHK, OwnedReadOnlyHookProtocol[SHV]]:
         """
-        Get the secondary hooks of the observable.
+        Get the secondary hooks of the X object.
         
         Returns
         -------

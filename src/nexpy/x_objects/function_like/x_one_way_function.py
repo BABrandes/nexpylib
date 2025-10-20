@@ -280,7 +280,7 @@ class XOneWayFunction(ListeningBase, CarriesSomeHooksBase[IHK|OHK, IHV|OHV, "XOn
 
     def change_values(self, values: Mapping[IHK|OHK, IHV|OHV]) -> None:
         """
-        Change the values of the observable.
+        Change the values of the X object.
         """
         success, msg = self._submit_values(values)
         if not success:

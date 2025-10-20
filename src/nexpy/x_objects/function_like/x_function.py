@@ -238,7 +238,7 @@ class XFunction(ListeningBase, CarriesSomeHooksBase[SHK, SHV, "XFunction"], Gene
 
     def change_values(self, values: Mapping[SHK, SHV]) -> None:
         """
-        Change the values of the observable.
+        Change the values of the X object.
         """
         success, msg = self._submit_values(values)
         if not success:

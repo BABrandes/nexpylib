@@ -22,7 +22,7 @@ class XSelectionDict(XDictBase[K, V, K, V], ObservableSelectionDictProtocol[K, V
     │ None            │         error            │         error            │
     └─────────────────┴──────────────────────────┴──────────────────────────┘
     
-    The observable ensures that these three components stay synchronized:
+    The X object ensures that these three components stay synchronized:
     - When dict or key changes, value is automatically updated
     - When value changes, the dictionary is updated at the current key
     - When key changes, value is updated to match the new key

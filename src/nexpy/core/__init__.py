@@ -10,7 +10,7 @@ Observables library. These are lower-level abstractions meant for users who want
 create custom observable types or extend the library's functionality.
 
 Core Components:
-- BaseObservable: Base class for all observable types
+- BaseXObject: Base class for all observable types
 - Hook/HookProtocol: Core hook implementations and protocols
 - OwnedHook/HookWithOwnerProtocol: Owned hook implementations and protocols
 - FloatingHook: Advanced hook with validation and reaction capabilities
@@ -23,10 +23,10 @@ Core Components:
 - default_nexus_manager: Module containing configuration (e.g., FLOAT_ACCURACY)
 
 Example Usage with New Protocol-Based Architecture:
-    >>> from observables.core import BaseObservable, OwnedHook, HookWithOwnerProtocol
+    >>> from observables.core import BaseXObject, OwnedHook, HookWithOwnerProtocol
     >>> 
     >>> # Create a custom observable type using the new architecture
-    >>> class MyCustomObservable(BaseObservable):
+    >>> class MyCustomObservable(BaseXObject):
     ...     def __init__(self, initial_value):
     ...         # Create owned hook
     ...         self._value_hook = OwnedHook(owner=self, initial_value=initial_value)

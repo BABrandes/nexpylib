@@ -1,5 +1,5 @@
 """
-Test cases for ObservableSubscriber
+Test cases for XSubscriber
 """
 
 from typing import Optional, Mapping
@@ -7,13 +7,13 @@ import asyncio
 import pytest
 
 
-from nexpy import Publisher, ObservableSubscriber
+from nexpy import Publisher, XSubscriber
 
 from tests.test_base import ObservableTestCase
 from tests.run_tests import console_logger as logger
 
-class TestObservableSubscriber(ObservableTestCase):
-    """Test ObservableSubscriber functionality"""
+class TestXSubscriber(ObservableTestCase):
+    """Test XSubscriber functionality"""
     
     def setup_method(self):
         super().setup_method()
@@ -37,8 +37,8 @@ class TestObservableSubscriber(ObservableTestCase):
             return {"value": self.callback_call_count}
     
     def test_initialization_with_single_publisher(self):
-        """Test creating ObservableSubscriber with a single publisher"""
-        observable = ObservableSubscriber(
+        """Test creating XSubscriber with a single publisher"""
+        observable = XSubscriber(
             self.publisher,
             self.simple_callback,
             logger=logger
@@ -52,13 +52,13 @@ class TestObservableSubscriber(ObservableTestCase):
         assert self.publisher.is_subscribed(observable)
     
     def test_initialization_with_multiple_publishers(self):
-        """Test creating ObservableSubscriber with multiple publishers"""
+        """Test creating XSubscriber with multiple publishers"""
         publisher2 = Publisher(logger=logger)
         publisher3 = Publisher(logger=logger)
         
         publishers = {self.publisher, publisher2, publisher3}
         
-        observable = ObservableSubscriber(
+        observable = XSubscriber(
             publishers,
             self.simple_callback,
             logger=logger
@@ -70,8 +70,8 @@ class TestObservableSubscriber(ObservableTestCase):
         assert publisher3.is_subscribed(observable)
     
     def test_reaction_to_publication(self):
-        """Test that ObservableSubscriber reacts to publications"""
-        _ = ObservableSubscriber(
+        """Test that XSubscriber reacts to publications"""
+        _ = XSubscriber(
             self.publisher,
             self.simple_callback,
             logger=logger
@@ -90,7 +90,7 @@ class TestObservableSubscriber(ObservableTestCase):
     
     def test_multiple_publications(self):
         """Test multiple publications"""
-        _ = ObservableSubscriber(
+        _ = XSubscriber(
             self.publisher,
             self.simple_callback,
             logger=logger
@@ -111,7 +111,7 @@ class TestObservableSubscriber(ObservableTestCase):
         publisher2 = Publisher(logger=logger)
         publisher3 = Publisher(logger=logger)
         
-        _ = ObservableSubscriber(   
+        _ = XSubscriber(   
             {self.publisher, publisher2, publisher3},
             self.simple_callback,
             logger=logger
@@ -143,7 +143,7 @@ class TestObservableSubscriber(ObservableTestCase):
                 publishers_seen.append(pub)
             return {"data": "value"}
         
-        _ = ObservableSubscriber(
+        _ = XSubscriber(
             {self.publisher, publisher2},
             tracking_callback,
             logger=logger
@@ -170,7 +170,7 @@ class TestObservableSubscriber(ObservableTestCase):
                 return {"initial": 0}
             return values_to_return
         
-        _ = ObservableSubscriber(
+        _ = XSubscriber(
             self.publisher,
             callback,
             logger=logger
@@ -182,7 +182,7 @@ class TestObservableSubscriber(ObservableTestCase):
         
         # The observable should have the values from callback
         # Note: This assumes submit_values updates internal state
-        # The exact assertion depends on how BaseObservable works
+        # The exact assertion depends on how BaseXObject works
     
     def test_async_callback_execution(self):
         """Test that callbacks execute asynchronously"""
@@ -194,7 +194,7 @@ class TestObservableSubscriber(ObservableTestCase):
             call_times.append(time.time())
             return {"value": 1}
         
-        _ = ObservableSubscriber(
+        _ = XSubscriber(
             self.publisher,
             slow_callback,
             logger=logger
@@ -216,7 +216,7 @@ class TestObservableSubscriber(ObservableTestCase):
         assert len(call_times) > 1  # Initial + publication
 
 
-class TestObservableSubscriberEdgeCases(ObservableTestCase):
+class TestXSubscriberEdgeCases(ObservableTestCase):
     """Test edge cases and error handling"""
     
     def setup_method(self):
@@ -235,7 +235,7 @@ class TestObservableSubscriberEdgeCases(ObservableTestCase):
             raise ValueError("Test error in callback")
         
         publisher = Publisher(logger=logger)
-        _ = ObservableSubscriber(
+        _ = XSubscriber(
             publisher,
             failing_callback,
             logger=logger
@@ -246,11 +246,11 @@ class TestObservableSubscriberEdgeCases(ObservableTestCase):
         self.loop.run_until_complete(asyncio.sleep(0.01))
     
     def test_empty_publisher_set(self):
-        """Test creating ObservableSubscriber with empty publisher set"""
+        """Test creating XSubscriber with empty publisher set"""
         def callback(pub: Optional[Publisher]) -> Mapping[str, int]:
             return {"value": 0}
         
-        observable = ObservableSubscriber(
+        observable = XSubscriber(
             set(),
             callback,
             logger=logger
@@ -267,7 +267,7 @@ class TestObservableSubscriberEdgeCases(ObservableTestCase):
             received_values.append(pub)
             return {"value": 0}
         
-        ObservableSubscriber(
+        XSubscriber(
             Publisher(logger=logger),
             callback,
             logger=logger
@@ -277,8 +277,8 @@ class TestObservableSubscriberEdgeCases(ObservableTestCase):
         assert received_values[0] is None
 
 
-class TestObservableSubscriberIntegration(ObservableTestCase):
-    """Integration tests for ObservableSubscriber"""
+class TestXSubscriberIntegration(ObservableTestCase):
+    """Integration tests for XSubscriber"""
     
     def setup_method(self):
         super().setup_method()
@@ -290,7 +290,7 @@ class TestObservableSubscriberIntegration(ObservableTestCase):
     
     @pytest.mark.skip(reason="Flaky async test - timing issues with subscriber notifications")
     def test_multiple_xobjects_same_publisher(self):
-        """Test multiple ObservableSubscribers on same Publisher"""
+        """Test multiple XSubscribers on same Publisher"""
         publisher = Publisher(logger=logger)
         
         count1 = [0]
@@ -306,8 +306,8 @@ class TestObservableSubscriberIntegration(ObservableTestCase):
                 count2[0] += 1
             return {"value": count2[0]}
         
-        _ = ObservableSubscriber(publisher, callback1, logger=logger)
-        _ = ObservableSubscriber(publisher, callback2, logger=logger)
+        _ = XSubscriber(publisher, callback1, logger=logger)
+        _ = XSubscriber(publisher, callback2, logger=logger)
         
         # Publish once
         publisher.publish()
@@ -325,7 +325,7 @@ class TestObservableSubscriberIntegration(ObservableTestCase):
         assert count2[0] == 2
     
     def test_chained_xobjects(self):
-        """Test chaining Publishers and ObservableSubscribers"""
+        """Test chaining Publishers and XSubscribers"""
         publisher1 = Publisher(logger=logger)
         publisher2 = Publisher(logger=logger)
         
@@ -342,8 +342,8 @@ class TestObservableSubscriberIntegration(ObservableTestCase):
                 values_from_pub2.append("pub2")
             return {"source": "pub2"}
         
-        _ = ObservableSubscriber(publisher1, callback1, logger=logger)
-        _ = ObservableSubscriber(publisher2, callback2, logger=logger)
+        _ = XSubscriber(publisher1, callback1, logger=logger)
+        _ = XSubscriber(publisher2, callback2, logger=logger)
         
         # Publish from both
         publisher1.publish()

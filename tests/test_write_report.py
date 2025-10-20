@@ -8,7 +8,7 @@ from typing import Any
 from enum import Enum
 
 
-from nexpy import ObservableSingleValue, ObservableList, ObservableSelectionDict, ObservableSet, ObservableSelectionSet as ObservableSelectionOption, ObservableMultiSelectionSet as ObservableMultiSelectionOption, write_report
+from nexpy import XValue, XList, ObservableSelectionDict, XSet, ObservableSelectionSet as XSetSelect, ObservableMultiSelectionSet as XSetMultiSelect, write_report
 from nexpy.core import CarriesSomeHooksBase
 
 
@@ -51,26 +51,26 @@ class TestWriteReport:
         print("🔧 Creating complex observable system...")
         
         # 1. Core user data
-        user_name = ObservableSingleValue("Alice")
-        user_age = ObservableSingleValue(28)
-        user_role = ObservableSelectionOption(UserRole.USER, {UserRole.ADMIN, UserRole.USER, UserRole.GUEST})
+        user_name = XValue("Alice")
+        user_age = XValue(28)
+        user_role = XSetSelect(UserRole.USER, {UserRole.ADMIN, UserRole.USER, UserRole.GUEST})
         
         # 2. Task management system
-        task_list = ObservableList(["Setup project", "Write documentation", "Run tests"])
+        task_list = XList(["Setup project", "Write documentation", "Run tests"])
         task_priorities = ObservableSelectionDict({"Setup project": 1, "Write documentation": 2, "Run tests": 3}, "Setup project")
-        completed_tasks = ObservableSet({"Write documentation"})
+        completed_tasks = XSet({"Write documentation"})
         
         # 3. Multi-selection for task statuses
         available_statuses = {TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.DONE}
-        current_task_statuses = ObservableMultiSelectionOption[TaskStatus](
+        current_task_statuses = XSetMultiSelect[TaskStatus](
             {TaskStatus.TODO, TaskStatus.IN_PROGRESS}, 
             available_statuses
         )
         
         # 4. Derived/computed observables
-        task_count = ObservableSingleValue(0)  # Will be bound to task_list.length_hook
-        user_display = ObservableSingleValue("")  # Will combine name and role
-        priority_sum = ObservableSingleValue(0)  # Will sum all priorities
+        task_count = XValue(0)  # Will be bound to task_list.length_hook
+        user_display = XValue("")  # Will combine name and role
+        priority_sum = XValue(0)  # Will sum all priorities
         
         print("✅ Basic observables created")
         
@@ -81,23 +81,23 @@ class TestWriteReport:
         task_count.join(task_list.length_hook, "use_target_value")  # type: ignore
         
         # Bind some observables to demonstrate shared hook nexuses
-        task_backup: ObservableList[Any] = ObservableList([])  # Will share nexus with task_list
+        task_backup: XList[Any] = XList([])  # Will share nexus with task_list
         task_backup.join_by_key("value", task_list.value_hook, "use_target_value") # type: ignore
         
         # Create another observable that shares the user's age
-        min_age_requirement = ObservableSingleValue(18)
-        age_validator = ObservableSingleValue(False)  # Will be connected to show age >= min_age
+        min_age_requirement = XValue(18)
+        age_validator = XValue(False)  # Will be connected to show age >= min_age
         
         # Connect age-related observables
-        backup_age: ObservableSingleValue[Any] = ObservableSingleValue(0)
+        backup_age: XValue[Any] = XValue(0)
         backup_age.join(user_age.hook, "use_target_value")  # type: ignore
         
         # Create observables that share nexus with the sets
-        completed_backup: ObservableSet[Any] = ObservableSet(set())
+        completed_backup: XSet[Any] = XSet(set())
         completed_backup.join_by_key("value", completed_tasks.value_hook, "use_target_value") # type: ignore
         
         # Multi-selection backup
-        status_backup: ObservableMultiSelectionOption[TaskStatus] = ObservableMultiSelectionOption(set(), available_statuses)
+        status_backup: XSetMultiSelect[TaskStatus] = XSetMultiSelect(set(), available_statuses)
         status_backup.join_by_key("selected_options", current_task_statuses.selected_options_hook, "use_target_value") # type: ignore
         status_backup.join_by_key("available_options", current_task_statuses.available_options_hook, "use_target_value") # type: ignore
         
@@ -221,11 +221,11 @@ class TestWriteReport:
         """Test write_report with a simple system to verify basic functionality"""
         
         # Create a simple system
-        name: ObservableSingleValue[Any] = ObservableSingleValue[Any]("John")
-        age: ObservableSingleValue[Any] = ObservableSingleValue[Any](25)
+        name: XValue[Any] = XValue[Any]("John")
+        age: XValue[Any] = XValue[Any](25)
         
         # Create a backup that shares the name
-        name_backup: ObservableSingleValue[Any] = ObservableSingleValue[Any]("")
+        name_backup: XValue[Any] = XValue[Any]("")
         name_backup.join(name.hook, "use_target_value")  # type: ignore
         
         observables: dict[str, CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"]] = {

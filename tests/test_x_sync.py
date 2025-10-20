@@ -3,7 +3,7 @@ from logging import basicConfig, getLogger, DEBUG
 
 import pytest
 
-from nexpy import ObservableSync, ObservableSingleValue, FunctionValues
+from nexpy import ObservableSync, XValue, FunctionValues
 from nexpy.x_objects_base.carries_some_hooks_base import CarriesSomeHooksBase
 from nexpy.core.hooks.owned_hook import OwnedHook
 
@@ -182,10 +182,10 @@ class TestObservableSync:
         assert len(notifications) > 0
 
     def test_integration_with_observable_single_value(self):
-        """Test integration with ObservableSingleValue by connecting after initialization."""
+        """Test integration with XValue by connecting after initialization."""
         # Create external observables
-        external_a = ObservableSingleValue[int](5, logger=logger)
-        external_b = ObservableSingleValue[int](10, logger=logger)
+        external_a = XValue[int](5, logger=logger)
+        external_b = XValue[int](10, logger=logger)
 
         def sync_callback(values: FunctionValues[str, int]) -> tuple[bool, dict[str, int]]:
             """Simple sync callback that passes through values."""
