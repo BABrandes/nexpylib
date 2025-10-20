@@ -1,0 +1,486 @@
+from typing import Generic, TypeVar, Sequence, Callable, Literal, Optional, Any
+from collections.abc import Iterable, Iterator
+from logging import Logger
+
+from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
+from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
+from ...x_objects_base.x_complex_base import ComplexObservableBase
+from ...core.nexus_system.submission_error import SubmissionError
+from ...core.nexus_system.nexus_manager import NexusManager
+from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from .protocols import XListProtocol
+from .utils import can_be_list
+
+T = TypeVar("T")
+  
+
+class XList(ComplexObservableBase[Literal["value"], Literal["length"], Iterable[T], int, "XList"], XListProtocol[T], Generic[T]):
+    """
+    Acting like a list.
+
+    The hooks store an Iterable - allowing them to connect to any other iterable. But values requested from this object will be a list.
+    """
+    def __init__(
+        self,
+        observable_or_hook_or_value: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | None = None,
+        logger: Optional[Logger] = None,
+        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+        ) -> None: # type: ignore
+
+
+        if observable_or_hook_or_value is None:
+            initial_value: Sequence[T] = ()
+            hook: Optional[ManagedHookProtocol[Iterable[T]]] = None
+        elif isinstance(observable_or_hook_or_value, XListProtocol):
+            initial_value = observable_or_hook_or_value.value # type: ignore
+            hook = observable_or_hook_or_value.value_hook # type: ignore
+        elif isinstance(observable_or_hook_or_value, ManagedHookProtocol):
+            initial_value = observable_or_hook_or_value.value # type: ignore
+            hook = observable_or_hook_or_value # type: ignore
+        else:
+            # Pass sequence directly - nexus system will convert to tuple
+            initial_value = observable_or_hook_or_value # type: ignore
+            hook = None
+
+        super().__init__(
+            initial_hook_values={"value": initial_value}, # type: ignore
+            verification_method=lambda x: (True, "Verification method passed") if can_be_list(x) else (False, "Value has not been converted to a list!"), # type: ignore
+            secondary_hook_callbacks={"length": lambda x: len(x["value"])}, # type: ignore
+            logger=logger,
+            output_value_wrapper={
+                "value": lambda x: list(x) # type: ignore
+            },
+            nexus_manager=nexus_manager
+        )
+
+        if hook is not None:
+            self._join("value", hook, "use_target_value") # type: ignore
+
+    #########################################################
+    # ObservableListProtocol implementation
+    #########################################################
+
+    #-------------------------------- list value --------------------------------   
+
+    @property
+    def value_hook(self) -> Hook[Iterable[T]]:
+        """
+        Get the hook for the list (contains Sequence).
+        """
+        return self._primary_hooks["value"] # type: ignore
+
+    @property
+    def value(self) -> list[T]: # type: ignore
+        """
+        Get the list value as mutable list (copied from the hook).
+        """
+        value = self._primary_hooks["value"].value
+        return list(value)
+
+    @value.setter
+    def value(self, value: Iterable[T]) -> None:
+        self.change_value(value)
+    
+    def change_value(self, new_value: Iterable[T]) -> None:
+        """
+        Change the list value (lambda-friendly method).
+        """
+        success, msg = self._submit_value("value", list(new_value))
+        if not success:
+            raise SubmissionError(msg, new_value, "value")
+
+    #-------------------------------- length --------------------------------
+
+    @property
+    def length_hook(self) -> ReadOnlyHook[int]:
+        """
+        Get the hook for the list length.
+        """
+        return self._secondary_hooks["length"] # type: ignore
+
+    @property
+    def length(self) -> int:
+        """
+        Get the current length of the list.
+        """
+        return len(self._primary_hooks["value"].value) # type: ignore
+
+    #########################################################
+    # Standard list methods
+    #########################################################
+    
+    # Standard list methods
+    def append(self, item: T) -> None:
+        """
+        Add an item to the end of the list.
+        
+        Creates a new tuple with the appended item.
+        
+        Args:
+            item: The item to add to the list
+        """
+        current_value = self._primary_hooks["value"].value
+        new_list: list[T] = list(current_value) + [item] # type: ignore
+        self.change_value(new_list)
+    
+    def extend(self, iterable: Iterable[T]) -> None:
+        """
+        Extend the list by appending elements from the iterable.
+        
+        Creates a new tuple with the extended elements.
+        
+        Args:
+            iterable: The iterable containing elements to add
+        """
+        current_value = self._primary_hooks["value"].value
+        new_list = list(current_value) + list(iterable) # type: ignore
+        self.change_value(new_list)
+    
+    def insert(self, index: int, item: T) -> None:
+        """
+        Insert an item at a given position.
+        
+        Creates a new tuple with the item inserted.
+        
+        Args:
+            index: The position to insert the item at
+            item: The item to insert
+        """
+        current = self._primary_hooks["value"].value # type: ignore
+        new_list = list(current)
+        new_list.insert(index, item)
+        self.change_value(new_list)
+    
+    def remove(self, item: T) -> None:
+        """
+        Remove the first occurrence of a value from the list.
+        
+        Creates a new tuple without the first occurrence of the item.
+        
+        Args:
+            item: The item to remove from the list
+            
+        Raises:
+            ValueError: If the item is not in the list
+        """
+        current = self._primary_hooks["value"].value # type: ignore
+        if item not in current:
+            raise ValueError(f"{item} not in list")
+        
+        # Create new list without the first occurrence
+        new_list = list(current)
+        new_list.remove(item)
+        self.change_value(new_list)
+    
+    def pop(self, index: int = -1) -> T:
+        """
+        Remove and return the item at the specified index.
+        
+        Creates a new tuple without the popped item.
+        
+        Args:
+            index: The index of the item to remove (default: -1, last item)
+            
+        Returns:
+            The removed item
+            
+        Raises:
+            IndexError: If the index is out of range
+        """
+        current = self._primary_hooks["value"].value # type: ignore
+        new_list = list(current)
+        item: T = new_list.pop(index)
+        self.change_value(new_list)
+        return item
+    
+    def clear(self) -> None:
+        """
+        Remove all items from the list.
+        
+        Creates an empty list.
+        """
+        if self._primary_hooks["value"].value:
+            self.change_value([])
+    
+    def sort(self, key: Optional[Callable[[T], Any]] = None, reverse: bool = False) -> None:
+        """
+        Sort the list in place.
+        
+        Creates a new sorted tuple.
+        
+        Args:
+            key: Optional function to extract comparison key from each element
+            reverse: If True, sort in descending order (default: False)
+        """
+        current_value = self._primary_hooks["value"].value
+        self.change_value(sorted(current_value, key=key, reverse=reverse)) # type: ignore
+    
+    def reverse(self) -> None:
+        """
+        Reverse the elements of the list in place.
+        
+        Creates a new tuple with elements in reversed order.
+        """
+        current_value = self._primary_hooks["value"].value
+        self.change_value(reversed(current_value)) # type: ignore
+    
+    def count(self, item: T) -> int:
+        """
+        Return the number of occurrences of a value in the list.
+        
+        Args:
+            item: The item to count
+            
+        Returns:
+            The number of times the item appears in the list
+        """
+        return list(self._primary_hooks["value"].value).count(item)
+    
+    def index(self, item: T, start: int = 0, stop: Optional[int] = None) -> int:
+        """
+        Return the first index of a value in the list.
+        
+        Args:
+            item: The item to find
+            start: Start index for the search (default: 0)
+            stop: End index for the search (default: end of list)
+            
+        Returns:
+            The index of the first occurrence of the item
+            
+        Raises:
+            ValueError: If the item is not found in the specified range
+        """
+        list_value = list(self._primary_hooks["value"].value)
+        if stop is None:
+            return list_value.index(item, start)
+        else:
+            return list_value.index(item, start, stop)
+    
+    def __str__(self) -> str:
+        return f"OL(value={self._primary_hooks['value'].value})"
+    
+    def __repr__(self) -> str:
+        return f"ObservableList({self._primary_hooks['value'].value})"
+    
+    def __len__(self) -> int:
+        """
+        Get the length of the list.
+        
+        Returns:
+            The number of items in the list
+        """
+        return len(list(self._primary_hooks["value"].value))
+    
+    def __getitem__(self, index: int) -> T:
+        """
+        Get an item at the specified index or slice.
+        
+        Args:
+            index: Integer index or slice object
+            
+        Returns:
+            The item at the index or a slice of items
+            
+        Raises:
+            IndexError: If the index is out of range
+        """
+        return list(self._primary_hooks["value"].value)[index]
+    
+    def __setitem__(self, index: int, value: T) -> None:
+        """
+        Set an item at the specified index.
+        
+        Creates a new tuple with the item replaced.
+        
+        Args:
+            index: Integer index
+            value: The value to set
+            
+        Raises:
+            IndexError: If the index is out of range
+        """
+        current = self._primary_hooks["value"].value # type: ignore
+        # Modify list
+        new_list = list(current)
+        new_list[index] = value
+        if new_list != current: # type: ignore
+            self.change_value(new_list)
+    
+    def __delitem__(self, index: int) -> None:
+        """
+        Delete an item at the specified index.
+        
+        Creates a new tuple without the deleted item.
+        
+        Args:
+            index: Integer index
+            
+        Raises:
+            IndexError: If the index is out of range
+        """
+        current = self._primary_hooks["value"].value # type: ignore
+        # Create list without the item at index
+        new_list = list(current)
+        del new_list[index]
+        self.change_value(new_list)
+    
+    def __contains__(self, item: T) -> bool:
+        """
+        Check if an item is contained in the list.
+        
+        Args:
+            item: The item to check for
+            
+        Returns:
+            True if the item is in the list, False otherwise
+        """
+        return item in self._primary_hooks["value"].value
+    
+    def __iter__(self) -> Iterator[T]:
+        """
+        Get an iterator over the list items.
+        
+        Returns:
+            An iterator that yields each item in the list
+        """
+        return iter(self._primary_hooks["value"].value)
+    
+    def __reversed__(self) -> Iterator[T]:
+        """
+        Get a reverse iterator over the list items.
+        
+        Returns:
+            A reverse iterator that yields each item in the list in reverse order
+        """
+        return reversed(list(self._primary_hooks["value"].value))
+    
+    def __eq__(self, other: Any) -> bool:
+        """
+        Check equality with another list or observable list.
+        
+        Args:
+            other: Another list or ObservableList to compare with
+            
+        Returns:
+            True if the lists contain the same items in the same order, False otherwise
+        """
+        if isinstance(other, XList):
+            return self._primary_hooks["value"].value == other._primary_hooks["value"].value # type: ignore
+        return self._primary_hooks["value"].value == other
+    
+    def __ne__(self, other: Any) -> bool:
+        """
+        Check inequality with another list or observable list.
+        
+        Args:
+            other: Another list or ObservableList to compare with
+            
+        Returns:
+            True if the lists are not equal, False otherwise
+        """
+        return not (self == other)
+    
+    def __lt__(self, other: Any) -> bool:
+        """
+        Check if this list is less than another list or observable list.
+        
+        Args:
+            other: Another list or ObservableList to compare with
+            
+        Returns:
+            True if this list is lexicographically less than the other, False otherwise
+        """
+        if isinstance(other, XList):
+            return self._primary_hooks["value"].value < other._primary_hooks["value"].value # type: ignore
+        return self._primary_hooks["value"].value < other
+    
+    def __le__(self, other: Any) -> bool:
+        """
+        Check if this list is less than or equal to another list or observable list.
+        
+        Args:
+            other: Another list or ObservableList to compare with
+            
+        Returns:
+            True if this list is lexicographically less than or equal to the other, False otherwise
+        """
+        if isinstance(other, XList):
+            return self._primary_hooks["value"].value <= other._primary_hooks["value"].value # type: ignore
+        return self._primary_hooks["value"].value <= other
+    
+    def __gt__(self, other: Any) -> bool:
+        """
+        Check if this list is greater than another list or observable list.
+        
+        Args:
+            other: Another list or ObservableList to compare with
+            
+        Returns:
+            True if this list is lexicographically greater than the other, False otherwise
+        """
+        if isinstance(other, XList):
+            return self._primary_hooks["value"].value > other._primary_hooks["value"].value # type: ignore
+        return self._primary_hooks["value"].value > other
+    
+    def __ge__(self, other: Any) -> bool:
+        """
+        Check if this list is greater than or equal to another list or observable list.
+        
+        Args:
+            other: Another list or ObservableList to compare with
+            
+        Returns:
+            True if this list is lexicographically greater than or equal to the other, False otherwise
+        """
+        if isinstance(other, XList):
+            return self._primary_hooks["value"].value >= other._primary_hooks["value"].value # type: ignore
+        return self._primary_hooks["value"].value >= other
+    
+    def __add__(self, other: Any) -> tuple[T, ...]:
+        """
+        Concatenate this list with another list or observable list.
+        
+        Args:
+            other: Another iterable or ObservableList to concatenate with
+            
+        Returns:
+            A new tuple containing all items from both collections
+        """
+        current_value = self._primary_hooks["value"].value
+        if isinstance(other, XList):
+            return list(current_value) + list(other._primary_hooks["value"].value) # type: ignore
+        return list(current_value) + list(other) # type: ignore
+    
+    def __mul__(self, other: int) -> tuple[T, ...]:
+        """
+        Repeat the list a specified number of times.
+        
+        Args:
+            other: The number of times to repeat the list
+            
+        Returns:
+            A new tuple with the original items repeated
+        """
+        return self._primary_hooks["value"].value * other # type: ignore
+    
+    def __rmul__(self, other: int) -> tuple[T, ...]:
+        """
+        Repeat the list a specified number of times (right multiplication).
+        
+        Args:
+            other: The number of times to repeat the list
+            
+        Returns:
+            A new tuple with the original items repeated
+        """
+        return other * self._primary_hooks["value"].value # type: ignore
+    
+    def __hash__(self) -> int:
+        """
+        Get the hash value based on the current list contents.
+        
+        Returns:
+            Hash value of the tuple
+        """
+        return hash(self._primary_hooks["value"].value) # type: ignore

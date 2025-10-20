@@ -7,7 +7,7 @@ name = "nexpylib"
 version = "0.1.0"
 description = "A Python library for scientific computing and data analysis"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "Apache-2.0"}
 authors = [
     {name = "Your Name", email = "your.email@example.com"}
 ]
@@ -18,7 +18,7 @@ keywords = ["scientific computing", "data analysis", "python"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
