@@ -94,7 +94,7 @@ Hook Fusion Across Objects
     >>> display = nx.XValue(0.0)
     >>> 
     >>> # Fuse them so they share the same state
-    >>> sensor.hook.join(display.hook)
+    >>> sensor.value_hook.join(display.value_hook)
     >>> 
     >>> # Now they're synchronized
     >>> sensor.value = 25.5
@@ -214,8 +214,8 @@ from .x_objects.list_like.protocols import XListProtocol
 from .x_objects.set_like.protocols import XSetProtocol
 from .x_objects.dict_like.protocols import XDictProtocol
 
-from .x_objects.set_like.x_selection_set import XSelectionSet as XSetSelect
-from .x_objects.set_like.x_optional_selection_set import XOptionalSelectionSet as XSetOptionalSelect
+from .x_objects.set_like.x_selection_set import XSelectionSet as XSetSingleSelect
+from .x_objects.set_like.x_optional_selection_set import XOptionalSelectionSet as XSetSingleSelectOptional
 from .x_objects.set_like.x_multi_selection_set import XMultiSelectionSet as XSetMultiSelect
 
 from .x_objects.dict_like.x_selection_dict import XSelectionDict as XDictSelect
@@ -253,8 +253,8 @@ __all__ = [
     'XDictSelect',
 
     # Selection objects (set-like)
-    'XSetSelect',
-    'XSetOptionalSelect',
+    'XSetSingleSelect',
+    'XSetSingleSelectOptional',
     'XSetMultiSelect',
 
     # Selection objects (dict-like)
@@ -300,8 +300,8 @@ __all__ = [
 try:
     from ._version import __version__, __version_tuple__
 except ImportError:
-    __version__ = "0.0.1"
-    __version_tuple__ = (0, 0, 1)
+    __version__ = "0.1.0"
+    __version_tuple__ = (0, 1, 0)
 
 __author__ = 'Benedikt Axel Brandes'
 __year__ = '2025'

@@ -116,32 +116,28 @@ class XSelectionSet(XComplexBase[Literal["selected_option", "available_options"]
         return self._primary_hooks["selected_option"] # type: ignore
 
     @property
-    def selected_option(self) -> T: # type: ignore
+    def selected_option(self) -> T:
         return self._primary_hooks["selected_option"].value # type: ignore
     
     @selected_option.setter
     def selected_option(self, selected_option: T) -> None:
         self.change_selected_option(selected_option)
 
-    def change_selected_option(self, selected_option: T) -> None:
+    def change_selected_option(self, selected_option: T, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         if selected_option == self._primary_hooks["selected_option"].value:
             return
         
-        success, msg = self._submit_values({"selected_option": selected_option})
-        if not success:
-            raise ValueError(msg)
-        
-        success, msg = self._submit_values({"selected_option": selected_option})
-        if not success:
-            raise ValueError(msg)
+        success, msg = self._submit_value("selected_option", selected_option, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, selected_option, "selected_option")
     
-    def change_selected_option_and_available_options(self, selected_option: T, available_options: Iterable[T]) -> None:
+    def change_selected_option_and_available_options(self, selected_option: T, available_options: Iterable[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         if selected_option == self._primary_hooks["selected_option"].value and available_options == self._primary_hooks["available_options"].value:
             return
         
-        success, msg = self._submit_values({"selected_option": selected_option, "available_options": set(available_options)})
-        if not success:
-            raise ValueError(msg)
+        success, msg = self._submit_values({"selected_option": selected_option, "available_options": set(available_options)}, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, {"selected_option": selected_option, "available_options": available_options}, "selected_option and available_options")
 
     #-------------------------------- number of available options --------------------------------
 
@@ -159,25 +155,25 @@ class XSelectionSet(XComplexBase[Literal["selected_option", "available_options"]
         """Add an option to the available options set."""
         success, msg = self._submit_values({"available_options": self._primary_hooks["available_options"].value | set([option])}) # type: ignore
         if not success:
-            raise ValueError(msg)
+            raise SubmissionError(msg, option, "available_options")
 
     def add_available_options(self, options: Iterable[T]) -> None:
         """Add an option to the available options set."""
         success, msg = self._submit_values({"available_options": self._primary_hooks["available_options"].value | set(options)}) # type: ignore
         if not success:
-            raise ValueError(msg)
+            raise SubmissionError(msg, options, "available_options")
 
     def remove_available_option(self, option: T) -> None:
         """Remove an option from the available options set."""
         success, msg = self._submit_values({"available_options": self._primary_hooks["available_options"].value - set([option])}) # type: ignore
         if not success:
-            raise ValueError(msg)
+            raise SubmissionError(msg, option, "available_options")
 
     def remove_available_options(self, options: Iterable[T]) -> None:
         """Remove an option from the available options set."""
         success, msg = self._submit_values({"available_options": self._primary_hooks["available_options"].value - set(options)}) # type: ignore
         if not success:
-            raise ValueError(msg)
+            raise SubmissionError(msg, options, "available_options")
 
     def __str__(self) -> str:
         sorted_options = sorted(self.available_options) # type: ignore

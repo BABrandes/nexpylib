@@ -7,6 +7,7 @@ from ...x_objects_base.x_complex_base import XComplexBase
 from .protocols import XDictProtocol
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.submission_error import SubmissionError
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -76,11 +77,16 @@ class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], M
         """Get the current dictionary."""
         return self._value_wrapped("dict") # type: ignore
     
-    def change_dict(self, new_dict: Mapping[K, V]) -> None:
+    @dict.setter
+    def dict(self, value: Mapping[K, V]) -> None:
+        """Set the current dictionary."""
+        self.change_dict(value)
+    
+    def change_dict(self, value: Mapping[K, V], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current dictionary."""
-        success, msg = self._submit_value("dict", new_dict)
-        if not success:
-            raise ValueError(msg)
+        success, msg = self._submit_value("dict", value, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, value, "dict")
 
     #-------------------------------- Length --------------------------------
 

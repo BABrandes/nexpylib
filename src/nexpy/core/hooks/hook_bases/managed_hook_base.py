@@ -179,7 +179,7 @@ class ManagedHookBase(ManagedHookProtocol[T], Publisher, ListeningBase, Generic[
         with self._lock:
             return self._get_previous_value()
 
-    def join(self, target_hook: "HookWithConnectionProtocol[T]|CarriesSingleHookProtocol[T]", initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> tuple[bool, str]:
+    def join(self, target_hook: "HookWithConnectionProtocol[T]|CarriesSingleHookProtocol[T]", initial_sync_mode: Literal["use_caller_value", "use_target_value"] = "use_target_value") -> tuple[bool, str]:
         """
         Join this hook to another hook.
 
@@ -187,9 +187,10 @@ class ManagedHookBase(ManagedHookProtocol[T], Publisher, ListeningBase, Generic[
 
         Args:
             target_hook: The hook or CarriesSingleHookProtocol to connect to
-            initial_sync_mode: Determines which hook's value is used initially:
+            initial_sync_mode: Determines which hook's value is used initially. Defaults to "use_target_value"
+                (adopts the target's value, useful when joining to potentially large nexuses).
                 - "use_caller_value": Use this hook's value (caller = self)
-                - "use_target_value": Use the target hook's value
+                - "use_target_value": Use the target hook's value (default)
 
         Returns:
             A tuple containing a boolean indicating if the connection was successful and a string message

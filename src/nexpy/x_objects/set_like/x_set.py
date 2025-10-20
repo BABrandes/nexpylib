@@ -88,15 +88,15 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
     def set(self, value: Iterable[T]) -> None:
         self.change_set(value)
     
-    def change_set(self, value: Iterable[T]) -> None:
+    def change_set(self, value: Iterable[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """
         Set the current value of the set.
         
         Args:
             value: Any iterable that can be converted to a set
         """
-        success, msg = self._submit_values({"value": set(value)})
-        if not success:
+        success, msg = self._submit_values({"value": set(value)}, logger=logger)
+        if not success and raise_submission_error_flag:
             raise SubmissionError(msg, value, "value")
 
     #-------------------------------- length --------------------------------
@@ -122,7 +122,7 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
     #########################################################
     
     # Standard set methods
-    def add(self, item: T) -> None:
+    def add(self, item: T, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """
         Add an element to the set.
         
@@ -133,11 +133,11 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         """
         if item not in self._primary_hooks["value"].value:
             new_set = set(self._primary_hooks["value"].value) | {item}
-            success, msg = self._submit_value("value", new_set)
-            if not success:
-                raise ValueError(msg)
+            success, msg = self._submit_value("value", new_set, logger=logger)
+            if not success and raise_submission_error_flag:
+                raise SubmissionError(msg, item, "value")
     
-    def remove(self, item: T) -> None:
+    def remove(self, item: T, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """
         Remove an element from the set.
         
@@ -153,11 +153,11 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
             raise KeyError(item)
         
         new_set = set(self._primary_hooks["value"].value) - {item}
-        success, msg = self._submit_value("value", new_set)
+        success, msg = self._submit_value("value", new_set, logger=logger)
         if not success:
-            raise ValueError(msg)
+            raise SubmissionError(msg, item, "value")
     
-    def discard(self, item: T) -> None:
+    def discard(self, item: T, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """
         Remove an element from the set if it is present.
         
@@ -169,11 +169,11 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         """
         if item in self._primary_hooks["value"].value:
             new_set = set(self._primary_hooks["value"].value) - {item}
-            success, msg = self._submit_value("value", new_set)
-            if not success:
+            success, msg = self._submit_value("value", new_set, logger=logger)
+            if not success and raise_submission_error_flag:
                 raise ValueError(msg)
     
-    def pop(self) -> T:
+    def pop(self, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> T:
         """
         Remove and return an arbitrary element from the set.
         
@@ -191,11 +191,11 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         item: T = next(iter(self._primary_hooks["value"].value))
         new_set = set(self._primary_hooks["value"].value) - {item}
         success, msg = self._submit_value("value", set(new_set))
-        if not success:
-            raise ValueError(msg)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, item, "value")
         return item 
     
-    def clear(self) -> None:
+    def clear(self, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """
         Remove all elements from the set.
         
@@ -204,8 +204,8 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         if self._primary_hooks["value"].value:
             new_set: set[T] = set()
             success, msg = self._submit_values({"value": new_set})
-            if not success:
-                raise ValueError(msg)
+            if not success and raise_submission_error_flag:
+                raise SubmissionError(msg, "value")
     
     def update(self, *others: Iterable[T]) -> None:
         """
@@ -222,7 +222,7 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         if new_set != self._primary_hooks["value"].value:
             success, msg = self._submit_values({"value": new_set})
             if not success:
-                raise ValueError(msg)
+                raise SubmissionError(msg, "value")
     
     def intersection_update(self, *others: Iterable[T]) -> None:
         """
@@ -239,7 +239,7 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         if new_set != self._primary_hooks["value"].value:
             success, msg = self._submit_values({"value": new_set})
             if not success:
-                raise ValueError(msg)
+                raise SubmissionError(msg, "value")
     
     def difference_update(self, *others: Iterable[T]) -> None:
         """
@@ -256,7 +256,7 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         if new_set != self._primary_hooks["value"].value:
             success, msg = self._submit_values({"value": new_set})
             if not success:
-                raise ValueError(msg)
+                raise SubmissionError(msg, "value")
     
     def symmetric_difference_update(self, other: Iterable[T]) -> None:
         """
@@ -274,7 +274,7 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         if new_set != current_set:
             success, msg = self._submit_values({"value": new_set})
             if not success:
-                raise ValueError(msg)
+                raise SubmissionError(msg, "value")
     
     def __str__(self) -> str:
         return f"XSet(options={self._primary_hooks['value'].value!r})"

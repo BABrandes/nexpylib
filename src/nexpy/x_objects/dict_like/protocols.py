@@ -1,4 +1,5 @@
-from typing import Iterable, TypeVar, Optional, Protocol, Mapping, runtime_checkable, final
+from typing import Iterable, TypeVar, Optional, Protocol, Mapping, runtime_checkable
+from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 
@@ -21,15 +22,16 @@ class XDictProtocol(Protocol[K, V]):
     @property
     def dict(self) -> dict[K, V]:
         """
-        Get the immutable dictionary value.
+        Get the current dictionary.
         """
         ...
 
     @dict.setter
     def dict(self, value: Mapping[K, V]) -> None:
+        """Set the current dictionary."""
         self.change_dict(value)
 
-    def change_dict(self, new_dict: Mapping[K, V]) -> None:
+    def change_dict(self, value: Mapping[K, V], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """
         Change the dictionary value (lambda-friendly method).
         """
@@ -106,7 +108,7 @@ class XSelectionDictProtocol(XDictProtocol[K, V], Protocol[K, V]):
         """Set the current key."""
         ...
 
-    def change_key(self, new_value: K) -> None:
+    def change_key(self, value: K, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current key."""
         ...
 
@@ -127,13 +129,13 @@ class XSelectionDictProtocol(XDictProtocol[K, V], Protocol[K, V]):
         """Set the current value."""
         ...
 
-    def change_value(self, new_value: V) -> None:
+    def change_value(self, value: V, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current value."""
         ...
 
     #-------------------------------- Convenience methods -------------------
     
-    def change_dict_and_key(self, new_dict_value: Mapping[K, V], new_key_value: K) -> None:
+    def change_dict_and_key(self, dict_value: Mapping[K, V], key_value: K, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the dictionary and key behind this hook."""
         ...
 
@@ -161,7 +163,7 @@ class XOptionalSelectionDictProtocol(XDictProtocol[K, V], Protocol[K, V]):
         """Set the current key."""
         ...
 
-    def change_key(self, new_value: Optional[K]) -> None:
+    def change_key(self, value: Optional[K], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current key."""
         ...
 
@@ -182,13 +184,13 @@ class XOptionalSelectionDictProtocol(XDictProtocol[K, V], Protocol[K, V]):
         """Set the current value."""
         ...
     
-    def change_value(self, new_value: Optional[V]) -> None:
+    def change_value(self, value: Optional[V], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current value."""
         ...
 
     #-------------------------------- Convenience methods -------------------
     
-    def change_dict_and_key(self, new_dict_value: Mapping[K, V], new_key_value: Optional[K]) -> None:
+    def change_dict_and_key(self, dict_value: Mapping[K, V], key_value: Optional[K], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the dictionary and key behind this hook."""
         ...
 
@@ -215,7 +217,7 @@ class XSelectionDictWithDefaultProtocol(XDictProtocol[K, V], Protocol[K, V]):
         """Set the current key."""
         ...
     
-    def change_key(self, new_value: K) -> None:
+    def change_key(self, value: K, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current key."""
         ...
 
@@ -236,13 +238,13 @@ class XSelectionDictWithDefaultProtocol(XDictProtocol[K, V], Protocol[K, V]):
         """Set the current value."""
         ...
     
-    def change_value(self, new_value: V) -> None:
+    def change_value(self, value: V, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current value."""
         ...
 
     #-------------------------------- Convenience methods -------------------
     
-    def change_dict_and_key(self, new_dict_value: Mapping[K, V], new_key_value: K) -> None:
+    def change_dict_and_key(self, dict_value: Mapping[K, V], key_value: K, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the dictionary and key behind this hook."""
         ...
     
@@ -269,7 +271,7 @@ class XOptionalSelectionDictWithDefaultProtocol(XDictProtocol[K, V], Protocol[K,
         """Set the current key."""
         ...
     
-    def change_key(self, new_value: Optional[K]) -> None:
+    def change_key(self, value: Optional[K], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current key."""
         ...
     
@@ -290,13 +292,13 @@ class XOptionalSelectionDictWithDefaultProtocol(XDictProtocol[K, V], Protocol[K,
         """Set the current value."""
         ...
     
-    def change_value(self, new_value: Optional[V]) -> None:
+    def change_value(self, value: Optional[V], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current value."""
         ...
 
     #-------------------------------- Convenience methods -------------------
 
-    def change_dict_and_key(self, new_dict_value: Mapping[K, V], new_key_value: Optional[K]) -> None:
+    def change_dict_and_key(self, dict_value: Mapping[K, V], key_value: Optional[K], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the dictionary and key behind this hook."""
         ...
     

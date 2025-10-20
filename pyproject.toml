@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nexpylib"
-version = "0.0.1"
-description = "A Python library for scientific computing and data analysis"
+version = "0.1.0"
+description = "Transitive synchronization and shared-state fusion for Python through Nexus fusion and atomic internal synchronization"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
@@ -14,14 +14,16 @@ authors = [
 maintainers = [
     {name = "Benedikt Axel Brandes", email = "benedikt.brandes@me.com"}
 ]
-keywords = ["scientific computing", "data analysis", "python"]
+keywords = ["reactive", "binding", "data-binding", "synchronization", "nexus", "fusion", "observable", "gui", "reactive-programming"]
 classifiers = [
     "Development Status :: 3 - Alpha",
-    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.13",
-    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: User Interfaces",
 ]
 requires-python = ">=3.13"
 dependencies = [

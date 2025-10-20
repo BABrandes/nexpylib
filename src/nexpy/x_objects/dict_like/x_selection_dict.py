@@ -165,10 +165,7 @@ class XSelectionDict(XDictSelectionBase[K, V, K, V], XSelectionDictProtocol[K, V
     @key.setter
     def key(self, value: K) -> None:
         """Set the current key."""
-        
-        success, msg = self._submit_value("key", value)
-        if not success:
-            raise ValueError(msg)
+        self.change_key(value)
 
     def change_key(self, new_value: K) -> None:
         """Change the current key."""
@@ -194,10 +191,7 @@ class XSelectionDict(XDictSelectionBase[K, V, K, V], XSelectionDictProtocol[K, V
     @value.setter
     def value(self, value: V) -> None:
         """Set the current value."""
-        
-        success, msg = self._submit_value("value", value)
-        if not success:
-            raise ValueError(msg)
+        self.change_value(value)
 
     def change_value(self, new_value: V) -> None:
         """Change the current value."""

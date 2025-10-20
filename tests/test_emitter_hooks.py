@@ -6,7 +6,7 @@ secondary hooks are properly recomputed when component values change.
 """
 
 import pytest
-from nexpy import XList, XDictSelect, XSet, XValue, XSetSelect, XSetOptionalSelect, XSetMultiSelect
+from nexpy import XList, XDictSelect, XSet, XValue, XSetSingleSelect, XSetSingleSelectOptional, XSetMultiSelect
 
 class TestEmitterHooksBasicFunctionality:
     """Test basic secondary hook functionality."""
@@ -151,8 +151,8 @@ class TestEmitterHooksSelection:
     """Test secondary hooks for selection observables."""
     
     def test_selection_option_number_of_available_options(self):
-        """Test that XSetSelect has number_of_available_options secondary hook."""
-        obs = XSetSelect("a", {"a", "b", "c"})
+        """Test that XSetSingleSelect has number_of_available_options secondary hook."""
+        obs = XSetSingleSelect("a", {"a", "b", "c"})
         
         # Check that hook exists
         assert "number_of_available_options" in [key for key in obs._secondary_hooks.keys()] # type: ignore
@@ -167,8 +167,8 @@ class TestEmitterHooksSelection:
         assert obs.number_of_available_options == 5, "Emitter hook should update when available options change"
     
     def test_optional_selection_option_number_of_available_options(self):
-        """Test that XSetOptionalSelect has number_of_available_options secondary hook."""
-        obs = XSetOptionalSelect(None, {"a", "b", "c"})
+        """Test that XSetSingleSelectOptional has number_of_available_options secondary hook."""
+        obs = XSetSingleSelectOptional(None, {"a", "b", "c"})
         
         # Check that hook exists  
         assert "number_of_available_options" in [key for key in obs._secondary_hooks.keys()] # type: ignore

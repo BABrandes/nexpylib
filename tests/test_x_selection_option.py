@@ -1,12 +1,12 @@
 
-from nexpy import XSetSelect, XSetOptionalSelect
+from nexpy import XSetSingleSelect, XSetSingleSelectOptional
 import pytest
 
-class TestXSetSelect:
-    """Test cases for XSetSelect"""
+class TestXSetSingleSelect:
+    """Test cases for XSetSingleSelect"""
     
     def setup_method(self):
-        self.observable = XSetSelect("Apple", {"Apple", "Banana", "Cherry"})
+        self.observable = XSetSingleSelect("Apple", {"Apple", "Banana", "Cherry"})
         self.notification_count = 0
     
     def notification_callback(self):
@@ -69,10 +69,10 @@ class TestXSetSelect:
     def test_initialization_with_carries_bindable_selection_option(self):
         """Test initialization with CarriesBindableSelectionOption"""
         # Create a source observable selection option
-        source = XSetSelect("Red", {"Red", "Green", "Blue"})
+        source = XSetSingleSelect("Red", {"Red", "Green", "Blue"})
         
         # Create a new observable selection option initialized with the source
-        target: XSetSelect[str] = XSetSelect(source)
+        target: XSetSingleSelect[str] = XSetSingleSelect(source)
         
         # Check that the target has the same initial value
         assert target.selected_option == "Red"
@@ -89,9 +89,9 @@ class TestXSetSelect:
     def test_initialization_with_carries_bindable_selection_option_chain(self):
         """Test initialization with CarriesBindableSelectionOption in a chain"""
         # Create a chain of observable selection options
-        obs1 = XSetSelect("Small", {"Small", "Medium"})
-        obs2: XSetSelect[str] = XSetSelect(obs1)
-        obs3: XSetSelect[str] = XSetSelect(obs2)
+        obs1 = XSetSingleSelect("Small", {"Small", "Medium"})
+        obs2: XSetSingleSelect[str] = XSetSingleSelect(obs1)
+        obs3: XSetSingleSelect[str] = XSetSingleSelect(obs2)
         
         # Check initial values
         assert obs1.selected_option == "Small"
@@ -112,8 +112,8 @@ class TestXSetSelect:
     
     def test_initialization_with_carries_bindable_selection_option_unbinding(self):
         """Test that initialization with CarriesBindableSelectionOption can be unbound"""
-        source = XSetSelect("Red", {"Red", "Green"})
-        target: XSetSelect[str] = XSetSelect(source)
+        source = XSetSingleSelect("Red", {"Red", "Green"})
+        target: XSetSingleSelect[str] = XSetSingleSelect(source)
         
         # Verify they are bound
         assert target.selected_option == "Red"
@@ -134,10 +134,10 @@ class TestXSetSelect:
     
     def test_initialization_with_carries_bindable_selection_option_multiple_targets(self):
         """Test multiple targets initialized with the same source"""
-        source = XSetSelect("Red", {"Red", "Green"})
-        target1: XSetSelect[str] = XSetSelect(source)
-        target2: XSetSelect[str] = XSetSelect(source)
-        target3: XSetSelect[str] = XSetSelect(source)
+        source = XSetSingleSelect("Red", {"Red", "Green"})
+        target1: XSetSingleSelect[str] = XSetSingleSelect(source)
+        target2: XSetSingleSelect[str] = XSetSingleSelect(source)
+        target3: XSetSingleSelect[str] = XSetSingleSelect(source)
         
         # Check initial values
         assert target1.selected_option == "Red"
@@ -159,21 +159,21 @@ class TestXSetSelect:
     def test_initialization_with_carries_bindable_selection_option_edge_cases(self):
         """Test edge cases for initialization with CarriesBindableSelectionOption"""
         # Test with None value in source
-        source_none: XSetOptionalSelect[str] = XSetOptionalSelect(None, {"Red", "Green"})
-        target_none: XSetOptionalSelect[str] = XSetOptionalSelect(source_none)
+        source_none: XSetSingleSelectOptional[str] = XSetSingleSelectOptional(None, {"Red", "Green"})
+        target_none: XSetSingleSelectOptional[str] = XSetSingleSelectOptional(source_none)
         assert target_none.selected_option is None
         assert target_none.available_options == {"Red", "Green"}
         
         # Test with single option in source
-        source_single = XSetSelect("Red", {"Red"})
-        target_single: XSetSelect[str] = XSetSelect(source_single)
+        source_single = XSetSingleSelect("Red", {"Red"})
+        target_single: XSetSingleSelect[str] = XSetSingleSelect(source_single)
         assert target_single.selected_option == "Red"
         assert target_single.available_options == {"Red"}
     
     def test_initialization_with_carries_bindable_selection_option_binding_consistency(self):
         """Test binding system consistency when initializing with CarriesBindableSelectionOption"""
-        source = XSetSelect("Red", {"Red", "Green"})
-        target: XSetSelect[str] = XSetSelect(source)
+        source = XSetSingleSelect("Red", {"Red", "Green"})
+        target: XSetSingleSelect[str] = XSetSingleSelect(source)
         
         # Check binding consistency
         # Note: check_status_consistency() method no longer exists in new architecture
@@ -189,26 +189,26 @@ class TestXSetSelect:
         import time
         
         # Create source
-        source = XSetSelect("Red", {"Red", "Green"})
+        source = XSetSingleSelect("Red", {"Red", "Green"})
         
         # Measure initialization time
         start_time = time.time()
         for _ in range(1000):
-            target: XSetSelect[str] = XSetSelect(source)
+            target: XSetSingleSelect[str] = XSetSingleSelect(source)
         end_time = time.time()
         
         # Should complete in reasonable time (less than 6 seconds)
         assert end_time - start_time < 6.0, "Initialization should be fast"
         
         # Verify the last target is properly bound
-        target = XSetSelect(source)
+        target = XSetSingleSelect(source)
         source.selected_option = "Green"
         assert target.selected_option == "Green"
     
     def test_binding_bidirectional(self):
         """Test bidirectional binding between obs1 and obs2"""
-        obs1 = XSetSelect("Red", {"Red", "Green", "Yellow"})
-        obs2 = XSetSelect("Blue", {"Red", "Green", "Blue"})
+        obs1 = XSetSingleSelect("Red", {"Red", "Green", "Yellow"})
+        obs2 = XSetSingleSelect("Blue", {"Red", "Green", "Blue"})
         
         # Bind obs1 to obs2
         obs1.join_by_key("available_options", obs2.available_options_hook, "use_target_value") #type: ignore
@@ -232,8 +232,8 @@ class TestXSetSelect:
     
     def test_binding_initial_sync_modes(self):
         """Test different initial sync modes"""
-        obs1 = XSetSelect("Red", {"Red", "Green", "Blue"})
-        obs2 = XSetSelect("Blue", {"Red", "Green", "Blue"})
+        obs1 = XSetSingleSelect("Red", {"Red", "Green", "Blue"})
+        obs2 = XSetSingleSelect("Blue", {"Red", "Green", "Blue"})
         
         # Test update_value_from_observable mode
         obs1.join_by_key("selected_option", obs2.selected_option_hook, "use_target_value") # type: ignore
@@ -242,8 +242,8 @@ class TestXSetSelect:
         assert obs1.selected_option == "Blue"
         
         # Test update_observable_from_self mode
-        obs3 = XSetSelect("Small", {"Small", "Medium", "Large"})
-        obs4 = XSetSelect("Large", {"Small", "Medium", "Large"})
+        obs3 = XSetSingleSelect("Small", {"Small", "Medium", "Large"})
+        obs4 = XSetSingleSelect("Large", {"Small", "Medium", "Large"})
         obs3.join_by_key("selected_option", obs4.selected_option_hook, "use_target_value") # type: ignore
         obs3.join_by_key("available_options", obs4.available_options_hook, "use_target_value") # type: ignore
         # USE_TARGET_VALUE means caller gets target's values
@@ -251,8 +251,8 @@ class TestXSetSelect:
     
     def test_unbinding(self):
         """Test unbinding observables"""
-        obs1 = XSetSelect("Red", {"Red", "Green", "Blue"})
-        obs2 = XSetSelect("Blue", {"Red", "Green", "Blue"})
+        obs1 = XSetSingleSelect("Red", {"Red", "Green", "Blue"})
+        obs2 = XSetSingleSelect("Blue", {"Red", "Green", "Blue"})
         
         obs1.join_by_key("selected_option", obs2.selected_option_hook, "use_target_value") # type: ignore
         obs1.join_by_key("available_options", obs2.available_options_hook, "use_target_value") # type: ignore
@@ -273,15 +273,15 @@ class TestXSetSelect:
     
     def test_binding_to_self(self):
         """Test that binding to self raises an error"""
-        obs = XSetSelect("Red", {"Red", "Green"})
+        obs = XSetSingleSelect("Red", {"Red", "Green"})
         with pytest.raises(ValueError):
             obs.join_by_key("selected_option", obs.selected_option_hook, "use_target_value") # type: ignore
     
     def test_binding_chain_unbinding(self):
         """Test unbinding in a chain of bindings"""
-        obs1 = XSetSelect("Red", {"Red", "Green", "Blue"})
-        obs2 = XSetSelect("Blue", {"Red", "Green", "Blue"})
-        obs3 = XSetSelect("Green", {"Red", "Green", "Blue"})
+        obs1 = XSetSingleSelect("Red", {"Red", "Green", "Blue"})
+        obs2 = XSetSingleSelect("Blue", {"Red", "Green", "Blue"})
+        obs3 = XSetSingleSelect("Green", {"Red", "Green", "Blue"})
         
         # Create chain: obs1 -> obs2 -> obs3
         obs1.join_by_key("selected_option", obs2.selected_option_hook, "use_target_value") # type: ignore
@@ -322,7 +322,7 @@ class TestXSetSelect:
     
     def test_listener_management(self):
         """Test listener management methods"""
-        obs = XSetSelect("Red", {"Red", "Green"})
+        obs = XSetSingleSelect("Red", {"Red", "Green"})
         
         # Test is_listening_to
         assert not obs.is_listening_to(self.notification_callback)
@@ -335,9 +335,9 @@ class TestXSetSelect:
     
     def test_multiple_bindings(self):
         """Test multiple bindings to the same observable"""
-        obs1 = XSetSelect("Red", {"Red", "Green", "Blue"})
-        obs2 = XSetSelect("Blue", {"Blue", "Green", "Red"})
-        obs3 = XSetSelect("Green", {"Green", "Blue", "Red"})
+        obs1 = XSetSingleSelect("Red", {"Red", "Green", "Blue"})
+        obs2 = XSetSingleSelect("Blue", {"Blue", "Green", "Red"})
+        obs3 = XSetSingleSelect("Green", {"Green", "Blue", "Red"})
         
         # Bind obs2 and obs3 to obs1
         obs2.join_by_key("selected_option", obs1.selected_option_hook, "use_target_value") # type: ignore
@@ -368,7 +368,7 @@ class TestXSetSelect:
     
     def test_selection_option_methods(self):
         """Test standard selection option methods"""
-        obs = XSetSelect("Red", {"Red", "Green", "Blue"})
+        obs = XSetSingleSelect("Red", {"Red", "Green", "Blue"})
         
         # Test set_selected_option_and_available_options
         obs.change_selected_option_and_available_options("Blue", {"Blue", "Green"})
@@ -385,7 +385,7 @@ class TestXSetSelect:
     
     def test_selection_option_copy_behavior(self):
         """Test that available_options returns an immutable frozenset"""
-        obs = XSetSelect("Red", {"Red", "Green", "Blue"})
+        obs = XSetSingleSelect("Red", {"Red", "Green", "Blue"})
         
         # Get the available options
         options_frozen = obs.available_options
@@ -403,20 +403,20 @@ class TestXSetSelect:
     def test_selection_option_validation(self):
         """Test selection option validation"""
         # Test with valid selection option
-        obs = XSetSelect("Red", {"Red", "Green"})
+        obs = XSetSingleSelect("Red", {"Red", "Green"})
         assert obs.selected_option == "Red"
         assert obs.available_options == {"Red", "Green"}
         
         # Test with None value
-        obs_none = XSetOptionalSelect(None, {"Red", "Green"})
+        obs_none = XSetSingleSelectOptional(None, {"Red", "Green"})
         assert obs_none.selected_option is None
         assert obs_none.available_options == {"Red", "Green"}
     
     def test_selection_option_binding_edge_cases(self):
         """Test edge cases for selection option binding"""
         # Test binding selection options with same initial values
-        obs1 = XSetSelect("Red", {"Red", "Green", "Yellow"})
-        obs2 = XSetSelect("Red", {"Red", "Green", "Yellow"})
+        obs1 = XSetSingleSelect("Red", {"Red", "Green", "Yellow"})
+        obs2 = XSetSingleSelect("Red", {"Red", "Green", "Yellow"})
         
         obs1.join_by_key("selected_option", obs2.selected_option_hook, "use_target_value") # type: ignore
         obs1.join_by_key("available_options", obs2.available_options_hook, "use_target_value") # type: ignore
@@ -425,8 +425,8 @@ class TestXSetSelect:
         assert obs2.available_options == {"Red", "Green", "Yellow"}
         
         # Test binding selection options with different options
-        obs3 = XSetSelect("Red", {"Red", "Blue", "Green"})
-        obs4 = XSetSelect("Green", {"Green", "Blue", "Red"})
+        obs3 = XSetSingleSelect("Red", {"Red", "Blue", "Green"})
+        obs4 = XSetSingleSelect("Green", {"Green", "Blue", "Red"})
         obs3.join_by_key("selected_option", obs4.selected_option_hook, "use_target_value") # type: ignore
         
         obs3.selected_option = "Blue"
@@ -437,7 +437,7 @@ class TestXSetSelect:
         import time
         
         # Test selected_option access performance
-        obs = XSetSelect("Red", {"Red", "Green", "Blue"})
+        obs = XSetSingleSelect("Red", {"Red", "Green", "Blue"})
         start_time = time.time()
         
         for _ in range(10000):
@@ -449,11 +449,11 @@ class TestXSetSelect:
         assert end_time - start_time < 1.0, "Selected option access should be fast"
         
         # Test binding performance
-        source = XSetSelect("Red", {"Red", "Green"})
+        source = XSetSingleSelect("Red", {"Red", "Green"})
         start_time = time.time()
         
         for _ in range(100):
-            XSetSelect(source)
+            XSetSingleSelect(source)
         
         end_time = time.time()
         
@@ -462,7 +462,7 @@ class TestXSetSelect:
     
     def test_selection_option_error_handling(self):
         """Test selection option error handling"""
-        obs = XSetSelect("Red", {"Red", "Green"})
+        obs = XSetSingleSelect("Red", {"Red", "Green"})
         
         # Test setting invalid selected option
         with pytest.raises(ValueError):
@@ -474,8 +474,8 @@ class TestXSetSelect:
     
     def test_selection_option_binding_consistency(self):
         """Test binding system consistency"""
-        source = XSetSelect("Red", {"Red", "Green"})
-        target: XSetSelect[str] = XSetSelect(source)
+        source = XSetSingleSelect("Red", {"Red", "Green"})
+        target: XSetSingleSelect[str] = XSetSingleSelect(source)
         
         # Check binding consistency
         
@@ -485,14 +485,14 @@ class TestXSetSelect:
     
     def test_selection_option_binding_none_observable(self):
         """Test that binding to None raises an error"""
-        obs = XSetSelect("Red", {"Red", "Green"})
+        obs = XSetSingleSelect("Red", {"Red", "Green"})
         with pytest.raises(ValueError):
             obs.join_by_key("selected_option", None, "use_target_value")  # type: ignore
     
     def test_selection_option_binding_with_same_values(self):
         """Test binding when observables already have the same value"""
-        obs1 = XSetSelect("Red", {"Red", "Green", "Blue"})
-        obs2 = XSetSelect("Blue", {"Red", "Green", "Blue"})
+        obs1 = XSetSingleSelect("Red", {"Red", "Green", "Blue"})
+        obs2 = XSetSingleSelect("Blue", {"Red", "Green", "Blue"})
         
         obs1.join_by_key("selected_option", obs2.selected_option_hook, "use_target_value") # type: ignore
         obs1.join_by_key("available_options", obs2.available_options_hook, "use_target_value") # type: ignore
@@ -502,7 +502,7 @@ class TestXSetSelect:
     
     def test_listener_duplicates(self):
         """Test that duplicate listeners are not added"""
-        obs = XSetSelect("Red", {"Red", "Green"})
+        obs = XSetSingleSelect("Red", {"Red", "Green"})
         callback = lambda: None
         
         obs.add_listener(callback, callback)
@@ -513,7 +513,7 @@ class TestXSetSelect:
     
     def test_remove_nonexistent_listener(self):
         """Test removing a listener that doesn't exist"""
-        obs = XSetSelect("Red", {"Red", "Green"})
+        obs = XSetSingleSelect("Red", {"Red", "Green"})
         callback = lambda: None
         
         # Should not raise an error

@@ -4,7 +4,7 @@ from logging import Logger
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
 from .x_dict_selection_base import XDictSelectionBase
-from .protocols import XOptionalSelectionDictWithDefaultProtocol
+from .protocols import XOptionalSelectionDictWithDefaultProtocol, XDictProtocol
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.submission_error import SubmissionError
 
@@ -40,17 +40,17 @@ class XOptionalSelectionDictWithDefault(
 
     def __init__(
         self,
-        dict_hook: Mapping[K, V] | Hook[Mapping[K, V]] | ReadOnlyHook[Mapping[K, V]],
+        dict_hook: Mapping[K, V] | Hook[Mapping[K, V]] | ReadOnlyHook[Mapping[K, V]] | XDictProtocol[K, V],
         key_hook: Optional[K] | Hook[Optional[K]] | ReadOnlyHook[Optional[K]] = None,
         value_hook: Optional[Hook[Optional[V]]] | ReadOnlyHook[Optional[V]] = None,
-        default_value: V | Callable[[K], V] = None,  # type: ignore
+        default_value: V | Callable[[K], V] = None,
         logger: Optional[Logger] = None
     ):
         """
         Initialize an ObservableOptionalDefaultSelectionDict.
         
         Args:
-            dict_hook: The mapping or hook containing the mapping
+            dict_hook: The mapping or hook containing the mapping or an XDictProtocol
             key_hook: The initial key or hook (can be None)
             value_hook: Optional hook for the value (if None, will be derived)
             default_value: Default value or callable to use when key is not in dict
@@ -58,16 +58,19 @@ class XOptionalSelectionDictWithDefault(
         """
         # Store default_value for use in callbacks
         self._default_value: V | Callable[[K], V] = default_value
-        
+
+        if isinstance(dict_hook, XDictProtocol):
+            dict_hook = dict_hook.dict
+
         # Pre-process dict to add default entry if needed (before wrapping in Map)
         if not isinstance(dict_hook, ManagedHookProtocol):
             # Extract initial key
             initial_key = key_hook.value if isinstance(key_hook, ManagedHookProtocol) else key_hook # type: ignore
             # Add default entry if key is not None and not in dict
-            if initial_key is not None and initial_key not in dict_hook: # type: ignore
-                _dict = dict(dict_hook) # type: ignore
+            if initial_key is not None and initial_key not in dict_hook:
+                _dict = dict(dict_hook)
                 _dict[initial_key] = self._get_default_value(initial_key) # type: ignore
-                dict_hook = _dict # type: ignore
+                dict_hook = _dict
         
         # Call parent constructor
         super().__init__(dict_hook, key_hook, value_hook, invalidate_callback=None, logger=logger) # type: ignore
@@ -76,7 +79,7 @@ class XOptionalSelectionDictWithDefault(
         """Helper to get default value (call if callable, return if constant)."""
         if callable(self._default_value):
             return self._default_value(key)  # type: ignore
-        return self._default_value  # type: ignore
+        return self._default_value
 
     def _create_add_values_callback(self) -> Callable[
         ["XOptionalSelectionDictWithDefault[K, V]", UpdateFunctionValues[Literal["dict", "key", "value"], Any]], 
@@ -246,57 +249,53 @@ class XOptionalSelectionDictWithDefault(
     @property
     def key_hook(self) -> "Hook[Optional[K]]":
         """Get the key hook."""
-        return self._primary_hooks["key"] # type: ignore
+        return self._primary_hooks["key"]
     
     @property
     def key(self) -> Optional[K]:
         """Get the current key."""
-        return self._primary_hooks["key"].value # type: ignore
+        return self._value_wrapped("key") # type: ignore
 
     @key.setter
     def key(self, value: Optional[K]) -> None:
         """Set the current key."""
-        success, msg = self._submit_value("key", value)
-        if not success:
-            raise ValueError(msg)
+        self.change_key(value)
     
-    def change_key(self, new_value: Optional[K]) -> None:
+    def change_key(self, value: Optional[K], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current key."""
-        success, msg = self._submit_value("key", new_value)
-        if not success:
-            raise ValueError(msg)
+        success, msg = self._submit_value("key", value, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, value, "key")
     
     #-------------------------------- Value --------------------------------
     
     @property
     def value_hook(self) -> "Hook[Optional[V]]":
         """Get the value hook."""
-        return self._primary_hooks["value"] # type: ignore
+        return self._primary_hooks["value"]
     
     @property
     def value(self) -> Optional[V]:
         """Get the current value."""
-        return self._primary_hooks["value"].value # type: ignore
+        return self._value_wrapped("value") # type: ignore
 
     @value.setter
     def value(self, value: Optional[V]) -> None:
         """Set the current value."""
-        success, msg = self._submit_value("value", value)
-        if not success:
-            raise ValueError(msg)
+        self.change_value(value)
     
-    def change_value(self, new_value: Optional[V]) -> None:
+    def change_value(self, value: Optional[V], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current value."""
-        success, msg = self._submit_value("value", new_value)
-        if not success:
-            raise ValueError(msg)
+        success, msg = self._submit_value("value", value, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, value, "value")
 
     #-------------------------------- Convenience methods -------------------
 
-    def change_dict_and_key(self, new_dict_value: Mapping[K, V], new_key_value: Optional[K]) -> None:
+    def change_dict_and_key(self, dict_value: Mapping[K, V], key_value: Optional[K], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the dictionary and key behind this hook."""
-        success, msg = self._submit_values({"dict": new_dict_value, "key": new_key_value})
-        if not success:
-            raise SubmissionError(msg, {"dict": new_dict_value, "key": new_key_value}, "dict and key")
+        success, msg = self._submit_values({"dict": dict_value, "key": key_value}, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, {"dict": dict_value, "key": key_value}, "dict and key")
     
     #------------------------------------------------------------------------

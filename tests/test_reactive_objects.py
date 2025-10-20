@@ -364,12 +364,12 @@ class TestXDictSelect(ObservableTestCase):
         assert hasattr(select, 'value_hook')
 
 
-class TestXSetSelect(ObservableTestCase):
-    """Test XSetSelect selection from set."""
+class TestXSetSingleSelect(ObservableTestCase):
+    """Test XSetSingleSelect selection from set."""
     
     def test_xset_select_creation(self):
-        """Test creating XSetSelect."""
-        select = nx.XSetSelect(
+        """Test creating XSetSingleSelect."""
+        select = nx.XSetSingleSelect(
             selected_option=3,
             available_options={1, 2, 3, 4, 5}
         )
@@ -379,7 +379,7 @@ class TestXSetSelect(ObservableTestCase):
     
     def test_xset_select_change_selection(self):
         """Test changing selection."""
-        select = nx.XSetSelect(
+        select = nx.XSetSingleSelect(
             selected_option=1,
             available_options={1, 2, 3}
         )
@@ -392,7 +392,7 @@ class TestXSetSelect(ObservableTestCase):
     
     def test_xset_select_invariant(self):
         """Test that selection must be in set."""
-        select = nx.XSetSelect(
+        select = nx.XSetSingleSelect(
             selected_option=1,
             available_options={1, 2, 3}
         )

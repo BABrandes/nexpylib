@@ -8,7 +8,7 @@ It covers complex binding scenarios, collective validation, and transitive bindi
 
 import time
 
-from nexpy import XValue, XSet, XSetSelect, XSetOptionalSelect
+from nexpy import XValue, XSet, XSetSingleSelect, XSetSingleSelectOptional
 from run_tests import console_logger as logger
 import pytest
 
@@ -17,9 +17,9 @@ class TestCollectiveHooks:
 
     def setup_method(self):
         """Set up test fixtures."""
-        # Create XSetSelect instances with compatible initial states
-        self.selector1: XSetSelect[str] = XSetSelect("Red", {"Red", "Green", "Blue"}, logger=logger)
-        self.selector2: XSetSelect[str] = XSetSelect("Red", {"Red", "Green", "Blue"}, logger=logger)
+        # Create XSetSingleSelect instances with compatible initial states
+        self.selector1: XSetSingleSelect[str] = XSetSingleSelect("Red", {"Red", "Green", "Blue"}, logger=logger)
+        self.selector2: XSetSingleSelect[str] = XSetSingleSelect("Red", {"Red", "Green", "Blue"}, logger=logger)
         
         # Create XValue instances with colors (compatible types)
         self.value1: XValue[str] = XValue("Red", logger=logger)
@@ -31,7 +31,7 @@ class TestCollectiveHooks:
 
     def test_collective_hooks_property(self):
         """Test that collective_hooks property returns the correct hooks."""
-        # XSetSelect should have selected_option, available_options, and secondary hooks
+        # XSetSingleSelect should have selected_option, available_options, and secondary hooks
         all_hooks = list(self.selector1._primary_hooks.values()) + list(self.selector1._secondary_hooks.values()) # type: ignore
         assert len(all_hooks) == 3
         assert self.selector1._primary_hooks["selected_option"] in all_hooks # type: ignore
@@ -103,7 +103,7 @@ class TestCollectiveHooks:
     def test_collective_validation(self):
         """Test collective validation with multiple dependent values."""
         # Create a selector with strict validation
-        strict_selector = XSetSelect("Red", {"Red", "Green"}, logger=logger)
+        strict_selector = XSetSingleSelect("Red", {"Red", "Green"}, logger=logger)
         
         # Test that setting available_options without the current selected_option fails
         with pytest.raises(ValueError):
@@ -123,7 +123,7 @@ class TestCollectiveHooks:
         
         # Test the specific case that was failing
         # Create a new selector and try to set an invalid state
-        test_selector = XSetSelect("Red", {"Red", "Green"}, logger=logger)
+        test_selector = XSetSingleSelect("Red", {"Red", "Green"}, logger=logger)
         
         # This should fail because "Red" is not in {"Green", "Blue"}
         with pytest.raises(ValueError):
@@ -283,7 +283,7 @@ class TestCollectiveHooks:
     def test_binding_with_validation_errors(self):
         """Test binding behavior when validation errors occur."""
         # Create a selector with strict validation
-        strict_selector = XSetSelect("Red", {"Red", "Green"}, logger=logger)
+        strict_selector = XSetSingleSelect("Red", {"Red", "Green"}, logger=logger)
         
         # Bind it to a regular selector
         self.selector1.join_by_key("selected_option", strict_selector.selected_option_hook, "use_caller_value")  # type: ignore
@@ -343,10 +343,10 @@ class TestCollectiveHooks:
     def test_collective_hooks_with_empty_sets(self):
         """Test collective hooks behavior with empty sets."""
         # Create a selector that allows None
-        none_selector: XSetOptionalSelect[str] = XSetOptionalSelect(None, set(), logger=logger)
+        none_selector: XSetSingleSelectOptional[str] = XSetSingleSelectOptional(None, set(), logger=logger)
         
         # Create a compatible selector that also allows None for binding
-        compatible_selector: XSetOptionalSelect[str] = XSetOptionalSelect(None, set(), logger=logger)
+        compatible_selector: XSetSingleSelectOptional[str] = XSetSingleSelectOptional(None, set(), logger=logger)
         
         # Bind the compatible selector to the none_selector
         compatible_selector.join_by_key("selected_option", none_selector.selected_option_hook, "use_caller_value")  # type: ignore
@@ -362,9 +362,9 @@ class TestCollectiveHooks:
     def test_performance_with_collective_hooks(self):
         """Test performance with collective hooks."""
         # Create multiple observables with compatible types
-        x_objects: list[XSetSelect[str]] = []
+        x_objects: list[XSetSingleSelect[str]] = []
         for i in range(10):
-            selector = XSetSelect("Common", {f"Color{i}", f"Option{i}", "Common"}, logger=logger)
+            selector = XSetSingleSelect("Common", {f"Color{i}", f"Option{i}", "Common"}, logger=logger)
             x_objects.append(selector)
         
         # Bind them in a complex network
@@ -386,9 +386,9 @@ class TestCollectiveHooks:
     def test_collective_hooks_edge_cases(self):
         """Test edge cases with collective hooks."""
         # Test with circular references (should not cause infinite loops)
-        selector_a = XSetSelect("A", {"A", "B", "C"}, logger=logger)
-        selector_b = XSetSelect("B", {"B", "C", "A"}, logger=logger)
-        selector_c = XSetSelect("C", {"C", "A"}, logger=logger)
+        selector_a = XSetSingleSelect("A", {"A", "B", "C"}, logger=logger)
+        selector_b = XSetSingleSelect("B", {"B", "C", "A"}, logger=logger)
+        selector_c = XSetSingleSelect("C", {"C", "A"}, logger=logger)
         
         # Create a triangle binding - but avoid circular binding by using different sync modes
         selector_a.join_by_key("selected_option", selector_b.selected_option_hook, "use_caller_value")  # type: ignore
@@ -406,8 +406,8 @@ class TestCollectiveHooks:
     def test_binding_with_different_sync_modes(self):
         """Test binding with different sync modes in collective scenarios."""
         # Create observables
-        selector_a = XSetSelect("A", {"A", "B", "C"}, logger=logger)
-        selector_b = XSetSelect("B", {"B", "C", "A"}, logger=logger)
+        selector_a = XSetSingleSelect("A", {"A", "B", "C"}, logger=logger)
+        selector_b = XSetSingleSelect("B", {"B", "C", "A"}, logger=logger)
         value_a = XValue("ValueA", logger=logger)
         value_b = XValue("ValueB", logger=logger)
         
@@ -425,7 +425,7 @@ class TestCollectiveHooks:
     def test_collective_hooks_cleanup(self):
         """Test that collective hooks are properly cleaned up."""
         # Create observables and bind them
-        selector: XSetSelect[str] = XSetSelect("Test", {"Test", "Other"}, logger=logger)
+        selector: XSetSingleSelect[str] = XSetSingleSelect("Test", {"Test", "Other"}, logger=logger)
         value: XValue[str] = XValue("Test", logger=logger)
         options: XSet[str] = XSet({"Test", "Other"}, logger=logger)
         

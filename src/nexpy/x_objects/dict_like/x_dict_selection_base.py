@@ -10,6 +10,7 @@ from ...core.auxiliary.listening_base import ListeningBase
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.submission_error import SubmissionError
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -74,8 +75,8 @@ class XDictSelectionBase(
         """
         
         if isinstance(dict_hook, (Hook, ReadOnlyHook)):
-            _initial_dict_value: Mapping[K, V] = dict_hook.value # type: ignore
-        elif isinstance(dict_hook, Mapping): # type: ignore
+            _initial_dict_value: Mapping[K, V] = dict_hook.value
+        elif isinstance(dict_hook, Mapping):
             _initial_dict_value = dict_hook
         else:
             raise ValueError("dict_hook must be a Hook, ReadOnlyHook, or Mapping")
@@ -83,18 +84,18 @@ class XDictSelectionBase(
         if isinstance(key_hook, ManagedHookProtocol):
             _initial_key_value: KT = key_hook.value  # type: ignore
         else:
-            _initial_key_value = key_hook  # type: ignore
+            _initial_key_value = key_hook
 
         # Compute initial value if not provided
         if value_hook is None:
             _initial_value_value: VT = self._compute_initial_value(
-                _initial_dict_value, # type: ignore
+                _initial_dict_value,
                 _initial_key_value  # type: ignore
             )
         else:
             if not isinstance(value_hook, ManagedHookProtocol):  # type: ignore
                 raise ValueError("value_hook must be a Hook or ReadOnlyHook or None")
-            _initial_value_value = value_hook.value  # type: ignore
+            _initial_value_value = value_hook.value
 
         # Initialize ListeningBase
         ListeningBase.__init__(self, logger)
@@ -201,20 +202,18 @@ class XDictSelectionBase(
         """
         Set the dictionary value.
         """
-        success, msg = self._submit_value("dict", value)
-        if not success:
-            raise ValueError(msg)
+        self.change_dict(value)
 
-    def change_dict(self, new_dict: Mapping[K, V]) -> None:
+    def change_dict(self, value: Mapping[K, V], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """
         Change the dictionary behind this hook.
         
         Args:
-            new_dict: The new mapping
+            value: The new mapping
         """
-        success, msg = self._submit_value("dict", new_dict)
-        if not success:
-            raise ValueError(msg)
+        success, msg = self._submit_value("dict", value, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, value, "dict")
 
     @property
     def key_hook(self) -> Hook[KT]:
@@ -224,7 +223,7 @@ class XDictSelectionBase(
         Returns:
             The hook managing the dictionary key.
         """
-        return self._primary_hooks["key"] # type: ignore
+        return self._primary_hooks["key"]
 
     @property
     def key(self) -> KT:
@@ -238,17 +237,15 @@ class XDictSelectionBase(
         """
         Set the key behind this hook.
         """
-        success, msg = self._submit_value("key", value)
-        if not success:
-            raise ValueError(msg)
+        self.change_key(value)
 
-    def change_key(self, new_value: KT) -> None:
+    def change_key(self, value: KT, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """
         Change the key behind this hook.
         """
-        success, msg = self._submit_value("key", new_value)
-        if not success:
-            raise ValueError(msg)
+        success, msg = self._submit_value("key", value, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, value, "key")
 
     @property
     def value_hook(self) -> Hook[VT]:
@@ -258,7 +255,7 @@ class XDictSelectionBase(
         Returns:
             The hook managing the retrieved value.
         """
-        return self._primary_hooks["value"] # type: ignore
+        return self._primary_hooks["value"]
 
     @property
     def value(self) -> VT:
@@ -272,17 +269,15 @@ class XDictSelectionBase(
         """
         Set the value behind this hook.
         """
-        success, msg = self._submit_value("value", value)
-        if not success:
-            raise ValueError(msg)
+        self.change_value(value)
 
-    def change_value(self, new_value: VT) -> None:
+    def change_value(self, value: VT, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """
         Change the value behind this hook.
         """
-        success, msg = self._submit_value("value", new_value)
-        if not success:
-            raise ValueError(msg)
+        success, msg = self._submit_value("value", value, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, value, "value")
 
     # ------------------------- length -------------------------
 
@@ -320,7 +315,7 @@ class XDictSelectionBase(
         Returns:
             A set of all keys in the dictionary.
         """
-        return set(self._value_wrapped("keys")) # type: ignore
+        return self._value_wrapped("keys") # type: ignore
 
     # ------------------------- values -------------------------
 

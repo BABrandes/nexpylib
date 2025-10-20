@@ -1,4 +1,5 @@
-from typing import Literal, TypeVar, Generic, Optional, Mapping, Any, Callable
+from typing import Literal, TypeVar, Generic, Mapping, Any, Callable, Optional
+from logging import Logger
 
 from .x_dict_selection_base import XDictSelectionBase, Hook
 from .protocols import XOptionalSelectionDictProtocol
@@ -206,58 +207,53 @@ class XOptionalSelectionDict(
     @property
     def key_hook(self) -> "Hook[Optional[K]]":
         """Get the key hook."""
-        return self._primary_hooks["key"] # type: ignore
+        return self._primary_hooks["key"]
     
 
     @property
     def key(self) -> Optional[K]:
         """Get the current key."""
-        return self._primary_hooks["key"].value # type: ignore
+        return self._value_wrapped("key") # type: ignore
     
     @key.setter
     def key(self, value: Optional[K]) -> None:
         """Set the current key."""
-        success, msg = self._submit_value("key", value)
-        if not success:
-            raise ValueError(msg)
+        self.change_key(value)
 
-    def change_key(self, new_value: Optional[K]) -> None:
+    def change_key(self, value: Optional[K], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current key."""
-        success, msg = self._submit_value("key", new_value)
-        if not success:
-            raise SubmissionError(msg, new_value, "key")
+        success, msg = self._submit_value("key", value, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, value, "key")
 
     #-------------------------------- Value --------------------------------
 
     @property
     def value_hook(self) -> "Hook[Optional[V]]":
         """Get the value hook."""
-        return self._primary_hooks["value"] # type: ignore
+        return self._primary_hooks["value"]
     
     @property
     def value(self) -> Optional[V]:
         """Get the current value."""
-        return self._primary_hooks["value"].value # type: ignore
+        return self._value_wrapped("value") # type: ignore
     
     @value.setter
     def value(self, value: Optional[V]) -> None:
-        """Set the current value."""
-        success, msg = self._submit_value("value", value)
-        if not success:
-            raise ValueError(msg)
+        self.change_value(value)
     
-    def change_value(self, new_value: Optional[V]) -> None:
+    def change_value(self, value: Optional[V], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current value."""
-        success, msg = self._submit_value("value", new_value)
-        if not success:
-            raise SubmissionError(msg, new_value, "value")
+        success, msg = self._submit_value("value", value, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, value, "value")
 
     #-------------------------------- Convenience methods -------------------
     
-    def change_dict_and_key(self, new_dict_value: Mapping[K, V], new_key_value: Optional[K]) -> None:
+    def change_dict_and_key(self, dict_value: Mapping[K, V], key_value: Optional[K], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the dictionary and key behind this hook."""
-        success, msg = self._submit_values({"dict": new_dict_value, "key": new_key_value})
-        if not success:
-            raise SubmissionError(msg, {"dict": new_dict_value, "key": new_key_value}, "dict and key")
+        success, msg = self._submit_values({"dict": dict_value, "key": key_value}, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, {"dict": dict_value, "key": key_value}, "dict and key")
 
     #------------------------------------------------------------------------

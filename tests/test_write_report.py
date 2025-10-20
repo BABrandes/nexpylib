@@ -8,7 +8,7 @@ from typing import Any
 from enum import Enum
 
 
-from nexpy import XValue, XList, XDictSelect, XSet, XSetSelect, XSetMultiSelect, write_report
+from nexpy import XValue, XList, XDictSelect, XSet, XSetSingleSelect, XSetMultiSelect, write_report
 from nexpy.core import CarriesSomeHooksBase
 
 
@@ -53,7 +53,7 @@ class TestWriteReport:
         # 1. Core user data
         user_name = XValue("Alice")
         user_age = XValue(28)
-        user_role = XSetSelect(UserRole.USER, {UserRole.ADMIN, UserRole.USER, UserRole.GUEST})
+        user_role = XSetSingleSelect(UserRole.USER, {UserRole.ADMIN, UserRole.USER, UserRole.GUEST})
         
         # 2. Task management system
         task_list = XList(["Setup project", "Write documentation", "Run tests"])

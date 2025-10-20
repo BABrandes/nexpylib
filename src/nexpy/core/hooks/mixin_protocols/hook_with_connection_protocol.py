@@ -39,7 +39,7 @@ class HookWithConnectionProtocol(Hashable, Protocol[T]):
     def value(self, value: T) -> None:
         raise ValueError("Value cannot be set for connection hooks without implementation of HookWithSetterProtocol")
 
-    def join(self, target_hook: "HookWithConnectionProtocol[T]|CarriesSingleHookProtocol[T]", initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> tuple[bool, str]:
+    def join(self, target_hook: "HookWithConnectionProtocol[T]|CarriesSingleHookProtocol[T]", initial_sync_mode: Literal["use_caller_value", "use_target_value"] = "use_target_value") -> tuple[bool, str]:
         """
         Connect this hook to another hook.
 
@@ -47,7 +47,10 @@ class HookWithConnectionProtocol(Hashable, Protocol[T]):
 
         Args:
             target_hook: The hook or CarriesSingleHookProtocol to connect to
-            initial_sync_mode: The initial synchronization mode
+            initial_sync_mode: The initial synchronization mode. Defaults to "use_target_value"
+                (adopts the target's value, useful when joining to potentially large nexuses).
+                - "use_caller_value": Use this hook's value (caller = self)
+                - "use_target_value": Use the target hook's value (default)
 
         Returns:
             A tuple containing a boolean indicating if the connection was successful and a string message
