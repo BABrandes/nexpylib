@@ -13,11 +13,11 @@ from ..core.nexus_system.submission_error import SubmissionError
 
 from .carries_single_hook_protocol import CarriesSingleHookProtocol
 from .x_object_serializable_mixin import XObjectSerializableMixin
-from .carries_some_hooks_base import CarriesSomeHooksBase
+from .x_base import XBase
 
 T = TypeVar("T")
 
-class XSimpleBase(ListeningBase, CarriesSomeHooksBase[Literal["value"], T, "XSimpleBase[T]"], CarriesSingleHookProtocol[T], XObjectSerializableMixin[Literal["value"], T], Generic[T]):
+class XSimpleBase(ListeningBase, XBase[Literal["value"], T, "XSimpleBase[T]"], CarriesSingleHookProtocol[T], XObjectSerializableMixin[Literal["value"], T], Generic[T]):
     """
     Base class for simple X objects (single value) with transitive synchronization via Nexus fusion.
     
@@ -110,7 +110,7 @@ class XSimpleBase(ListeningBase, CarriesSomeHooksBase[Literal["value"], T, "XSim
             
             return True, "Value is valid"
 
-        CarriesSomeHooksBase.__init__( # type: ignore
+        XBase.__init__( # type: ignore
             self,
             validate_complete_values_in_isolation_callback=validate_complete_values_in_isolation_callback,
             logger=logger,

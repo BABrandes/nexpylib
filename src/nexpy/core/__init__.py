@@ -69,29 +69,19 @@ For normal usage of the library, import from the main package:
     >>> from observables import ObservableSingleValue, ObservableList
 """
 
-from ..x_objects_base.carries_some_hooks_base import CarriesSomeHooksBase
-from ..x_objects_base.x_composite_base import XCompositeBase
-from ..x_objects_base.x_simple_base import XSimpleBase
-from .nexus_system.nexus import Nexus
-from ..x_objects_base.carries_some_hooks_protocol import CarriesSomeHooksProtocol
-from ..x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol
+from nexpy.core.nexus_system.nexus import Nexus
 from .auxiliary.listening_base import ListeningBase
 from .auxiliary.listening_protocol import ListeningProtocol
-from .nexus_system.nexus_manager import NexusManager
+from nexpy.core.nexus_system.nexus_manager import NexusManager
 from .publisher_subscriber.subscriber import Subscriber
-from .nexus_system.submission_error import SubmissionError
-from .nexus_system.update_function_values import UpdateFunctionValues
+from nexpy.core.nexus_system.submission_error import SubmissionError
+from nexpy.core.nexus_system.update_function_values import UpdateFunctionValues
 
 # Re-export the module for advanced configuration
 # Note: For user-facing configuration, use: from nexpy import default
 
 __all__ = [
-    'XCompositeBase',
-    'XSimpleBase',
     'Nexus',
-    'CarriesSomeHooksBase',
-    'CarriesSomeHooksProtocol',
-    'CarriesSingleHookProtocol',
     'ListeningBase',
     'ListeningProtocol',
     'NexusManager',

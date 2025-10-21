@@ -12,7 +12,7 @@ import time
 import pytest   
 
 from nexpy import XValue, XList, XDictSelect
-from nexpy.core import XCompositeBase
+from nexpy import XBase
 
 basicConfig(level=DEBUG)
 logger = getLogger(__name__)
@@ -32,7 +32,7 @@ class TestCachePerformance:
         """Test that get_key operations use O(1) cache after first access."""
         # Create an observable with a moderate number of hooks via binding
         main_obs: XValue[Any] = XValue("main")
-        bound_xobjects: list[XComplexBase[Any, Any, Any, Any, "XComplexBase[Any, Any, Any, Any, Any]"]] = []
+        bound_xobjects: list[XBase[Any, Any, Any]] = []
         
         # Create bound observables to populate the hook nexus
         for i in range(50):

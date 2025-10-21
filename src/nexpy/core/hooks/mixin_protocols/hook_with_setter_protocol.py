@@ -5,13 +5,13 @@ from .hook_with_connection_protocol import HookWithConnectionProtocol
 
 
 from ...auxiliary.listening_protocol import ListeningProtocol
-from ...nexus_system.has_nexus_manager_protocol import HasNexusManagerProtocol
+from nexpy.core.nexus_system.has_nexus_manager_protocol import HasNexusManagerProtocol
 from ...publisher_subscriber.publisher_protocol import PublisherProtocol
-from ...nexus_system.submission_error import SubmissionError
+from nexpy.core.nexus_system.submission_error import SubmissionError
 
 if TYPE_CHECKING:
-    from ...nexus_system.nexus import Nexus
-    from ...nexus_system.nexus_manager import NexusManager
+    from nexpy.core.nexus_system.nexus import Nexus
+    from nexpy.core.nexus_system.nexus_manager import NexusManager
     from .hook_with_getter_protocol import HookWithGetterProtocol
     from ....x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol
 
@@ -112,9 +112,9 @@ class HookWithSetterProtocol(ListeningProtocol, PublisherProtocol, HasNexusManag
             for hook, value in hooks_and_values:
                 if isinstance(hook, HookWithConnectionProtocol):
                     hook_nexus: Nexus[Any] = hook._get_nexus() # type: ignore
-                    if hook_nexus in nexus_and_values: # type: ignore
+                    if hook_nexus in nexus_and_values:
                         raise ValueError("All hook nexuses must be unique")
-                    nexus_and_values[hook_nexus] = value # type: ignore
+                    nexus_and_values[hook_nexus] = value
                 if isinstance(hook, CarriesSingleHookProtocol):
                     nexus_and_values[hook._get_nexus()] = value # type: ignore
         else:

@@ -4,13 +4,13 @@ from logging import basicConfig, getLogger, DEBUG
 import pytest
 
 from nexpy import XFunction, XValue, FunctionValues
-from nexpy.x_objects_base.carries_some_hooks_base import CarriesSomeHooksBase
+from nexpy import XBase
 from nexpy.core.hooks.owned_hook import OwnedHook
 
 basicConfig(level=DEBUG)
 logger = getLogger(__name__)
 
-class MockObservable(CarriesSomeHooksBase[str, int, "MockObservable"]):
+class MockObservable(XBase[str, int, "MockObservable"]):
     """Mock observable that implements the required interface."""
     
     def __init__(self, name: str):

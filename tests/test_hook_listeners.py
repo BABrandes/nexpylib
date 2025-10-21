@@ -2,13 +2,13 @@ from unittest.mock import Mock
 from typing import Any
 
 from nexpy import Hook
-from nexpy.x_objects_base.carries_some_hooks_base import CarriesSomeHooksBase
+from nexpy import XBase
 from nexpy.core.hooks.owned_hook import OwnedHook
 
 from nexpy.core.nexus_system.nexus import Nexus
 from nexpy.core.auxiliary.listening_base import ListeningBase
 
-class MockCarriesHooks(CarriesSomeHooksBase[Any, Any, "MockCarriesHooks"]):
+class MockCarriesHooks(XBase[Any, Any, "MockCarriesHooks"]):
     """Mock class that implements CarriesHooks interface for testing."""
     
     def __init__(self, name: str = "MockOwner"):
@@ -222,8 +222,8 @@ class TestHookListeners:
     
     def test_multiple_hooks_independent_listeners(self):
         """Test that different hooks have independent listener sets."""
-        owner1: CarriesSomeHooksBase[str, Any, "MockCarriesHooks"] = MockCarriesHooks("Owner1") # type: ignore
-        owner2: CarriesSomeHooksBase[str, Any, "MockCarriesHooks"] = MockCarriesHooks("Owner2") # type: ignore
+        owner1: XBase[str, Any, "MockCarriesHooks"] = MockCarriesHooks("Owner1") # type: ignore
+        owner2: XBase[str, Any, "MockCarriesHooks"] = MockCarriesHooks("Owner2") # type: ignore
         
         hook1 = OwnedHook(owner1, "value1")
         hook2 = OwnedHook(owner2, "value2")

@@ -2,8 +2,8 @@ from typing import Generic, Optional, TypeVar, Any
 from logging import Logger
 
 from ..auxiliary.listening_base import ListeningBase
-from ..nexus_system.nexus_manager import NexusManager
-from ..nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from nexpy.core.nexus_system.nexus_manager import NexusManager
+from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER as DEFAULT_NEXUS_MANAGER
 from ...x_objects_base.carries_some_hooks_protocol import CarriesSomeHooksProtocol
 
 from .hook_bases.managed_hook_base import ManagedHookBase

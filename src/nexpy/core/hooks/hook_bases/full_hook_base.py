@@ -3,8 +3,8 @@ import logging
 
 from ..hook_protocols.full_hook_protocol import FullHookProtocol
 from ..hook_bases.managed_hook_base import ManagedHookBase
-from ...nexus_system.nexus_manager import NexusManager
-from ...nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from nexpy.core.nexus_system.nexus_manager import NexusManager
+from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER
 from ..mixin_protocols.hook_with_getter_protocol import HookWithGetterProtocol
 
 if TYPE_CHECKING:
@@ -66,7 +66,7 @@ class FullHookBase(ManagedHookBase[T], FullHookProtocol[T], Generic[T]):
     def __init__(
         self,
         value: T,
-        nexus_manager: "NexusManager" = DEFAULT_NEXUS_MANAGER,
+        nexus_manager: "NexusManager" = _DEFAULT_NEXUS_MANAGER,
         logger: Optional[logging.Logger] = None
         ) -> None:
         """

@@ -2,13 +2,13 @@ from typing import Any, Mapping, Optional
 import threading
 from logging import Logger
 
-from nexpy.x_objects_base.x_composite_base import XCompositeBase
+from nexpy import XCompositeBase
 from nexpy.core.hooks.owned_hook import OwnedHook
 
 from run_tests import console_logger as logger
 import pytest
 
-class MockObservable(XComplexBase[Any, Any, Any, Any, "MockObservable"]):
+class MockObservable(XCompositeBase[Any, Any, Any, Any, "MockObservable"]):
     """Mock observable for testing purposes that can handle arbitrary hooks."""
     
     def __init__(self, name: str):
@@ -22,7 +22,13 @@ class MockObservable(XComplexBase[Any, Any, Any, Any, "MockObservable"]):
         logger: Optional[Logger] = None,
         **kwargs: Any) -> None:
         """Construct a MockObservable instance."""
-        super().__init__(initial_hook_values=initial_values)
+        super().__init__(
+            initial_hook_values=initial_values,
+            compute_missing_primary_values_callback=None,
+            compute_secondary_values_callback={},
+            validate_complete_primary_values_callback=None,
+            logger=logger
+        )
     
     def _act_on_invalidation(self, keys: set[Any]) -> None:
         """Act on invalidation - required by BaseXObject."""

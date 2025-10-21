@@ -6,7 +6,6 @@ Based on examples in README.md, docs/usage.md, and docs/examples.md.
 
 import pytest
 import nexpy as nx
-from nexpy.core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
 from test_base import ObservableTestCase
 
 
@@ -201,8 +200,8 @@ class TestUsageGuideExamples(ObservableTestCase):
         """Test multiple listeners on same hook."""
         temperature = nx.XValue(20.0)
         
-        log = []
-        alerts = []
+        log: list[str] = []
+        alerts: list[str] = []
         
         def logger():
             log.append(f"Temperature: {temperature.value}")

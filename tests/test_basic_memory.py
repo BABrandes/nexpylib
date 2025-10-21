@@ -13,7 +13,7 @@ from nexpy import (
     XValue, XList, XSet, XDict,
     XDictSelect, XDictSelectOptional, ReadOnlyHook
 )
-from nexpy.x_objects_base.carries_some_hooks_base import CarriesSomeHooksBase
+from nexpy import XBase
 
 
 class TestEssentialMemoryManagement:
@@ -419,8 +419,8 @@ class TestMemoryStressScenarios:
 
     def test_mixed_observable_types_memory(self):
         """Test memory management with mixed observable types."""
-        observables: list[CarriesSomeHooksBase[Any, Any, Any]] = []
-        weak_refs: list[weakref.ref[CarriesSomeHooksBase[Any, Any, Any]]] = []
+        observables: list[XBase[Any, Any, Any]] = []
+        weak_refs: list[weakref.ref[XBase[Any, Any, Any]]] = []
         
         # Create mixed observable types
         for i in range(20):

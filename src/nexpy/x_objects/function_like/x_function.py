@@ -6,18 +6,18 @@ from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
 from ...core.hooks.hook_protocols.owned_full_hook_protocol import OwnedFullHookProtocol
 from ...core.auxiliary.listening_base import ListeningBase
-from ...x_objects_base.carries_some_hooks_base import CarriesSomeHooksBase
+from ...x_objects_base.x_base import XBase
 from ...core.nexus_system.nexus import Nexus
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.submission_error import SubmissionError
 from .function_values import FunctionValues
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 
 SHK = TypeVar("SHK")
 SHV = TypeVar("SHV")
 
-class XFunction(ListeningBase, CarriesSomeHooksBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
+class XFunction(ListeningBase, XBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
 
 
     def __init__(
@@ -26,7 +26,7 @@ class XFunction(ListeningBase, CarriesSomeHooksBase[SHK, SHV, "XFunction"], Gene
         completing_function_callable: Callable[[FunctionValues[SHK, SHV]], tuple[bool, dict[SHK, SHV]]],
         *,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ) -> None:
 
 
@@ -92,7 +92,7 @@ class XFunction(ListeningBase, CarriesSomeHooksBase[SHK, SHV, "XFunction"], Gene
 
             return values_to_be_added
 
-        CarriesSomeHooksBase.__init__( # type: ignore
+        XBase.__init__( # type: ignore
             self,
             logger=logger,
             invalidate_callback=None,

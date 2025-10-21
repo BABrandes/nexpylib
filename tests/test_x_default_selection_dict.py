@@ -2,7 +2,7 @@ from typing import Any, Literal, Mapping, Optional
 from logging import Logger, basicConfig, getLogger, DEBUG
 
 from nexpy import XDictSelectDefault, FloatingHook, Hook
-from nexpy.x_objects_base.x_composite_base import XCompositeBase
+from nexpy import XCompositeBase
 from nexpy.core.hooks.owned_hook import OwnedHook
 import pytest
 
@@ -10,7 +10,7 @@ basicConfig(level=DEBUG)
 logger = getLogger(__name__)
 
 
-class MockObservable(XComplexBase[Literal["value"], Any, Any, Any, "MockObservable"]):
+class MockObservable(XCompositeBase[Literal["value"], Any, Any, Any, "MockObservable"]):
     """Mock observable for testing purposes."""
     
     def __init__(self, name: str):
@@ -22,7 +22,12 @@ class MockObservable(XComplexBase[Literal["value"], Any, Any, Any, "MockObservab
         logger: Optional[Logger] = None,
         **kwargs: Any) -> None:
         """Construct a MockObservable instance."""
-        super().__init__(initial_hook_values=initial_values)
+        super().__init__(
+            initial_hook_values=initial_values,
+            compute_missing_primary_values_callback=None,
+            compute_secondary_values_callback={},
+            validate_complete_primary_values_callback=None
+        )
     
     def _act_on_invalidation(self, keys: set[Literal["value"]]) -> None:
         """Act on invalidation - required by BaseXObject."""

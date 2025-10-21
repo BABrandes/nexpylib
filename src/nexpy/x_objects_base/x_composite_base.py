@@ -15,7 +15,7 @@ from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # t
 from .._utils import log
 from ..core.nexus_system.submission_error import SubmissionError
 
-from .carries_some_hooks_base import CarriesSomeHooksBase
+from .x_base import XBase
 from ..core.nexus_system.update_function_values import UpdateFunctionValues
 from .x_object_serializable_mixin import XObjectSerializableMixin
 
@@ -25,7 +25,7 @@ PHV = TypeVar("PHV", covariant=True)
 SHV = TypeVar("SHV", covariant=True)
 O = TypeVar("O", bound="XCompositeBase[Any, Any, Any, Any, Any]")
 
-class XCompositeBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XObjectSerializableMixin[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV, O]):
+class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializableMixin[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV, O]):
     """
     Base class for composite X objects (multiple hooks) in the hook-based architecture.
 
@@ -170,7 +170,7 @@ class XCompositeBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], X
             logger: Optional[Logger] = None,
             nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER):
         """
-        Initialize the XComplexBase with hook-based architecture.
+        Initialize the XCompositeBase with hook-based architecture.
         
         This is the base class for many X objects in the library. The first four parameters
         are mandatory to ensure all subclasses explicitly define their core structure, though
@@ -496,7 +496,7 @@ class XCompositeBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], X
             # Step 4: Return the additional values
             return additional_values
         
-        CarriesSomeHooksBase.__init__( # type: ignore
+        XBase.__init__( # type: ignore
             self,
             logger=logger,
             invalidate_callback=internal_invalidate_callback,

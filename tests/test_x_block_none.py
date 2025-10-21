@@ -225,7 +225,7 @@ class TestXBlockNoneHookAccess:
             hook_with_None=None
         )
         
-        keys = obs._get_keys() # type: ignore
+        keys = obs._get_hook_keys() # type: ignore
         assert keys == {"value_without_none", "value_with_none"}
 
     def test_get_hook_key(self):
@@ -250,7 +250,7 @@ class TestXBlockNoneHookAccess:
             hook_with_None=None
         )
         
-        with pytest.raises(ValueError, match="not found in hooks"):
+        with pytest.raises(ValueError, match="not found in"):
             obs._get_key_by_hook_or_nexus(unknown_hook) # type: ignore
 
 

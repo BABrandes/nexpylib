@@ -9,7 +9,7 @@ from ..core.nexus_system.nexus_manager import NexusManager
 from ..core.nexus_system.nexus import Nexus
 from ..core.nexus_system.update_function_values import UpdateFunctionValues
 from ..core.hooks.hook_protocols.owned_hook_protocol import OwnedHookProtocol
-from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER
+from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ..core.nexus_system.has_nexus_manager_protocol import HasNexusManagerProtocol
 from ..core.hooks.hook_aliases import Hook, ReadOnlyHook
 
@@ -21,9 +21,9 @@ import weakref
 
 HK = TypeVar("HK")
 HV = TypeVar("HV")
-O = TypeVar("O", bound="CarriesSomeHooksBase[Any, Any, Any]")
+O = TypeVar("O", bound="XBase[Any, Any, Any]")
 
-class CarriesSomeHooksBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[HK, HV, O], ABC):
+class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[HK, HV, O], ABC):
     """
     Base class for observables in the new hook-based architecture.
     
@@ -103,7 +103,7 @@ class CarriesSomeHooksBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProt
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER, 
         ) -> None:
         """
-        Initialize the CarriesSomeHooksBase.
+        Initialize the XBase.
         """
 
         # Store weak references to callbacks to avoid circular references
@@ -296,7 +296,7 @@ class CarriesSomeHooksBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProt
                     hook_pairs.append((hook, hook_of_observable))
                 case _: # type: ignore
                     raise ValueError(f"Invalid initial sync mode: {initial_sync_mode}")
-        Nexus[HV].join_hook_pairs(*hook_pairs) # type: ignore
+        Nexus[HV].join_hook_pairs(*hook_pairs)
 
     def _isolate(self, key: Optional[HK] = None) -> None:
         """
@@ -335,7 +335,7 @@ class CarriesSomeHooksBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProt
 
         # Remove all listeners
         if isinstance(self, ListeningProtocol):
-            self.remove_all_listeners() # type: ignore
+            self.remove_all_listeners()
 
     def _validate_value(self, key: HK, value: HV, *, logger: Optional[Logger] = None) -> tuple[bool, str]:
         """

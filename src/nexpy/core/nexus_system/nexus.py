@@ -71,7 +71,7 @@ class Nexus(Generic[T]):
     def __init__(
         self,
         value: T,
-        hooks: set["HookWithConnectionProtocol[T]"] = set(),
+        hooks: set["HookWithConnectionProtocol[T]"] = set(), # type: ignore
         logger: Optional[logging.Logger] = None,
         nexus_manager: Optional["NexusManager"] = None
         ) -> None:
@@ -107,10 +107,10 @@ class Nexus(Generic[T]):
                 assert hook2.value == 42
         """
         
-        from .default_nexus_manager import DEFAULT_NEXUS_MANAGER
+        from .default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
         
         if nexus_manager is None:
-            nexus_manager = DEFAULT_NEXUS_MANAGER
+            nexus_manager = _DEFAULT_NEXUS_MANAGER
 
         self._nexus_manager: "NexusManager" = nexus_manager
         self._hooks: set[weakref.ref["HookWithConnectionProtocol[T]"]] = {weakref.ref(hook) for hook in hooks}
@@ -223,8 +223,8 @@ class Nexus(Generic[T]):
         for hook_nexus in nexuses:
             for hook in hook_nexus._get_hooks():
                 if value_type is None:
-                    value_type = type(hook.value)  # type: ignore
-                elif type(hook.value) != value_type:  # type: ignore
+                    value_type = type(hook.value)
+                elif type(hook.value) != value_type:
                     raise ValueError("The hooks in the hook nexuses must have the same value type")
 
         # Check if any groups have overlapping hooks (not disjoint) and collect all hooks
@@ -290,7 +290,7 @@ class Nexus(Generic[T]):
         for hook_pair in hook_pairs:
             nexus_to_take_value_from: Nexus[Any] = hook_pair[0]._get_nexus() # type: ignore
             nexus_to_be_updated: Nexus[Any] = hook_pair[1]._get_nexus() # type: ignore
-            nexus_and_values[nexus_to_be_updated] = nexus_to_take_value_from.stored_value # type: ignore
+            nexus_and_values[nexus_to_be_updated] = nexus_to_take_value_from.stored_value
         success, msg = nexus_manager.submit_values(nexus_and_values)  # type: ignore
         if not success:
             raise ValueError(msg)  # type: ignore
@@ -305,7 +305,7 @@ class Nexus(Generic[T]):
             if hook_nexus_1 is hook_nexus_2:
                 continue
                 
-            merged_nexus: Nexus[T] = Nexus[T]._create_merged_nexuses(hook_nexus_1, hook_nexus_2) # type: ignore
+            merged_nexus: Nexus[T] = Nexus[T]._create_merged_nexuses(hook_nexus_1, hook_nexus_2)
             
             # Replace nexus for all hooks
             # NOTE: Caller (join method) already holds locks in proper order via lock ordering

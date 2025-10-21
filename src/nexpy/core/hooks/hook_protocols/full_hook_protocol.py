@@ -1,7 +1,7 @@
 from typing import TypeVar, runtime_checkable, Protocol
 
 from ...auxiliary.listening_protocol import ListeningProtocol
-from ...nexus_system.has_nexus_manager_protocol import HasNexusManagerProtocol
+from nexpy.core.nexus_system.has_nexus_manager_protocol import HasNexusManagerProtocol
 from ...publisher_subscriber.publisher_protocol import PublisherProtocol
 from ..hook_protocols.managed_hook_protocol import ManagedHookProtocol
 from ..mixin_protocols.hook_with_setter_protocol import HookWithSetterProtocol

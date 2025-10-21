@@ -8,8 +8,7 @@ from typing import Any
 from enum import Enum
 
 
-from nexpy import XValue, XList, XDictSelect, XSet, XSetSingleSelect, XSetMultiSelect, write_report
-from nexpy.core import CarriesSomeHooksBase
+from nexpy import XValue, XList, XDictSelect, XSet, XSetSingleSelect, XSetMultiSelect, write_report, XBase
 
 
 class UserRole(Enum):
@@ -33,7 +32,7 @@ class TestWriteReport:
         print("="*80)
         
         # Create the complex system
-        observables: dict[str, CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"]] = self._create_complex_system() # type: ignore
+        observables: dict[str, XBase[Any, Any, Any]] = self._create_complex_system()
         
         # Analyze it with write_report
         self._analyze_system(observables)
@@ -45,7 +44,7 @@ class TestWriteReport:
         print("✅ write_report test completed successfully!")
         print("="*80)
     
-    def _create_complex_system(self) -> dict[str, CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"]]:
+    def _create_complex_system(self) -> dict[str, XBase[Any, Any, Any]]:
         """Create a complex system with multiple observables and joinings"""
         
         print("🔧 Creating complex observable system...")
@@ -123,7 +122,7 @@ class TestWriteReport:
             "status_backup": status_backup,
         } # type: ignore
     
-    def _analyze_system(self, observables_dict: dict[str, CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"]]):
+    def _analyze_system(self, observables_dict: dict[str, XBase[Any, Any, Any]]):
         """Use write_report to analyze the complex system"""
         
         print("\n" + "="*80)
@@ -179,7 +178,7 @@ class TestWriteReport:
             for name, count in sorted(observable_connection_counts.items(), key=lambda x: x[1], reverse=True):
                 print(f"  {name}: {count} shared connections")
     
-    def _demonstrate_changes(self, observables_dict: dict[str, CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"]]):
+    def _demonstrate_changes(self, observables_dict: dict[str, XBase[Any, Any, Any]]):
         """Demonstrate how changes propagate through the system"""
         
         print("\n" + "="*80)
@@ -187,9 +186,9 @@ class TestWriteReport:
         print("="*80)
         
         # Show current state
-        task_list: CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"] = observables_dict["task_list"]
-        task_backup: CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"] = observables_dict["task_backup"]
-        task_count: CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"] = observables_dict["task_count"]
+        task_list: XBase[Any, Any, Any] = observables_dict["task_list"]
+        task_backup: XBase[Any, Any, Any] = observables_dict["task_backup"]
+        task_count: XBase[Any, Any, Any] = observables_dict["task_count"]
         
         print(f"Original task list: {task_list.list}") # type: ignore
         print(f"Task backup: {task_backup.list}") # type: ignore
@@ -204,9 +203,9 @@ class TestWriteReport:
         print(f"Task count: {task_count.value}") # type: ignore
         
         # Demonstrate user data joining
-        user_name: CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"] = observables_dict["user_name"] # type: ignore
-        backup_age: CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"] = observables_dict["backup_age"]
-        user_age: CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"] = observables_dict["user_age"]
+        user_name: XBase[Any, Any, Any] = observables_dict["user_name"]
+        backup_age: XBase[Any, Any, Any] = observables_dict["backup_age"]
+        user_age: XBase[Any, Any, Any] = observables_dict["user_age"]
         
         print(f"\nOriginal user age: {user_age.value}") # type: ignore
         print(f"Backup age: {backup_age.value}") # type: ignore
@@ -228,7 +227,7 @@ class TestWriteReport:
         name_backup: XValue[Any] = XValue[Any]("")
         name_backup.join(name.value_hook, "use_target_value")  # type: ignore
         
-        observables: dict[str, CarriesSomeHooksBase[Any, Any, "CarriesSomeHooksBase[Any, Any, Any]"]] = {
+        observables: dict[str, XBase[Any, Any, Any]] = {
             "name": name,
             "age": age,
             "name_backup": name_backup

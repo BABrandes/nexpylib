@@ -6,7 +6,7 @@ from ...x_objects_base.x_simple_base import XSimpleBase
 from ...x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER as DEFAULT_NEXUS_MANAGER
 from .protocols import XSingleValueProtocol
 
 T = TypeVar("T")

@@ -5,12 +5,12 @@ from ...core.hooks.owned_hook import OwnedHook
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
 from ...core.auxiliary.listening_base import ListeningBase
-from ...x_objects_base.carries_some_hooks_base import CarriesSomeHooksBase
+from ...x_objects_base.x_base import XBase
 from ...core.nexus_system.nexus import Nexus
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER as DEFAULT_NEXUS_MANAGER
 
 # Type variables for input and output hook names and values
 IHK = TypeVar("IHK")  # Input Hook Keys
@@ -19,7 +19,7 @@ IHV = TypeVar("IHV")  # Input Hook Values
 OHV = TypeVar("OHV")  # Output Hook Values
 
 
-class XOneWayFunction(ListeningBase, CarriesSomeHooksBase[IHK|OHK, IHV|OHV, "XOneWayFunction"], Generic[IHK, OHK, IHV, OHV]):
+class XOneWayFunction(ListeningBase, XBase[IHK|OHK, IHV|OHV, "XOneWayFunction"], Generic[IHK, OHK, IHV, OHV]):
 
 
     def __init__(
@@ -104,7 +104,7 @@ class XOneWayFunction(ListeningBase, CarriesSomeHooksBase[IHK|OHK, IHV|OHV, "XOn
 
             return values_to_be_added
 
-        CarriesSomeHooksBase.__init__( # type: ignore
+        XBase.__init__( # type: ignore
             self,
             logger=logger,
             invalidate_callback=None,

@@ -1,8 +1,8 @@
 from typing import Protocol, Literal, TYPE_CHECKING, TypeVar, runtime_checkable, Hashable
 
 if TYPE_CHECKING:
-    from ...nexus_system.nexus import Nexus
-    from ...nexus_system.nexus_manager import NexusManager
+    from nexpy.core.nexus_system.nexus import Nexus
+    from nexpy.core.nexus_system.nexus_manager import NexusManager
     from ....x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol    
 
 T = TypeVar("T")

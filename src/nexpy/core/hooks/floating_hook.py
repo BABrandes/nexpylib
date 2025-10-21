@@ -2,8 +2,8 @@ from typing import Generic, TypeVar, Optional, Callable
 from logging import Logger
 
 from ..auxiliary.listening_base import ListeningBase
-from ..nexus_system.nexus_manager import NexusManager
-from ..nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from nexpy.core.nexus_system.nexus_manager import NexusManager
+from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 
 from .hook_bases.full_hook_base import FullHookBase
 from .mixin_protocols.hook_with_isolated_validation_protocol import HookWithIsolatedValidationProtocol
@@ -125,7 +125,7 @@ class FloatingHook(FullHookBase[T], HookWithIsolatedValidationProtocol[T], HookW
         reaction_callback: Optional[Callable[[], tuple[bool, str]]] = None,
         isolated_validation_callback: Optional[Callable[[T], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
-        nexus_manager: "NexusManager" = DEFAULT_NEXUS_MANAGER
+        nexus_manager: "NexusManager" = _DEFAULT_NEXUS_MANAGER
         ) -> None:
         
         self._reaction_callback = reaction_callback

@@ -2,13 +2,13 @@ from typing import TypeVar, runtime_checkable, Protocol, TYPE_CHECKING, Mapping,
 from logging import Logger
 
 from ...auxiliary.listening_protocol import ListeningProtocol
-from ...nexus_system.has_nexus_manager_protocol import HasNexusManagerProtocol
+from nexpy.core.nexus_system.has_nexus_manager_protocol import HasNexusManagerProtocol
 from ...publisher_subscriber.publisher_protocol import PublisherProtocol
-from ...nexus_system.has_nexus_protocol import HasNexusProtocol
+from nexpy.core.nexus_system.has_nexus_protocol import HasNexusProtocol
 
 if TYPE_CHECKING:
-    from ...nexus_system.nexus import Nexus
-    from ...nexus_system.nexus_manager import NexusManager
+    from nexpy.core.nexus_system.nexus import Nexus
+    from nexpy.core.nexus_system.nexus_manager import NexusManager
 
 T = TypeVar("T")
 

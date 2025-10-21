@@ -57,7 +57,7 @@ class XSubscriber(XCompositeBase[HK, None, HV, None, "XSubscriber"], Subscriber,
             float, str, list, dict, custom objects, etc.
     
     Multiple Inheritance:
-        - XComplexBase: Core X object functionality with hooks and validation
+        - XCompositeBase: Core X object functionality with hooks and validation
         - Subscriber: Async reaction to publisher notifications
         - Generic[HK, HV]: Type-safe key-value storage
     
@@ -229,7 +229,7 @@ class XSubscriber(XCompositeBase[HK, None, HV, None, "XSubscriber"], Subscriber,
 
         Subscriber.__init__(self)
 
-        XComplexBase.__init__( # type: ignore
+        XCompositeBase.__init__( # type: ignore
             self,
             initial_hook_values=initial_values,
             compute_missing_primary_values_callback=None,

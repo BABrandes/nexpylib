@@ -204,6 +204,10 @@ Apache License 2.0
 Copyright (c) 2025 Benedikt Axel Brandes
 """
 
+from .x_objects_base.x_base import XBase
+from .x_objects_base.x_simple_base import XSimpleBase
+from .x_objects_base.x_composite_base import XCompositeBase
+
 from .x_objects.single_value_like.x_single_value import XSingleValue as XValue
 
 from .x_objects.list_like.x_list import XList
@@ -274,6 +278,11 @@ __all__ = [
     # Complex objects
     'XSubscriber',
     'XRootedPaths',
+    
+    # Base classes
+    'XBase',
+    'XSimpleBase',
+    'XCompositeBase',
 
     # Modern protocol aliases
     'XDictProtocol',
@@ -297,7 +306,7 @@ __all__ = [
     # Utilities
     'XObjectSerializableMixin',
     'write_report',
-    
+
     # Configuration
     'default',
 ]

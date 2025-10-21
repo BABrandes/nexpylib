@@ -10,7 +10,6 @@ This module tests the user-facing configuration API for:
 import pytest
 import nexpy as nx
 from nexpy import default
-from nexpy.core.nexus_system import default_nexus_manager
 from dataclasses import dataclass
 from test_base import ObservableTestCase
 
@@ -38,7 +37,7 @@ class TestDefaultModule(ObservableTestCase):
         assert default.FLOAT_ACCURACY == 1e-12
         
         # Verify it actually updates the underlying module
-        assert default_nexus_manager.FLOAT_ACCURACY == 1e-12
+        assert default.NEXUS_MANAGER.FLOAT_ACCURACY == 1e-12
         
         # Test setting different values
         default.FLOAT_ACCURACY = 1e-6
@@ -103,7 +102,7 @@ class TestDefaultModule(ObservableTestCase):
         manager = default.NEXUS_MANAGER
         
         # Should return the default nexus manager
-        assert manager is default_nexus_manager.DEFAULT_NEXUS_MANAGER
+        assert manager is default.NEXUS_MANAGER
         
         # Should be usable
         hook = nx.FloatingHook(42, nexus_manager=manager)
@@ -372,7 +371,7 @@ class TestDefaultModuleEdgeCases(ObservableTestCase):
         assert default.NEXUS_MANAGER is manager
         
         # Should be the default manager
-        assert manager is default_nexus_manager.DEFAULT_NEXUS_MANAGER
+        assert manager is default.NEXUS_MANAGER
     
     def test_register_equality_callback_cannot_override(self):
         """Test that registering a callback for same type pair raises error."""

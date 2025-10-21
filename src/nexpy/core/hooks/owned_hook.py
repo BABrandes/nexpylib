@@ -4,8 +4,8 @@ from logging import Logger
 from .hook_protocols.owned_full_hook_protocol import OwnedFullHookProtocol
 
 from ..auxiliary.listening_base import ListeningBase
-from ..nexus_system.nexus_manager import NexusManager
-from ..nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from nexpy.core.nexus_system.nexus_manager import NexusManager
+from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ...x_objects_base.carries_some_hooks_protocol import CarriesSomeHooksProtocol
 
 from .hook_bases.full_hook_base import FullHookBase
@@ -125,7 +125,7 @@ class OwnedHook(FullHookBase[T], OwnedFullHookProtocol[T], ListeningBase, Generi
             owner: CarriesSomeHooksProtocol[Any, Any],
             initial_value: T,
             logger: Optional[Logger] = None,
-            nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+            nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
             ) -> None:
 
         ListeningBase.__init__(self, logger)

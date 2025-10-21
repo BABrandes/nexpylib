@@ -8,9 +8,9 @@ from ..mixin_protocols.hook_with_connection_protocol import HookWithConnectionPr
 
 from ...._utils import log
 from ...auxiliary.listening_base import ListeningBase
-from ...nexus_system.nexus_manager import NexusManager
-from ...nexus_system.nexus import Nexus
-from ...nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from nexpy.core.nexus_system.nexus_manager import NexusManager
+from nexpy.core.nexus_system.nexus import Nexus
+from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER as DEFAULT_NEXUS_MANAGER
 from ....x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol
 from ...publisher_subscriber.publisher import Publisher
 
@@ -118,7 +118,7 @@ class ManagedHookBase(ManagedHookProtocol[T], Publisher, ListeningBase, Generic[
                 logged_hook = GetterHookBase("data", logger=logger)
         """
 
-        from ...nexus_system.nexus import Nexus
+        from nexpy.core.nexus_system.nexus import Nexus
 
         ListeningBase.__init__(self, logger)
         self._value = value
@@ -314,7 +314,7 @@ class ManagedHookBase(ManagedHookProtocol[T], Publisher, ListeningBase, Generic[
             A tuple containing a boolean indicating if the connection was successful and a string message
         """
 
-        from ...nexus_system.nexus import Nexus
+        from nexpy.core.nexus_system.nexus import Nexus
 
 
         if target_hook is None: # type: ignore
@@ -355,7 +355,7 @@ class ManagedHookBase(ManagedHookProtocol[T], Publisher, ListeningBase, Generic[
 
         log(self, "disconnect_hook", self._logger, True, "Disconnecting hook initiated")
 
-        from ...nexus_system.nexus import Nexus
+        from nexpy.core.nexus_system.nexus import Nexus
 
         # Check if we're being called during garbage collection by inspecting the call stack
         is_being_garbage_collected = any(frame.function == '__del__' for frame in inspect.stack())

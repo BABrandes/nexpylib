@@ -101,8 +101,8 @@ class XDictSelectionBase(
         # Initialize ListeningBase
         ListeningBase.__init__(self, logger)
         
-        # Initialize XComplexBase
-        XComplexBase.__init__(  # type: ignore
+        # Initialize XCompositeBase
+        XCompositeBase.__init__(  # type: ignore
             self,
             initial_hook_values={
                 "dict": dict_hook if isinstance(dict_hook, ManagedHookProtocol) else _initial_dict_value,
