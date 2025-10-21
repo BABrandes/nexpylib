@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-10-21
+
 ### Added
 - **Base Classes for Custom X Objects**: `XSimpleBase` and `XCompositeBase` base classes for creating custom reactive objects
   - `XSimpleBase`: For single-value reactive wrappers with validation
