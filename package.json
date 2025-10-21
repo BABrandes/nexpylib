@@ -1,6 +1,6 @@
 {
   "name": "nexpylib",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Type checking and development tools for nexpylib",
   "scripts": {
     "typecheck": "pyright",
