@@ -4,12 +4,12 @@ from abc import ABC, abstractmethod
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_complex_base import XComplexBase
+from ...x_objects_base.x_composite_base import XCompositeBase
 from .protocols import XDictProtocol
 from ...core.auxiliary.listening_base import ListeningBase
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER
 from ...core.nexus_system.submission_error import SubmissionError
 
 K = TypeVar("K")
@@ -18,7 +18,7 @@ KT = TypeVar("KT")  # Key type (can be Optional[K] for optional variants)
 VT = TypeVar("VT")  # Value type (can be Optional[V] for optional variants)
 
 class XDictSelectionBase(
-    XComplexBase[
+    XCompositeBase[
         Literal["dict", "key", "value"], 
         Literal["keys", "values", "length"], 
         Any, 
@@ -59,9 +59,10 @@ class XDictSelectionBase(
         key_hook: KT | Hook[KT] | ReadOnlyHook[KT],
         value_hook: Optional[Hook[VT]] | ReadOnlyHook[VT] = None,
         *,
+        custom_validator: Optional[Callable[[Mapping[Literal["dict", "key", "value"], Any]], tuple[bool, str]]] = None,
         invalidate_callback: Optional[Callable[[], None]] = None,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ):
         """
         Initialize the XDictSelectionBase.
@@ -108,17 +109,18 @@ class XDictSelectionBase(
                 "key": key_hook if not (key_hook is None or (isinstance(key_hook, type(None)))) else _initial_key_value,
                 "value": value_hook if value_hook is not None else _initial_value_value
             },
-            secondary_hook_callbacks={
+            compute_secondary_values_callback={
                 "keys": lambda values: set(values["dict"].keys()) if values["dict"] is not None else set(),  # type: ignore
                 "values": lambda values: list(values["dict"].values()) if values["dict"] is not None else list(),  # type: ignore
                 "length": lambda values: len(values["dict"]) if values["dict"] is not None else 0  # type: ignore
             },
-            verification_method=self._create_validation_callback(),
-            add_values_to_be_updated_callback=self._create_add_values_callback(),
-            invalidate_callback=invalidate_callback,
+            validate_complete_primary_values_callback=self._create_validation_callback(),
+            compute_missing_primary_values_callback=self._create_add_values_callback(),
+            invalidate_after_update_custom_callback=invalidate_callback,
             output_value_wrapper={
                 "dict": lambda x: dict(x) # type: ignore
             },
+            validate_complete_values_custom_callback=custom_validator,
             logger=logger,
             nexus_manager=nexus_manager
         )

@@ -1,27 +1,28 @@
-from typing import Generic, TypeVar, Optional, Literal, Mapping, Any
+from typing import Generic, TypeVar, Optional, Literal, Mapping, Any, Callable
 from collections.abc import Iterable
 from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_complex_base import XComplexBase
+from ...x_objects_base.x_composite_base import XCompositeBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from .protocols import XOptionalSelectionOptionProtocol
 from .utils import likely_settable
 
 T = TypeVar("T")
 
-class XOptionalSelectionSet(XComplexBase[Literal["selected_option", "available_options"], Literal["number_of_available_options"], Optional[T] | Iterable[T], int, "XOptionalSelectionSet"], XOptionalSelectionOptionProtocol[T], Generic[T]):
+class XOptionalSelectionSet(XCompositeBase[Literal["selected_option", "available_options"], Literal["number_of_available_options"], Optional[T] | Iterable[T], int, "XOptionalSelectionSet"], XOptionalSelectionOptionProtocol[T], Generic[T]):
 
     def __init__(
         self,
         selected_option: Optional[T] | Hook[Optional[T]] | ReadOnlyHook[Optional[T]] | XOptionalSelectionOptionProtocol[T],
         available_options: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | None = None,
         *,
+        custom_validator: Optional[Callable[[Mapping[Literal["selected_option", "available_options", "number_of_available_options"], Optional[T] | Iterable[T]| int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER) -> None: # type: ignore
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
         
         if isinstance(selected_option, XOptionalSelectionOptionProtocol):
             initial_selected_option: Optional[T] = selected_option.selected_option # type: ignore
@@ -40,7 +41,7 @@ class XOptionalSelectionSet(XComplexBase[Literal["selected_option", "available_o
 
             else:
                 # selected_option is a T (or None)
-                initial_selected_option = selected_option # type: ignore
+                initial_selected_option = selected_option
                 hook_selected_option = None
 
             if available_options is None:
@@ -48,12 +49,12 @@ class XOptionalSelectionSet(XComplexBase[Literal["selected_option", "available_o
                 hook_available_options = None
 
             elif isinstance(available_options, ManagedHookProtocol):
-                initial_available_options = available_options.value # type: ignore
+                initial_available_options = available_options.value
                 hook_available_options = available_options # type: ignore
 
             else:
                 # available_options is an Iterable[T]
-                initial_available_options = set(available_options) # type: ignore
+                initial_available_options = set(available_options)
                 hook_available_options = None
                 
         def is_valid_value(x: Mapping[Literal["selected_option", "available_options"], Any]) -> tuple[bool, str]:
@@ -70,11 +71,13 @@ class XOptionalSelectionSet(XComplexBase[Literal["selected_option", "available_o
 
         super().__init__(
             initial_hook_values={"selected_option": initial_selected_option, "available_options": initial_available_options}, # type: ignore
-            verification_method=is_valid_value,
-            secondary_hook_callbacks={"number_of_available_options": lambda x: len(x["available_options"])}, # type: ignore
+            compute_missing_primary_values_callback=None,
+            compute_secondary_values_callback={"number_of_available_options": lambda x: len(x["available_options"])}, # type: ignore
+            validate_complete_primary_values_callback=is_valid_value,
             output_value_wrapper={
                 "available_options": lambda x: set(x) # type: ignore
             },
+            validate_complete_values_custom_callback=custom_validator,
             logger=logger,
             nexus_manager=nexus_manager
         )

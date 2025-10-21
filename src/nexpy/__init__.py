@@ -228,9 +228,9 @@ from .x_objects.function_like.x_function import XFunction
 from .x_objects.function_like.x_one_way_function import XOneWayFunction
 
 
-from .x_objects.complex.xobject_rooted_paths import XRootedPaths
-from .x_objects.complex.xobject_block_none import XBlockNone
-from .x_objects.complex.xobject_subscriber import XSubscriber
+from .x_objects.other.xobject_rooted_paths import XRootedPaths
+from .x_objects.other.xobject_block_none import XBlockNone
+from .x_objects.other.xobject_subscriber import XSubscriber
 
 from .core.hooks.floating_hook import FloatingHook
 from .core.hooks.hook_aliases import Hook, ReadOnlyHook

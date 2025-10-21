@@ -2,7 +2,7 @@ from typing import Any, Literal, Mapping, Optional
 from logging import Logger, basicConfig, getLogger, DEBUG
 
 from nexpy import XDictSelect, XDictSelectOptional, FloatingHook
-from nexpy.x_objects_base.x_complex_base import XComplexBase
+from nexpy.x_objects_base.x_composite_base import XCompositeBase
 from nexpy.core.hooks.owned_hook import OwnedHook
 import pytest
 

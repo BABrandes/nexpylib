@@ -11,7 +11,7 @@ from ..core.hooks.mixin_protocols.hook_with_getter_protocol import HookWithGette
 from ..core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ..core.nexus_system.nexus import Nexus
 from ..core.nexus_system.nexus_manager import NexusManager
-from ..core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from .._utils import log
 from ..core.nexus_system.submission_error import SubmissionError
 
@@ -23,11 +23,11 @@ PHK = TypeVar("PHK")
 SHK = TypeVar("SHK")
 PHV = TypeVar("PHV", covariant=True)
 SHV = TypeVar("SHV", covariant=True)
-O = TypeVar("O", bound="XComplexBase[Any, Any, Any, Any, Any]")
+O = TypeVar("O", bound="XCompositeBase[Any, Any, Any, Any, Any]")
 
-class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XObjectSerializableMixin[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV, O]):
+class XCompositeBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XObjectSerializableMixin[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV, O]):
     """
-    Base class for all X objects in the hook-based architecture.
+    Base class for composite X objects (multiple hooks) in the hook-based architecture.
 
     This class combines BaseListening and BaseCarriesHooks to provide the complete
     interface for observables. It implements a flexible hook-based system that replaces
@@ -54,16 +54,20 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
     
     **Core Callback System:**
     
-    1. **verification_method**: Validates that all primary values together represent
-       a valid state. Called before any state changes are applied.
+    1. **internal_verification_method**: Validates that all primary values together represent
+       a valid state. Called first during validation, before any state changes are applied.
+       Operates on primary values only.
        
-    2. **secondary_hook_callbacks**: Calculate derived values from primary values.
+    2. **custom_validator**: Additional validation on both primary and secondary values.
+       Called after internal_verification_method. Operates on all hook values (primary + secondary).
+       
+    3. **secondary_hook_callbacks**: Calculate derived values from primary values.
        These are automatically recalculated when primary values change.
        
-    3. **add_values_to_be_updated_callback**: Adds additional values to complete
+    4. **add_values_to_be_updated_callback**: Adds additional values to complete
        partial updates (e.g., updating a dict when a dict value changes).
        
-    4. **invalidate_callback**: Called after successful state changes for external
+    5. **invalidate_callback**: Called after successful state changes for external
        actions outside the hook system.
     
     **Type Parameters:**
@@ -103,7 +107,7 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
         
         obs = BaseXObject(
             initial_component_values_or_hooks={'name': 'John', 'age': 30},
-            verification_method=validate_person
+            internal_verification_method=validate_person
         )
         ```
     
@@ -157,55 +161,74 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
             self,
             *,
             initial_hook_values: Mapping[PHK, PHV|OwnedHookProtocol[PHV]],
-            verification_method: Optional[Callable[[Mapping[PHK, PHV]], tuple[bool, str]]] = None,
-            secondary_hook_callbacks: Mapping[SHK, Callable[[Mapping[PHK, PHV]], SHV]] = {},
-            add_values_to_be_updated_callback: Optional[Callable[[O, UpdateFunctionValues[PHK, PHV]], Mapping[PHK, PHV]]] = None,
-            invalidate_callback: Optional[Callable[[], None]] = None,
+            compute_missing_primary_values_callback: Optional[Callable[[O, UpdateFunctionValues[PHK, PHV]], Mapping[PHK, PHV]]],
+            compute_secondary_values_callback: Optional[Mapping[SHK, Callable[[Mapping[PHK, PHV]], SHV]]],
+            validate_complete_primary_values_callback: Optional[Callable[[Mapping[PHK, PHV]], tuple[bool, str]]],
+            invalidate_after_update_custom_callback: Optional[Callable[[], None]] = None,
+            validate_complete_values_custom_callback: Optional[Callable[[Mapping[PHK|SHK, PHV|SHV]], tuple[bool, str]]] = None,
             output_value_wrapper: Optional[Mapping[PHK|SHK, Callable[[PHV|SHV], PHV|SHV]]] = None,
             logger: Optional[Logger] = None,
-            nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER):
+            nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER):
         """
-        Initialize the BaseXObject with hook-based architecture.
+        Initialize the XComplexBase with hook-based architecture.
+        
+        This is the base class for many X objects in the library. The first four parameters
+        are mandatory to ensure all subclasses explicitly define their core structure, though
+        they may be set to None if not needed for a particular implementation.
 
         Parameters
         ----------
-        initial_hook_values : Mapping[PHK, PHV|HookProtocol[PHV]]
+        initial_hook_values : Mapping[PHK, PHV|OwnedHookProtocol[PHV]] (required)
             Initial values or hooks for primary hooks.
-            Can contain either direct values (PHV) or HookProtocol objects that will be connected.
+            Can contain either direct values (PHV) or OwnedHookProtocol objects that will be connected.
             These represent the primary state of the X object.
+            This parameter is mandatory and must always be provided.
             
-        verification_method : Callable[[Mapping[PHK, PHV]], tuple[bool, str]], optional
-            Optional validation function that verifies all primary values together
-            represent a valid state. Called during value submission to ensure state consistency.
+        compute_missing_primary_values_callback : Optional[Callable[[O, UpdateFunctionValues[PHK, PHV]], Mapping[PHK, PHV]]] (required)
+            Function that adds additional primary values to make a potentially invalid
+            submission become valid. Called during value submission to complete partial updates.
+            This parameter is mandatory but can be set to None if not needed.
             
             The function signature is:
-            ``(primary_values: Mapping[PHK, PHV]) -> tuple[bool, str]``
+            ``(self: O, update_values: UpdateFunctionValues[PHK, PHV]) -> Mapping[PHK, PHV]``
             
             Parameters
             ----------
-            primary_values : Mapping[PHK, PHV]
-                Complete mapping of all primary hook values
+            self : O
+                The X object instance (for accessing current state)
+            update_values : UpdateFunctionValues[PHK, PHV]
+                Object containing current and submitted values
                 
             Returns
             -------
-            tuple[bool, str]
-                (is_valid, message) where:
-                - is_valid: True if the state is valid, False otherwise
-                - message: Human-readable description of validation result
+            Mapping[PHK, PHV]
+                Additional primary values to include in the submission
                 
+            Notes
+            -----
+            Use cases:
+            - Dictionary management: When changing a dict value, also update the dict itself
+            - Composite updates: Ensure related values are updated together
+            - Dependency resolution: Add missing values based on submitted changes
+            
             Examples
             --------
-            >>> def validate_dict_state(values):
-            ...     if 'dict' in values and 'key' in values:
-            ...         return values['key'] in values['dict'], "Key must exist in dict"
-            ...     return True, "Valid state"
+            >>> def complete_dict_updates(self, update_values):
+            ...     additional = {}
+            ...     if 'dict_value' in update_values.submitted:
+            ...         # Update the dict when a dict value changes
+            ...         new_dict = update_values.current['dict'].copy()
+            ...         new_dict[self.current_key] = update_values.submitted['dict_value']
+            ...         additional['dict'] = new_dict
+            ...     return additional
             
-        secondary_hook_callbacks : Mapping[SHK, Callable[[Mapping[PHK, PHV]], SHV]], optional
+        compute_secondary_values_callback : Optional[Mapping[SHK, Callable[[Mapping[PHK, PHV]], SHV]]] (required)
             Mapping of secondary hook keys to calculation functions.
             These functions compute derived values from primary values. Secondary hooks are
             read-only and automatically updated when primary values change.
+            This parameter is mandatory but can be set to None if there are no secondary values.
             
-            The function signature is:
+            The function signature for each callback is:
             ``(primary_values: Mapping[PHK, PHV]) -> SHV``
             
             Parameters
@@ -233,46 +256,35 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
             ...     'average': lambda values: sum(values['numbers']) / len(values['numbers'])
             ... }
             
-        add_values_to_be_updated_callback : Callable[[O, Mapping[PHK, PHV], Mapping[PHK, PHV]], Mapping[PHK, PHV]], optional
-            Optional function that adds additional values to make a potentially invalid
-            submission become valid. Called during value submission to complete partial updates.
+        validate_complete_primary_values_callback : Optional[Callable[[Mapping[PHK, PHV]], tuple[bool, str]]] (required)
+            Validation function that verifies all primary values together represent
+            a valid state. Called FIRST during validation, before validate_complete_values_custom_callback.
+            Operates on primary values only.
+            This parameter is mandatory but can be set to None if no validation is needed.
             
             The function signature is:
-            ``(self: O, current_values: Mapping[PHK, PHV], submitted_values: Mapping[PHK, PHV]) -> Mapping[PHK, PHV]``
+            ``(primary_values: Mapping[PHK, PHV]) -> tuple[bool, str]``
             
             Parameters
             ----------
-            self : O
-                The X object instance (for accessing current state)
-            current_values : Mapping[PHK, PHV]
-                Current values of all primary hooks
-            submitted_values : Mapping[PHK, PHV]
-                Values being submitted for update
+            primary_values : Mapping[PHK, PHV]
+                Complete mapping of all primary hook values
                 
             Returns
             -------
-            Mapping[PHK, PHV]
-                Additional values to include in the submission
+            tuple[bool, str]
+                (is_valid, message) where:
+                - is_valid: True if the state is valid, False otherwise
+                - message: Human-readable description of validation result
                 
-            Notes
-            -----
-            Use cases:
-            - Dictionary management: When changing a dict value, also update the dict itself
-            - Composite updates: Ensure related values are updated together
-            - Dependency resolution: Add missing values based on submitted changes
-            
             Examples
             --------
-            >>> def add_dict_updates(self, current, submitted):
-            ...     additional = {}
-            ...     if 'dict_value' in submitted and 'dict' in current:
-            ...         # Update the dict when a dict value changes
-            ...         new_dict = current['dict'].copy()
-            ...         new_dict[self.current_key] = submitted['dict_value']
-            ...         additional['dict'] = new_dict
-            ...     return additional
+            >>> def validate_dict_state(values):
+            ...     if 'dict' in values and 'key' in values:
+            ...         return values['key'] in values['dict'], "Key must exist in dict"
+            ...     return True, "Valid state"
             
-        invalidate_callback : Callable[[], None], optional
+        invalidate_after_update_custom_callback : Optional[Callable[[], None]], optional
             Optional function called after a new valid state is established.
             Used for further actions outside the hook system, such as triggering external
             events or updating dependent systems.
@@ -297,17 +309,76 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
             ...     # Log state change
             ...     logger.info("X object state changed")
             
-        logger : Logger, optional
+        validate_complete_values_custom_callback : Optional[Callable[[Mapping[PHK|SHK, PHV|SHV]], tuple[bool, str]]], optional
+            Optional validation function that validates all hook values (primary and secondary).
+            Called SECOND during validation, after validate_complete_primary_values_callback and after 
+            secondary values have been computed. This allows validation across all values.
+            
+            The function signature is:
+            ``(all_values: Mapping[PHK|SHK, PHV|SHV]) -> tuple[bool, str]``
+            
+            Parameters
+            ----------
+            all_values : Mapping[PHK|SHK, PHV|SHV]
+                Complete mapping of all hook values (primary + secondary)
+                
+            Returns
+            -------
+            tuple[bool, str]
+                (is_valid, message) where:
+                - is_valid: True if the state is valid, False otherwise
+                - message: Human-readable description of validation result
+                
+            Notes
+            -----
+            - Called after validate_complete_primary_values_callback
+            - Has access to both primary and secondary values
+            - Useful for cross-validation between primary and derived values
+            
+            Examples
+            --------
+            >>> def validate_all_values(values):
+            ...     # Can validate across primary and secondary values
+            ...     if values.get('total') != sum(values.get('items', [])):
+            ...         return False, "Total doesn't match sum of items"
+            ...     return True, "Valid state"
+            
+        output_value_wrapper : Optional[Mapping[PHK|SHK, Callable[[PHV|SHV], PHV|SHV]]], optional
+            Optional mapping of hook keys to wrapper functions that transform values when
+            accessed via value_by_key(). Does not affect internal hook values.
+            
+            The function signature for each wrapper is:
+            ``(value: PHV|SHV) -> PHV|SHV``
+            
+            Notes
+            -----
+            - Only affects external access via value_by_key()
+            - Internal hook values remain unchanged
+            - Useful for type conversion or value formatting on output
+            
+            Examples
+            --------
+            >>> output_wrappers = {
+            ...     'price': lambda x: round(x, 2),  # Round price to 2 decimals
+            ...     'name': lambda x: x.upper()       # Convert name to uppercase
+            ... }
+            
+        logger : Optional[Logger], optional
             Optional logger instance for debugging and error reporting.
             If None, uses the default logging configuration.
             
         nexus_manager : NexusManager, optional
             NexusManager instance for coordinating value updates.
-            Defaults to DEFAULT_NEXUS_MANAGER. Controls how values are synchronized
+            Defaults to _DEFAULT_NEXUS_MANAGER. Controls how values are synchronized
             and equality is checked across the hook system.
             
         Notes
         -----
+        Base Class Design:
+        - This class serves as the foundation for all complex X objects in the library
+        - The first four parameters are mandatory to ensure consistent initialization across subclasses
+        - Subclasses may pass None for callbacks they don't need, but must explicitly provide them
+        
         Implementation Notes:
         - Primary hooks represent the core state of the X object
         - Secondary hooks are derived values calculated from primary hooks
@@ -317,9 +388,9 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
         
         Error Handling:
         - Raises ValueError if primary and secondary hook keys overlap
-        - Raises ValueError if verification_method returns False
-        - Raises ValueError if add_values_to_be_updated_callback returns invalid keys
-        - Logs errors from invalidate_callback but doesn't raise them
+        - Raises ValueError if validate_complete_primary_values_callback or validate_complete_values_custom_callback returns False
+        - Raises ValueError if compute_missing_primary_values_callback returns invalid keys
+        - Logs errors from invalidate_after_update_custom_callback but doesn't raise them
         """
 
         #-------------------------------- Initialization start --------------------------------
@@ -332,7 +403,10 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
 
         # Eager Caching
         self._primary_hook_keys = set(initial_hook_values.keys())
-        self._secondary_hook_keys = set(secondary_hook_callbacks.keys())
+        if compute_secondary_values_callback is not None:
+            self._secondary_hook_keys: set[SHK] = set(compute_secondary_values_callback.keys())
+        else:
+            self._secondary_hook_keys = set()
 
         # Some checks:
         if self._primary_hook_keys & self._secondary_hook_keys:
@@ -350,9 +424,9 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
         #--------------------------------Initialize BaseCarriesHooks--------------------------------
 
         def internal_invalidate_callback(self_ref: O) -> tuple[bool, str]:
-            if invalidate_callback is not None:
+            if invalidate_after_update_custom_callback is not None:
                 try:
-                    invalidate_callback()
+                    invalidate_after_update_custom_callback()
                 except Exception as e:
                     log(self_ref, "invalidate", self_ref._logger, False, f"Error in the act_on_invalidation_callback: {e}")
                     raise ValueError(f"Error in the act_on_invalidation_callback: {e}")
@@ -360,9 +434,9 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
             return True, "Successfully invalidated"
 
         def internal_validation_in_isolation_callback(self_ref: O, values: Mapping[PHK|SHK, PHV|SHV]) -> tuple[bool, str]:
-            if verification_method is None:
-                return True, "No verification method provided. Default is True"
-            else:
+            
+            # First, do the internal verification method
+            if validate_complete_primary_values_callback is not None:
                 primary_values_dict: dict[PHK, PHV] = dict(self_ref.primary_values)
                 for key, value in values.items():
                     if key in self_ref._primary_hooks:
@@ -373,8 +447,16 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
                             return False, f"Internal secondary value for key {key} ( {self_ref._secondary_values[key]} ) is not equal to the submitted value {value}"
                     else:
                         raise ValueError(f"Key {key} not found in component_hooks or secondary_hooks")
-                success, msg = verification_method(primary_values_dict)
-                return success, msg
+                success, msg = validate_complete_primary_values_callback(primary_values_dict)
+                if not success:
+                    return False, msg
+            
+            # Then, do the custom validator
+            if validate_complete_values_custom_callback is not None:
+                success, msg = validate_complete_values_custom_callback(values)
+                if not success:
+                    return False, msg
+            return True, "Values are valid"
 
         def internal_add_values_to_be_updated_callback(self_ref: O, update_values: UpdateFunctionValues[PHK|SHK, PHV|SHV]) -> Mapping[PHK|SHK, PHV|SHV]:
             # Step 1: Complete the primary values
@@ -387,7 +469,7 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
 
             # Step 2: Generate additionally values if add_values_to_be_updated_callback is provided
             additional_values: dict[PHK|SHK, PHV|SHV] = {}
-            if add_values_to_be_updated_callback is not None:
+            if compute_missing_primary_values_callback is not None:
                 current_values_only_primary: Mapping[PHK, PHV] = {}
                 for key, value in update_values.current.items():
                     if key in self_ref._primary_hook_keys:
@@ -397,7 +479,7 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
                     if key in self_ref._primary_hook_keys:
                         submitted_values_only_primary[key] = value # type: ignore
 
-                additional_values = add_values_to_be_updated_callback(self_ref, UpdateFunctionValues(current=current_values_only_primary, submitted=submitted_values_only_primary)) # type: ignore
+                additional_values = compute_missing_primary_values_callback(self_ref, UpdateFunctionValues(current=current_values_only_primary, submitted=submitted_values_only_primary)) # type: ignore
                 # Check this they only contain primary hook keys
                 for key in additional_values.keys():
                     if key not in self_ref._primary_hook_keys:
@@ -431,7 +513,7 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
             if isinstance(value, HookWithGetterProtocol):
                 initial_value: PHV = value.value # type: ignore
             else:
-                initial_value = value # type: ignore
+                initial_value = value
 
             initial_primary_hook_values[key] = initial_value
             hook = OwnedHook(self, initial_value, logger, nexus_manager) # type: ignore
@@ -441,12 +523,13 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
                 value.join(hook, "use_target_value") # type: ignore
 
         self._secondary_hook_callbacks: dict[SHK, Callable[[Mapping[PHK, PHV]], SHV]] = {}
-        for key, _callback in secondary_hook_callbacks.items():
-            self._secondary_hook_callbacks[key] = _callback
-            value = _callback(initial_primary_hook_values)
-            self._secondary_values[key] = value
-            secondary_hook = OwnedHook[SHV](self, value, logger, nexus_manager)
-            self._secondary_hooks[key] = secondary_hook
+        if compute_secondary_values_callback is not None:
+            for key, _callback in compute_secondary_values_callback.items():
+                self._secondary_hook_callbacks[key] = _callback
+                value = _callback(initial_primary_hook_values)
+                self._secondary_values[key] = value
+                secondary_hook = OwnedHook[SHV](self, value, logger, nexus_manager)
+                self._secondary_hooks[key] = secondary_hook
 
         #-------------------------------- Initialize finished --------------------------------
 
@@ -578,7 +661,7 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
         Join many hooks by their keys.
         """
         for key, hook in source_hooks.items():
-            self.join_by_key(key, hook, initial_sync_mode) # type: ignore
+            self.join_by_key(key, hook, initial_sync_mode)
 
     def join_by_key(self, source_hook_key: PHK|SHK, target_hook: Hook[PHV|SHV]|ReadOnlyHook[PHV|SHV], initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> None:
         """
@@ -759,7 +842,7 @@ class XComplexBase(ListeningBase, CarriesSomeHooksBase[PHK|SHK, PHV|SHV, O], XOb
         """
         
         with self._lock:
-            success, msg = self._submit_value(key, value) # type: ignore
+            success, msg = self._submit_value(key, value)
             if not success and raise_submission_error_flag:
                 raise SubmissionError(msg, value, str(key))
             return success, msg

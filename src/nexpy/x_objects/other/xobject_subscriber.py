@@ -31,18 +31,17 @@ Example:
 
 from typing import Generic, TypeVar, Callable, Mapping, Optional, Literal
 from logging import Logger
-
-from ...x_objects_base.x_complex_base import XComplexBase
+from ...x_objects_base.x_composite_base import XCompositeBase
 from ...core.publisher_subscriber.publisher import Publisher
 from ...core.publisher_subscriber.subscriber import Subscriber
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER
 
 HK = TypeVar("HK")
 HV = TypeVar("HV")
 
 
-class XSubscriber(XComplexBase[HK, None, HV, None, "XSubscriber"], Subscriber, Generic[HK, HV]):
+class XSubscriber(XCompositeBase[HK, None, HV, None, "XSubscriber"], Subscriber, Generic[HK, HV]):
     """
     X object that automatically updates in response to Publisher publications.
     
@@ -144,8 +143,9 @@ class XSubscriber(XComplexBase[HK, None, HV, None, "XSubscriber"], Subscriber, G
         publisher: Publisher|set[Publisher],
         on_publication_callback: Callable[[None|Publisher], Mapping[HK, HV]],
         *,
+        custom_validator: Optional[Callable[[Mapping[HK, HV]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ) -> None:
         """
         Initialize a new XSubscriber.
@@ -211,17 +211,31 @@ class XSubscriber(XComplexBase[HK, None, HV, None, "XSubscriber"], Subscriber, G
         """
 
         self._on_publication_callback = on_publication_callback
+        self._custom_validator = custom_validator
 
         initial_values: Mapping[HK, HV] = self._on_publication_callback(None)
-        
+
+        def _validate_complete_values_in_isolation_callback(values: Mapping[HK, HV], custom_validator: Optional[Callable[[Mapping[HK, HV]], tuple[bool, str]]]) -> tuple[bool, str]:
+            """
+            Validate the complete values in isolation. return False when any value is None or the values do not match.
+            """
+
+            if custom_validator is not None:
+                success, msg = custom_validator(values)
+                if not success:
+                    return False, msg
+
+            return True, "Values are valid"
+
         Subscriber.__init__(self)
+
         XComplexBase.__init__( # type: ignore
             self,
             initial_hook_values=initial_values,
-            verification_method=None,
-            secondary_hook_callbacks={},
-            add_values_to_be_updated_callback=None,
-            invalidate_callback=None,
+            compute_missing_primary_values_callback=None,
+            compute_secondary_values_callback={},
+            validate_complete_primary_values_callback=lambda values, custom_validator = custom_validator: _validate_complete_values_in_isolation_callback(values, custom_validator),
+            invalidate_after_update_custom_callback=None,
             logger=logger,
             nexus_manager=nexus_manager)
         

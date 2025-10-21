@@ -3,23 +3,23 @@ from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_complex_base import XComplexBase
+from ...x_objects_base.x_composite_base import XCompositeBase
 from .protocols import XDictProtocol
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER
 from ...core.nexus_system.submission_error import SubmissionError
 
 K = TypeVar("K")
 V = TypeVar("V")
     
-class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], Mapping[K, V], int|set[K]|list[V], "XDict"], XDictProtocol[K, V], Generic[K, V]):
+class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"], Mapping[K, V], int|set[K]|list[V], "XDict"], XDictProtocol[K, V], Generic[K, V]):
 
     def __init__(
         self,
         observable_or_hook_or_value: Mapping[K, V] | Hook[Mapping[K, V]] | ReadOnlyHook[Mapping[K, V]] | XDictProtocol[K, V] | None = None,
         *,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ) -> None:
 
         if observable_or_hook_or_value is None:
@@ -42,12 +42,13 @@ class XDict(XComplexBase[Literal["dict"], Literal["length", "keys", "values"], M
 
         super().__init__(
             initial_hook_values={"dict": initial_dict_value},
-            verification_method=is_valid_value,
-            secondary_hook_callbacks={
+            compute_missing_primary_values_callback=None,
+            compute_secondary_values_callback={
                 "length": lambda x: len(x["dict"]),
                 "keys": lambda x: set(x["dict"].keys()),
                 "values": lambda x: list(x["dict"].values())
             },
+            validate_complete_primary_values_callback=is_valid_value,
             output_value_wrapper={
                 "dict": lambda x: dict(x), # type: ignore
                 "keys": lambda x: set(x), # type: ignore

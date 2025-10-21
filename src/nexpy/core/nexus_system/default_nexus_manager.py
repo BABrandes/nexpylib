@@ -136,14 +136,19 @@ def _value_equality_callback_int_float(value1: int, value2: float, float_accurac
         return False
     return abs(value1 - value2) < float_accuracy
 
+# =============================================================================
+# Default nexus manager instance (private - access via nexpy.default module)
+# =============================================================================
 
-# Build value equality callbacks dictionary
-_value_equality_callbacks = {
-    (float, float): _value_equality_callback_float,
-    (int, int): _value_equality_callback_int,
-    (float, int): _value_equality_callback_float_int,
-    (int, float): _value_equality_callback_int_float,
-}
+_DEFAULT_NEXUS_MANAGER: "NexusManager" = NexusManager(
+    value_equality_callbacks= {
+        (float, float): _value_equality_callback_float,
+        (int, int): _value_equality_callback_int,
+        (float, int): _value_equality_callback_float_int,
+        (int, float): _value_equality_callback_int_float,
+    },
+    registered_immutable_types=set()
+)
 
 # =============================================================================
 # Optional dependency integrations
@@ -155,6 +160,7 @@ _value_equality_callbacks = {
 # =============================================================================
 
 # --- united_system integration ---
+
 try:
     from united_system import RealUnitedScalar # type: ignore
     
@@ -183,31 +189,3 @@ try:
 except ImportError:
     # united_system is not available, skip RealUnitedScalar support
     pass
-
-
-# --- Add additional optional integrations here ---
-# Example:
-# try:
-#     from some_library import SomeType
-#     
-#     def _value_equality_callback_some_type(value1: SomeType, value2: SomeType) -> bool:
-#         """Check equality for SomeType values."""
-#         # Implementation here
-#         pass
-#     
-#     _value_equality_callbacks[(SomeType, SomeType)] = _value_equality_callback_some_type
-# except ImportError:
-#     pass
-
-
-# =============================================================================
-# Default nexus manager instance (private - access via nexpy.default module)
-# =============================================================================
-
-_DEFAULT_NEXUS_MANAGER: "NexusManager" = NexusManager(
-    value_equality_callbacks=_value_equality_callbacks,
-    registered_immutable_types=set()
-)
-
-# For backward compatibility (deprecated - use nexpy.default.NEXUS_MANAGER instead)
-DEFAULT_NEXUS_MANAGER = _DEFAULT_NEXUS_MANAGER

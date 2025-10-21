@@ -9,7 +9,7 @@ from ..core.nexus_system.nexus_manager import NexusManager
 from ..core.nexus_system.nexus import Nexus
 from ..core.nexus_system.update_function_values import UpdateFunctionValues
 from ..core.hooks.hook_protocols.owned_hook_protocol import OwnedHookProtocol
-from ..core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER
 from ..core.nexus_system.has_nexus_manager_protocol import HasNexusManagerProtocol
 from ..core.hooks.hook_aliases import Hook, ReadOnlyHook
 
@@ -100,7 +100,7 @@ class CarriesSomeHooksBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProt
         validate_complete_values_in_isolation_callback: Optional[Callable[[O, Mapping[HK, HV]], tuple[bool, str]]] = None,
         add_values_to_be_updated_callback: Optional[Callable[[O, UpdateFunctionValues[HK, HV]], Mapping[HK, HV]]] = None,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER, 
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER, 
         ) -> None:
         """
         Initialize the CarriesSomeHooksBase.

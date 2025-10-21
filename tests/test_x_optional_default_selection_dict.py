@@ -2,7 +2,7 @@ from typing import Any, Literal, Mapping, Optional
 from logging import Logger, basicConfig, getLogger, DEBUG
 
 from nexpy import XDictSelectOptionalDefault
-from nexpy.x_objects_base.x_complex_base import XComplexBase
+from nexpy.x_objects_base.x_composite_base import XCompositeBase
 import pytest
 
 

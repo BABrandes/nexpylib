@@ -12,7 +12,7 @@ import time
 import pytest   
 
 from nexpy import XValue, XList, XDictSelect
-from nexpy.core import XComplexBase
+from nexpy.core import XCompositeBase
 
 basicConfig(level=DEBUG)
 logger = getLogger(__name__)

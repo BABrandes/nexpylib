@@ -2,7 +2,7 @@ from typing import Any, Callable, Generic, Optional, TypeVar
 from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ...x_objects_base.x_single_value_base import XValueBase
+from ...x_objects_base.x_simple_base import XSimpleBase
 from ...x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
@@ -11,7 +11,7 @@ from .protocols import XSingleValueProtocol
 
 T = TypeVar("T")
 
-class XSingleValue(XValueBase[T], XSingleValueProtocol[T, Hook[T]], CarriesSingleHookProtocol[T], Generic[T]):
+class XSingleValue(XSimpleBase[T], XSingleValueProtocol[T, Hook[T]], CarriesSingleHookProtocol[T], Generic[T]):
     """
     Reactive value wrapper providing seamless integration with NexPy's synchronization system.
     

@@ -13,7 +13,7 @@ import pytest
 from unittest.mock import Mock
 
 from nexpy import XValue, XList
-from nexpy.x_objects_base.x_complex_base import XComplexBase
+from nexpy.x_objects_base.x_composite_base import XCompositeBase
 
 
 

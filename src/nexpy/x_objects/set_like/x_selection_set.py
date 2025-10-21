@@ -1,29 +1,30 @@
 
 
-from typing import Generic, Optional, TypeVar, Any, Literal, Mapping
+from typing import Generic, Optional, TypeVar, Any, Literal, Mapping, Callable
 from collections.abc import Iterable
 from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_complex_base import XComplexBase
+from ...x_objects_base.x_composite_base import XCompositeBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from .protocols import XSelectionOptionsProtocol
 from .utils import likely_settable
 
 T = TypeVar("T")
 
-class XSelectionSet(XComplexBase[Literal["selected_option", "available_options"], Literal["number_of_available_options"], T | Iterable[T], int, "XSelectionSet[T]"], XSelectionOptionsProtocol[T], Generic[T]):
+class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options"], Literal["number_of_available_options"], T | Iterable[T], int, "XSelectionSet[T]"], XSelectionOptionsProtocol[T], Generic[T]):
 
     def __init__(
         self,
         selected_option: T | Hook[T] | ReadOnlyHook[T] | XSelectionOptionsProtocol[T],
         available_options: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | None = None,
         *,
+        custom_validator: Optional[Callable[[Mapping[Literal["selected_option", "available_options", "number_of_available_options"], T | Iterable[T] | int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER) -> None:
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
 
         
         if isinstance(selected_option, XSelectionOptionsProtocol):
@@ -42,7 +43,7 @@ class XSelectionSet(XComplexBase[Literal["selected_option", "available_options"]
 
             else:
                 # selected_option is a T
-                initial_selected_option = selected_option # type: ignore
+                initial_selected_option = selected_option
                 hook_selected_option = None
 
             if available_options is None:
@@ -50,12 +51,12 @@ class XSelectionSet(XComplexBase[Literal["selected_option", "available_options"]
                 hook_available_options = None
 
             elif isinstance(available_options, ManagedHookProtocol):
-                initial_available_options = available_options.value # type: ignore
+                initial_available_options = available_options.value
                 hook_available_options = available_options # type: ignore
 
             else:
                 # available_options is an Iterable[T]
-                initial_available_options: Iterable[T] = set(available_options) # type: ignore
+                initial_available_options: Iterable[T] = set(available_options)
                 hook_available_options = None
                 
         def is_valid_value(x: Mapping[Literal["selected_option", "available_options"], Any]) -> tuple[bool, str]:
@@ -72,11 +73,13 @@ class XSelectionSet(XComplexBase[Literal["selected_option", "available_options"]
 
         super().__init__(
             initial_hook_values={"selected_option": initial_selected_option, "available_options": initial_available_options}, # type: ignore
-            verification_method=is_valid_value,
-            secondary_hook_callbacks={"number_of_available_options": lambda x: len(x["available_options"])}, # type: ignore
+            compute_missing_primary_values_callback=None,
+            compute_secondary_values_callback={"number_of_available_options": lambda x: len(x["available_options"])}, # type: ignore
+            validate_complete_primary_values_callback=is_valid_value,
             output_value_wrapper={
                 "available_options": lambda x: set(x) # type: ignore
             },
+            validate_complete_values_custom_callback=custom_validator,
             logger=logger,
             nexus_manager=nexus_manager
         )
@@ -97,7 +100,7 @@ class XSelectionSet(XComplexBase[Literal["selected_option", "available_options"]
         return self._primary_hooks["available_options"] # type: ignore
 
     @property
-    def available_options(self) -> set[T]: # type: ignore
+    def available_options(self) -> set[T]:
         return self._primary_hooks["available_options"].value # type: ignore
 
     @available_options.setter

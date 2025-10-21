@@ -1,20 +1,20 @@
-from typing import Generic, TypeVar, Sequence, Callable, Literal, Optional, Any
+from typing import Generic, TypeVar, Sequence, Callable, Literal, Optional, Any, Mapping
 from collections.abc import Iterable, Iterator
 from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_complex_base import XComplexBase
+from ...x_objects_base.x_composite_base import XCompositeBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER
 from .protocols import XListProtocol
 from .utils import can_be_list
 
 T = TypeVar("T")
   
 
-class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "XList"], XListProtocol[T], Generic[T]):
+class XList(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int, "XList"], XListProtocol[T], Generic[T]):
     """
     Acting like a list.
 
@@ -25,7 +25,8 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
         observable_or_hook_or_value: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | XListProtocol[T] | None = None,
         *,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+        custom_validator: Optional[Callable[[Mapping[Literal["value", "length"], Any]], tuple[bool, str]]] = None,
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
         ) -> None:
 
 
@@ -45,12 +46,14 @@ class XList(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, 
 
         super().__init__(
             initial_hook_values={"value": initial_value},
-            verification_method=lambda x: (True, "Verification method passed") if can_be_list(x) else (False, "Value has not been converted to a list!"),
-            secondary_hook_callbacks={"length": lambda x: len(x["value"])}, # type: ignore
-            logger=logger,
+            compute_missing_primary_values_callback=None,
+            compute_secondary_values_callback={"length": lambda x: len(x["value"])}, # type: ignore
+            validate_complete_primary_values_callback=lambda x: (True, "Verification method passed") if can_be_list(x) else (False, "Value has not been converted to a list!"),
             output_value_wrapper={
                 "value": lambda x: list(x) # type: ignore
             },
+            validate_complete_values_custom_callback=custom_validator,
+            logger=logger,
             nexus_manager=nexus_manager
         )
 

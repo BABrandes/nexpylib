@@ -70,8 +70,8 @@ For normal usage of the library, import from the main package:
 """
 
 from ..x_objects_base.carries_some_hooks_base import CarriesSomeHooksBase
-from ..x_objects_base.x_complex_base import XComplexBase
-from ..x_objects_base.x_single_value_base import XValueBase as XSingleValueBase
+from ..x_objects_base.x_composite_base import XCompositeBase
+from ..x_objects_base.x_simple_base import XSimpleBase
 from .nexus_system.nexus import Nexus
 from ..x_objects_base.carries_some_hooks_protocol import CarriesSomeHooksProtocol
 from ..x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol
@@ -86,8 +86,8 @@ from .nexus_system.update_function_values import UpdateFunctionValues
 # Note: For user-facing configuration, use: from nexpy import default
 
 __all__ = [
-    'XComplexBase',
-    'XSingleValueBase',
+    'XCompositeBase',
+    'XSimpleBase',
     'Nexus',
     'CarriesSomeHooksBase',
     'CarriesSomeHooksProtocol',

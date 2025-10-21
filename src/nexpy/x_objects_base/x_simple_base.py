@@ -8,7 +8,7 @@ from ..core.hooks.owned_hook import OwnedHook
 from ..core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ..core.nexus_system.nexus import Nexus
 from ..core.nexus_system.nexus_manager import NexusManager
-from ..core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ..core.nexus_system.submission_error import SubmissionError
 
 from .carries_single_hook_protocol import CarriesSingleHookProtocol
@@ -17,9 +17,9 @@ from .carries_some_hooks_base import CarriesSomeHooksBase
 
 T = TypeVar("T")
 
-class XValueBase(ListeningBase, CarriesSomeHooksBase[Literal["value"], T, "XValueBase[T]"], CarriesSingleHookProtocol[T], XObjectSerializableMixin[Literal["value"], T], Generic[T]):
+class XSimpleBase(ListeningBase, CarriesSomeHooksBase[Literal["value"], T, "XSimpleBase[T]"], CarriesSingleHookProtocol[T], XObjectSerializableMixin[Literal["value"], T], Generic[T]):
     """
-    Base class for single-value observables with transitive synchronization via Nexus fusion.
+    Base class for simple X objects (single value) with transitive synchronization via Nexus fusion.
     
     This class provides the core implementation for X objects that wrap a single value,
     including hook management, validation, and synchronization. It serves as the foundation
@@ -43,9 +43,9 @@ class XValueBase(ListeningBase, CarriesSomeHooksBase[Literal["value"], T, "XValu
             validation_in_isolation_callback: Optional[Callable[[T], tuple[bool, str]]] = None,
             invalidate_callback: Optional[Callable[[], None]] = None,
             logger: Optional[Logger] = None,
-            nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER):
+            nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER):
         """
-        Initialize the XValueBase.
+        Initialize the XSimpleBase.
         
         Args:
             value_or_hook: Initial value or Hook to join to
@@ -90,7 +90,7 @@ class XValueBase(ListeningBase, CarriesSomeHooksBase[Literal["value"], T, "XValu
 
         # Create validation callback that uses the verification method
         def validate_complete_values_in_isolation_callback(
-            self_ref: "XValueBase[T]", 
+            self_ref: "XSimpleBase[T]", 
             values: Mapping[Literal["value"], T]
         ) -> tuple[bool, str]:
             """Validate the complete values using the verification method."""
@@ -119,7 +119,7 @@ class XValueBase(ListeningBase, CarriesSomeHooksBase[Literal["value"], T, "XValu
 
         # If initialized with a Hook, join to it
         if hook is not None:
-            self._value_hook.join(hook, "use_target_value") # type: ignore
+            self._value_hook.join(hook, "use_target_value")
 
         #-------------------------------- Initialize finished --------------------------------
 

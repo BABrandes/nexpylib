@@ -1,33 +1,34 @@
-from typing import Generic, TypeVar, Optional, Literal, Mapping
+from typing import Generic, TypeVar, Optional, Literal, Mapping, Callable
 from collections.abc import Iterable
 from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_complex_base import XComplexBase
+from ...x_objects_base.x_composite_base import XCompositeBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from .protocols import XMultiSelectionOptionsProtocol
 from .utils import likely_settable
 
 T = TypeVar("T")
 
-class XMultiSelectionSet(XComplexBase[Literal["selected_options", "available_options"], Literal["number_of_selected_options", "number_of_available_options"], Iterable[T], int, "XMultiSelectionSet"], XMultiSelectionOptionsProtocol[T], Generic[T]):
+class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_options"], Literal["number_of_selected_options", "number_of_available_options"], Iterable[T], int, "XMultiSelectionSet"], XMultiSelectionOptionsProtocol[T], Generic[T]):
 
 
     def __init__(
         self,
         selected_options: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | XMultiSelectionOptionsProtocol[T], available_options: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | None = None,
         *,
+        custom_validator: Optional[Callable[[Mapping[Literal["selected_options", "available_options", "number_of_selected_options", "number_of_available_options"], Iterable[T] | int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER) -> None: # type: ignore
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
 
         # Handle initialization from XMultiSelectionOptionsProtocol
         if isinstance(selected_options, XMultiSelectionOptionsProtocol):            
-            source_observable = selected_options # type: ignore
-            initial_selected_options: Iterable[T] = source_observable.selected_options # type: ignore
-            initial_available_options: Iterable[T] = source_observable.available_options # type: ignore
+            source_observable = selected_options
+            initial_selected_options: Iterable[T] = source_observable.selected_options
+            initial_available_options: Iterable[T] = source_observable.available_options
             selected_options_hook: Optional[ManagedHookProtocol[Iterable[T]]] = None
             available_options_hook: Optional[ManagedHookProtocol[Iterable[T]]] = None
             observable: Optional[XMultiSelectionOptionsProtocol[T]] = selected_options
@@ -38,17 +39,17 @@ class XMultiSelectionSet(XComplexBase[Literal["selected_options", "available_opt
                 raise ValueError("available_options must be provided when not initializing from XMultiSelectionOptionsProtocol")
             
             if isinstance(available_options, ManagedHookProtocol):
-                initial_available_options = available_options.value # type: ignore
-                available_options_hook = available_options # type: ignore
+                initial_available_options = available_options.value
+                available_options_hook = available_options
             else:
-                initial_available_options = set(available_options) # type: ignore
+                initial_available_options = set(available_options)
                 available_options_hook = None
 
             if isinstance(selected_options, ManagedHookProtocol):
-                initial_selected_options = selected_options.value # type: ignore
-                selected_options_hook = selected_options # type: ignore
+                initial_selected_options = selected_options.value
+                selected_options_hook = selected_options
             else:
-                initial_selected_options = set(selected_options) # type: ignore
+                initial_selected_options = set(selected_options)
                 selected_options_hook = None
 
         def is_valid_value(x: Mapping[Literal["selected_options", "available_options"], Iterable[T]]) -> tuple[bool, str]:
@@ -64,12 +65,14 @@ class XMultiSelectionSet(XComplexBase[Literal["selected_options", "available_opt
             return True, "Verification method passed"
 
         super().__init__(
-            initial_hook_values={"selected_options": initial_selected_options, "available_options": initial_available_options}, # type: ignore
-            verification_method=is_valid_value,
-            secondary_hook_callbacks={"number_of_selected_options": lambda x: len(x["selected_options"]), "number_of_available_options": lambda x: len(x["available_options"])}, # type: ignore
+            initial_hook_values={"selected_options": initial_selected_options, "available_options": initial_available_options},
+            compute_missing_primary_values_callback=None,
+            compute_secondary_values_callback={"number_of_selected_options": lambda x: len(x["selected_options"]), "number_of_available_options": lambda x: len(x["available_options"])}, # type: ignore
+            validate_complete_primary_values_callback=is_valid_value,
             output_value_wrapper={
                 "available_options": lambda x: set(x) # type: ignore
             },
+            validate_complete_values_custom_callback=custom_validator,
             logger=logger,
             nexus_manager=nexus_manager
         )

@@ -2,7 +2,7 @@ from typing import Any, Mapping, Optional
 import threading
 from logging import Logger
 
-from nexpy.x_objects_base.x_complex_base import XComplexBase
+from nexpy.x_objects_base.x_composite_base import XCompositeBase
 from nexpy.core.hooks.owned_hook import OwnedHook
 
 from run_tests import console_logger as logger

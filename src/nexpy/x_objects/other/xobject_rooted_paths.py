@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar, Optional, Mapping
+from typing import Generic, TypeVar, Optional, Mapping, Callable
 from pathlib import Path
 from logging import Logger
 
@@ -9,7 +9,7 @@ from ...core.hooks.hook_protocols.owned_full_hook_protocol import OwnedFullHookP
 from ...core.nexus_system.nexus import Nexus
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 
 EK = TypeVar("EK", bound=str)
 
@@ -56,14 +56,16 @@ class XRootedPaths(CarriesSomeHooksBase[str, str|Path|None, "XRootedPaths"], XOb
     def __init__(
         self,
         root_path_initial_value: Optional[Path] = None,
-        rooted_elements_initial_relative_path_values: dict[EK, str|None] = {},
+        rooted_elements_initial_relative_path_values: dict[EK, str|None] = {}, # type: ignore
         *,
+        custom_validator: Optional[Callable[[Mapping[str, Path|str|None]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ):
 
         self._rooted_element_keys: set[EK] = set(rooted_elements_initial_relative_path_values.keys())
         self._rooted_element_path_hooks: dict[str, OwnedFullHookProtocol[Optional[str|Path]]] = {}
+        self._custom_validator = custom_validator
 
         # Initialize the hooks
 
@@ -132,6 +134,13 @@ class XRootedPaths(CarriesSomeHooksBase[str, str|Path|None, "XRootedPaths"], XOb
                 else:
                     if absolute_path is not None:
                         return False, "The root path is not set, so the absolute path must be None"
+
+            # Check the custom validator
+            if self_ref._custom_validator is not None:
+                success, msg = self_ref._custom_validator(values)
+                if not success:
+                    return False, msg
+
             return True, "Valid"
 
         def add_values_to_be_updated_callback(
@@ -244,7 +253,7 @@ class XRootedPaths(CarriesSomeHooksBase[str, str|Path|None, "XRootedPaths"], XOb
         if key == ROOT_PATH_KEY:
             return self._root_path_hook # type: ignore
         elif key in self._rooted_element_path_hooks:
-            return self._rooted_element_path_hooks[key] # type: ignore
+            return self._rooted_element_path_hooks[key]
         else:
             raise ValueError(f"Key {key} not found in hooks")
 
@@ -265,7 +274,7 @@ class XRootedPaths(CarriesSomeHooksBase[str, str|Path|None, "XRootedPaths"], XOb
         if key == ROOT_PATH_KEY:
             return self._root_path_hook.value
         elif key in self._rooted_element_path_hooks:
-            return self._rooted_element_path_hooks[key].value # type: ignore
+            return self._rooted_element_path_hooks[key].value
         else:
             raise ValueError(f"Key {key} not found in hooks")
 
@@ -327,6 +336,6 @@ class XRootedPaths(CarriesSomeHooksBase[str, str|Path|None, "XRootedPaths"], XOb
             values_to_submit[relative_path_key] = relative_path
 
         # Submit all values at once using BaseCarriesHooks.submit_values
-        success, msg = self._submit_values(values_to_submit) # type: ignore
+        success, msg = self._submit_values(values_to_submit)
         if not success:
             raise ValueError(f"Failed to set values from serialization: {msg}")

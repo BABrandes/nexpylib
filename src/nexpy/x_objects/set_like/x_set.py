@@ -1,19 +1,19 @@
-from typing import Any, Generic, Optional, TypeVar, Iterable, Literal, Iterator, Set
+from typing import Any, Generic, Optional, TypeVar, Iterable, Literal, Iterator, Set, Callable, Mapping
 from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_complex_base import XComplexBase
+from ...x_objects_base.x_composite_base import XCompositeBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from .protocols import XSetProtocol
 from .utils import likely_settable
 
 
 T = TypeVar("T")
    
-class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "XSet"], XSetProtocol[T], Set[T], Generic[T]):
+class XSet(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int, "XSet"], XSetProtocol[T], Set[T], Generic[T]):
     """
     Acting like a set.
 
@@ -24,8 +24,9 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         self,
         observable_or_hook_or_value: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | XSetProtocol[T] | None = None,
         *,
+        custom_validator: Optional[Callable[[Mapping[Literal["value", "length"], Iterable[T] | int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER) -> None:
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
 
         if observable_or_hook_or_value is None:
             initial_value: Iterable[T] = set()
@@ -43,11 +44,13 @@ class XSet(XComplexBase[Literal["value"], Literal["length"], Iterable[T], int, "
         
         super().__init__(
             initial_hook_values={"value": initial_value},
-            verification_method=lambda x: (True, "Verification method passed") if likely_settable(x["value"]) else (False, "Value cannot be used as a set!"),
-            secondary_hook_callbacks={"length": lambda x: len(x["value"])}, # type: ignore
+            compute_missing_primary_values_callback=None,
+            compute_secondary_values_callback={"length": lambda x: len(x["value"])}, # type: ignore
+            validate_complete_primary_values_callback=lambda x: (True, "Verification method passed") if likely_settable(x["value"]) else (False, "Value cannot be used as a set!"),
             output_value_wrapper={
                 "value": lambda x: set(x) # type: ignore
             },
+            validate_complete_values_custom_callback=custom_validator,
             logger=logger,
             nexus_manager=nexus_manager
         )
