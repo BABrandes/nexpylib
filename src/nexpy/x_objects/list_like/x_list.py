@@ -52,7 +52,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int
             output_value_wrapper={
                 "value": lambda x: list(x) # type: ignore
             },
-            validate_complete_values_custom_callback=custom_validator,
+            custom_validator=custom_validator,
             logger=logger,
             nexus_manager=nexus_manager
         )

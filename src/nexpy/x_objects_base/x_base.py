@@ -12,6 +12,7 @@ from ..core.hooks.hook_protocols.owned_hook_protocol import OwnedHookProtocol
 from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ..core.nexus_system.has_nexus_manager_protocol import HasNexusManagerProtocol
 from ..core.hooks.hook_aliases import Hook, ReadOnlyHook
+from .._utils import make_weak_callback
 
 from .carries_some_hooks_protocol import CarriesSomeHooksProtocol
 from .carries_single_hook_protocol import CarriesSingleHookProtocol
@@ -22,6 +23,7 @@ import weakref
 HK = TypeVar("HK")
 HV = TypeVar("HV")
 O = TypeVar("O", bound="XBase[Any, Any, Any]")
+
 
 class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[HK, HV, O], ABC):
     """
@@ -96,9 +98,9 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
 
     def __init__(
         self,
-        invalidate_callback: Optional[Callable[[O], tuple[bool, str]]] = None,
-        validate_complete_values_in_isolation_callback: Optional[Callable[[O, Mapping[HK, HV]], tuple[bool, str]]] = None,
-        add_values_to_be_updated_callback: Optional[Callable[[O, UpdateFunctionValues[HK, HV]], Mapping[HK, HV]]] = None,
+        invalidate_after_update_callback: Optional[Callable[[O], tuple[bool, str]]] = None,
+        validate_complete_values_callback: Optional[Callable[[O, Mapping[HK, HV]], tuple[bool, str]]] = None,
+        compute_missing_values_callback: Optional[Callable[[O, UpdateFunctionValues[HK, HV]], Mapping[HK, HV]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER, 
         ) -> None:
@@ -108,9 +110,9 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
 
         # Store weak references to callbacks to avoid circular references
         self._self_ref = weakref.ref(self)
-        self._invalidate_callback = invalidate_callback
-        self._validate_complete_values_in_isolation_callback = validate_complete_values_in_isolation_callback
-        self._add_values_to_be_updated_callback = add_values_to_be_updated_callback
+        self._invalidate_after_update_callback = make_weak_callback(invalidate_after_update_callback)
+        self._validate_complete_values_callback = make_weak_callback(validate_complete_values_callback)
+        self._compute_missing_values_callback = make_weak_callback(compute_missing_values_callback)
         self._logger: Optional[Logger] = logger
         self._nexus_manager: NexusManager = nexus_manager
 
@@ -135,11 +137,11 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
             ValueError: If the invalidate callback is not provided
         """
 
-        if self._invalidate_callback is not None:
+        if self._invalidate_after_update_callback is not None:
             if self._self_ref() is None:
                 raise ValueError("Owner has been garbage collected")
             self_ref: O = self._self_ref() # type: ignore
-            success, msg = self._invalidate_callback(self_ref)
+            success, msg = self._invalidate_after_update_callback(self_ref)
             if success == False:
                 return False, msg
             else:
@@ -165,11 +167,11 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
         """
 
 
-        if self._validate_complete_values_in_isolation_callback is not None:
+        if self._validate_complete_values_callback is not None:
             if self._self_ref() is None:
                 raise ValueError("Owner has been garbage collected")
             self_ref: O = self._self_ref() # type: ignore
-            return self._validate_complete_values_in_isolation_callback(self_ref, values)
+            return self._validate_complete_values_callback(self_ref, values)
         else:
             return True, "No validation in isolation callback provided"
 
@@ -235,11 +237,11 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
             Mapping of additional hook keys to values that should be updated
         """
         with self._lock:
-            if self._add_values_to_be_updated_callback is not None:
+            if self._compute_missing_values_callback is not None:
                 if self._self_ref() is None:
                     raise ValueError("Owner has been garbage collected")
                 self_ref: O = self._self_ref() # type: ignore
-                return self._add_values_to_be_updated_callback(self_ref, values)
+                return self._compute_missing_values_callback(self_ref, values)
             else:
                 return {}
 

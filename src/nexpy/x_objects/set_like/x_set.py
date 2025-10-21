@@ -30,7 +30,7 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int,
 
         if observable_or_hook_or_value is None:
             initial_value: Iterable[T] = set()
-            hook: Optional[ManagedHookProtocol[Iterable[T]]] = None 
+            hook: Optional[Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]]] = None 
         elif isinstance(observable_or_hook_or_value, XSetProtocol):
             initial_value = observable_or_hook_or_value.set
             hook = observable_or_hook_or_value.set_hook
@@ -47,10 +47,8 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int,
             compute_missing_primary_values_callback=None,
             compute_secondary_values_callback={"length": lambda x: len(x["value"])}, # type: ignore
             validate_complete_primary_values_callback=lambda x: (True, "Verification method passed") if likely_settable(x["value"]) else (False, "Value cannot be used as a set!"),
-            output_value_wrapper={
-                "value": lambda x: set(x) # type: ignore
-            },
-            validate_complete_values_custom_callback=custom_validator,
+            output_value_wrapper={"value": lambda x: set(x)}, # type: ignore
+            custom_validator=custom_validator,
             logger=logger,
             nexus_manager=nexus_manager
         )

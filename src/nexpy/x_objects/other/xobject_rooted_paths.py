@@ -184,8 +184,8 @@ class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializabl
 
         XBase.__init__( # type: ignore
             self,
-            validate_complete_values_in_isolation_callback=validate_complete_values_in_isolation_callback,
-            add_values_to_be_updated_callback=add_values_to_be_updated_callback,
+            validate_complete_values_callback=validate_complete_values_in_isolation_callback,
+            compute_missing_values_callback=add_values_to_be_updated_callback,
             logger=logger)
 
     ##########################################

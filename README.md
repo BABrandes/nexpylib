@@ -277,7 +277,7 @@ temperature.value = 20.001  # Update triggered (exceeds tolerance)
 
 ### 🎯 Selection Objects
 - `XDictSelect` — Select key-value pairs from dicts
-- `XSetSelect` — Select elements from sets
+- `XSetSingleSelect` — Select single elements from sets
 - `XSetMultiSelect` — Multiple selection support
 - Optional selection variants (allow `None` selection)
 

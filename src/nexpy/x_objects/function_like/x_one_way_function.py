@@ -107,9 +107,9 @@ class XOneWayFunction(ListeningBase, XBase[IHK|OHK, IHV|OHV, "XOneWayFunction"],
         XBase.__init__( # type: ignore
             self,
             logger=logger,
-            invalidate_callback=None,
-            validate_complete_values_in_isolation_callback=None,
-            add_values_to_be_updated_callback=add_values_to_be_updated_callback
+            invalidate_after_update_callback=None,
+            validate_complete_values_callback=None,
+            compute_missing_values_callback=add_values_to_be_updated_callback
         )
 
         # Connect internal input hooks to external hooks if provided

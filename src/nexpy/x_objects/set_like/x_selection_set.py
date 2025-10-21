@@ -79,7 +79,7 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
             output_value_wrapper={
                 "available_options": lambda x: set(x) # type: ignore
             },
-            validate_complete_values_custom_callback=custom_validator,
+            custom_validator=custom_validator,
             logger=logger,
             nexus_manager=nexus_manager
         )

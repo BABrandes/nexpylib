@@ -163,7 +163,7 @@ Key Features
   
 - **Reactive Collections** — XList, XSet, XDict with full Python protocol support
   
-- **Selection Objects** — XDictSelect, XSetSelect with multi-selection variants
+- **Selection Objects** — XDictSelect, XSetSingleSelect with multi-selection variants
   
 - **Thread-Safe by Design** — All operations protected by reentrant locks
   

@@ -127,7 +127,7 @@ NexPy is organized into four distinct layers:
 **Components**:
 - `XValue` — Single reactive value
 - `XDict`, `XList`, `XSet` — Reactive collections
-- `XDictSelect`, `XSetSelect` — Selection objects
+- `XDictSelect`, `XSetSingleSelect` — Selection objects
 - `XFunction` — Reactive computed values
 
 **Responsibilities**:

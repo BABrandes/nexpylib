@@ -40,8 +40,8 @@ class XSimpleBase(ListeningBase, XBase[Literal["value"], T, "XSimpleBase[T]"], C
             self,
             *,
             value_or_hook: T|Hook[T]|ReadOnlyHook[T]|CarriesSingleHookProtocol[T],
-            validation_in_isolation_callback: Optional[Callable[[T], tuple[bool, str]]] = None,
-            invalidate_callback: Optional[Callable[[], None]] = None,
+            validate_value_callback: Optional[Callable[[T], tuple[bool, str]]] = None,
+            invalidate_after_update_callback: Optional[Callable[[], None]] = None,
             logger: Optional[Logger] = None,
             nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER):
         """
@@ -49,8 +49,8 @@ class XSimpleBase(ListeningBase, XBase[Literal["value"], T, "XSimpleBase[T]"], C
         
         Args:
             value_or_hook: Initial value or Hook to join to
-            verification_method: Optional validation function
-            invalidate_callback: Optional callback for post-change actions
+            validate_value_callback: Optional validation function for the value
+            invalidate_after_update_callback: Optional callback executed after successful state changes
             logger: Optional logger for debugging
             nexus_manager: NexusManager for coordinating updates
         """
@@ -59,13 +59,8 @@ class XSimpleBase(ListeningBase, XBase[Literal["value"], T, "XSimpleBase[T]"], C
 
         # Initialize lock first
         self._lock = RLock()
-        
-        # Store configuration
-        self._verification_method = validation_in_isolation_callback
-        self._invalidate_callback = invalidate_callback
-        self._logger = logger
-        self._nexus_manager = nexus_manager
 
+        # Extract value and optional hook to join
         if isinstance(value_or_hook, CarriesSingleHookProtocol):
             value: T = value_or_hook._get_single_value() # type: ignore
             hook: Optional[OwnedHookProtocol[T]] = value_or_hook._get_single_hook() # type: ignore    
@@ -88,21 +83,22 @@ class XSimpleBase(ListeningBase, XBase[Literal["value"], T, "XSimpleBase[T]"], C
             nexus_manager
             )
 
-        # Create validation callback that uses the verification method
-        def validate_complete_values_in_isolation_callback(
+        # Create validation callback wrapper for XBase
+        # This captures the user's validation callback directly (no need to store it separately)
+        def validate_complete_values_callback_wrapper(
             self_ref: "XSimpleBase[T]", 
             values: Mapping[Literal["value"], T]
         ) -> tuple[bool, str]:
-            """Validate the complete values using the verification method."""
+            """Validate the complete values using the user's validation method."""
             if "value" not in values:
                 return False, "Value key not found in values"
             
             value = values["value"]
             
             # Use custom verification method if provided
-            if self_ref._verification_method is not None:
+            if validate_value_callback is not None:
                 try:
-                    success, msg = self_ref._verification_method(value)
+                    success, msg = validate_value_callback(value)
                     if not success:
                         return False, msg
                 except Exception as e:
@@ -110,9 +106,23 @@ class XSimpleBase(ListeningBase, XBase[Literal["value"], T, "XSimpleBase[T]"], C
             
             return True, "Value is valid"
 
+        # Create invalidation callback wrapper for XBase
+        def xbase_invalidate_after_update_callback_wrapper(
+            self_ref: "XSimpleBase[T]"
+        ) -> tuple[bool, str]:
+            """Call user's invalidate callback if provided."""
+            if invalidate_after_update_callback is not None:
+                try:
+                    invalidate_after_update_callback()
+                except Exception as e:
+                    return False, f"Invalidation error: {e}"
+            return True, "Invalidated successfully"
+
+        # Initialize XBase - it will handle weak reference storage
         XBase.__init__( # type: ignore
             self,
-            validate_complete_values_in_isolation_callback=validate_complete_values_in_isolation_callback,
+            invalidate_after_update_callback=xbase_invalidate_after_update_callback_wrapper,
+            validate_complete_values_callback=validate_complete_values_callback_wrapper,
             logger=logger,
             nexus_manager=nexus_manager
         )
@@ -220,34 +230,8 @@ class XSimpleBase(ListeningBase, XBase[Literal["value"], T, "XSimpleBase[T]"], C
     # Validation and Submission
     #########################################################
 
-    def _validate_value(self, key: Literal["value"], value: T, *, logger: Optional[Logger] = None) -> tuple[bool, str]:
-        """
-        Validate a value.
-
-        ** This method is not thread-safe and should only be called by the validate_value method.
-        
-        Args:
-            key: The key of the hook to validate
-            value: The value to validate
-            
-        Returns:
-            Tuple of (success, message)
-        """
-        # First check custom verification method if provided
-        if self._verification_method is not None:
-            try:
-                success, msg = self._verification_method(value)
-                if not success:
-                    return False, msg
-            except Exception as e:
-                return False, f"Validation error: {e}"
-        
-        # Then check with NexusManager
-        success, msg = self._nexus_manager.submit_values({self._value_hook._get_nexus(): value}, mode="Check values", logger=logger) # type: ignore
-        if not success:
-            return False, msg
-        else:
-            return True, "Value is valid"
+    # Note: _validate_value() is inherited from XBase and uses the validation callback we provided
+    # No need to override it here!
 
     def _submit_value(self, key: Literal["value"], value: T, *, logger: Optional[Logger] = None) -> tuple[bool, str]:
         """

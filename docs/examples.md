@@ -364,13 +364,13 @@ After value change:
 Dictionary: {'light': '#FFFFFF', 'dark': '#111111', 'blue': '#0000FF'}
 ```
 
-### Example 11: Set Selection
+### Example 11: Set Single Selection
 
 ```python
 import nexpy as nx
 
 # Create a selection from a set
-options = nx.XSetSelect({1, 2, 3, 4, 5}, selection=3)
+options = nx.XSetSingleSelect({1, 2, 3, 4, 5}, selection=3)
 
 print(f"Available options: {options.set}")
 print(f"Selected: {options.selection}")

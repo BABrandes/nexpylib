@@ -10,6 +10,7 @@ Complete API documentation for NexPy (nexpylib).
 - [Reactive Value Objects](#reactive-value-objects)
 - [Reactive Collections](#reactive-collections)
 - [Selection Objects](#selection-objects)
+- [Creating Custom X Objects](#creating-custom-x-objects)
 - [Nexus System](#nexus-system)
 - [Publisher-Subscriber](#publisher-subscriber)
 - [Protocols](#protocols)
@@ -452,17 +453,17 @@ print(options.dict["high"])  # 15
 
 ---
 
-### XSetSelect
+### XSetSingleSelect
 
 ```python
-class XSetSelect(Generic[T])
+class XSetSingleSelect(Generic[T])
 ```
 
-Selection from a set with automatic synchronization.
+Single selection from a set with automatic synchronization.
 
 **Constructor**:
 ```python
-XSetSelect(
+XSetSingleSelect(
     universe: Set[T],
     selection: T,
     logger: Optional[Logger] = None,
@@ -481,7 +482,7 @@ XSetSelect(
 
 **Example**:
 ```python
-options = nx.XSetSelect({1, 2, 3, 4, 5}, selection=3)
+options = nx.XSetSingleSelect({1, 2, 3, 4, 5}, selection=3)
 options.selection = 5  # OK
 # options.selection = 10  # Would raise KeyError
 ```
@@ -541,6 +542,453 @@ print(features.selection)  # {"a", "b", "c"}
 
 features.deselect("a")
 print(features.selection)  # {"b", "c"}
+```
+
+---
+
+## Creating Custom X Objects
+
+NexPy provides two base classes for creating custom reactive objects with full integration into the synchronization system:
+
+### XSimpleBase
+
+```python
+class XSimpleBase(Generic[T])
+```
+
+Base class for creating custom X objects that wrap a **single value**.
+
+**Use Cases:**
+- Custom reactive wrappers around domain objects
+- Validated single-value containers
+- Specialized value types with custom behavior
+
+**Constructor**:
+```python
+XSimpleBase(
+    value_or_hook: T | Hook[T] | ReadOnlyHook[T] | CarriesSingleHookProtocol[T],
+    validate_value_callback: Optional[Callable[[T], tuple[bool, str]]] = None,
+    invalidate_after_update_callback: Optional[Callable[[], None]] = None,
+    logger: Optional[Logger] = None,
+    nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+)
+```
+
+**Parameters**:
+- `value_or_hook` — Initial value or hook to join
+- `validate_value_callback` — Optional validation function for the value
+- `invalidate_after_update_callback` — Optional callback executed after successful state changes
+- `logger` — Optional logger for debugging
+- `nexus_manager` — NexusManager instance (default: global manager)
+
+**Properties Provided**:
+- `value: T` — The wrapped value (read/write)
+- `value_hook: Hook[T]` — The underlying hook for fusion operations
+
+**Example: Custom Validated Value**:
+```python
+import nexpy as nx
+from nexpy import XSimpleBase
+
+class PositiveNumber(XSimpleBase[float]):
+    """A number that must always be positive."""
+    
+    def __init__(self, value: float):
+        def validate_positive(val: float) -> tuple[bool, str]:
+            if val > 0:
+                return True, "Valid positive number"
+            return False, "Value must be positive"
+        
+        super().__init__(
+            value_or_hook=value,
+            validate_value_callback=validate_positive
+        )
+
+# Usage
+num = PositiveNumber(10.0)
+print(num.value)  # 10.0
+
+num.value = 20.0  # OK
+# num.value = -5.0  # Raises ValueError: Value must be positive
+```
+
+**Example: Custom Domain Object Wrapper**:
+```python
+import nexpy as nx
+from nexpy import XSimpleBase
+from dataclasses import dataclass
+
+@dataclass
+class User:
+    name: str
+    email: str
+    age: int
+
+class ReactiveUser(XSimpleBase[User]):
+    """Reactive wrapper for User objects."""
+    
+    def __init__(self, user: User):
+        def validate_user(u: User) -> tuple[bool, str]:
+            if u.age < 0:
+                return False, "Age cannot be negative"
+            if "@" not in u.email:
+                return False, "Invalid email"
+            return True, "Valid user"
+        
+        super().__init__(
+            value_or_hook=user,
+            validate_value_callback=validate_user
+        )
+    
+    @property
+    def name(self) -> str:
+        return self.value.name
+    
+    @property
+    def email(self) -> str:
+        return self.value.email
+
+# Usage
+user = ReactiveUser(User("Alice", "alice@example.com", 30))
+
+# Add listener for changes
+user.value_hook.add_listener(lambda: print(f"User changed: {user.name}"))
+
+# Update user
+user.value = User("Bob", "bob@example.com", 25)
+```
+
+---
+
+### XCompositeBase
+
+```python
+class XCompositeBase(Generic[PHK, SHK, PHV, SHV, O])
+```
+
+Base class for creating custom X objects with **multiple related hooks** and internal synchronization.
+
+**Use Cases:**
+- Objects with multiple interdependent properties
+- Selection objects (dict/set selections)
+- Complex stateful objects requiring atomic updates
+- Objects with computed/derived values
+
+**Type Parameters**:
+- `PHK` — Type of primary hook keys (e.g., `Literal["dict", "key"]`)
+- `SHK` — Type of secondary hook keys (e.g., `Literal["keys", "values"]`)
+- `PHV` — Type of primary hook values (e.g., `dict | str`)
+- `SHV` — Type of secondary hook values (e.g., `set | list`)
+- `O` — The class type itself (for self-referential typing)
+
+**Constructor**:
+```python
+XCompositeBase(
+    initial_hook_values: Mapping[PHK, PHV | OwnedHookProtocol[PHV]],
+    compute_missing_primary_values_callback: Optional[Callable[[O, UpdateFunctionValues[PHK, PHV]], Mapping[PHK, PHV]]],
+    compute_secondary_values_callback: Optional[Mapping[SHK, Callable[[Mapping[PHK, PHV]], SHV]]],
+    validate_complete_primary_values_callback: Optional[Callable[[Mapping[PHK, PHV]], tuple[bool, str]]],
+    invalidate_after_update_callback: Optional[Callable[[], None]] = None,
+    validate_complete_values_custom_callback: Optional[Callable[[Mapping[PHK|SHK, PHV|SHV]], tuple[bool, str]]] = None,
+    output_value_wrapper: Optional[Mapping[PHK|SHK, Callable[[PHV|SHV], PHV|SHV]]] = None,
+    logger: Optional[Logger] = None,
+    nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+)
+```
+
+**Key Parameters**:
+
+1. **`initial_hook_values`** (required)
+   - Initial values for primary hooks
+   - These represent the core mutable state
+
+2. **`compute_missing_primary_values_callback`** (required, can be None)
+   - Computes additional primary values needed to complete partial updates
+   - Example: When key changes, compute the corresponding value
+
+3. **`compute_secondary_values_callback`** (required, can be None)
+   - Mapping of secondary hook keys to calculation functions
+   - Secondary hooks are read-only and derived from primary values
+
+4. **`validate_complete_primary_values_callback`** (required, can be None)
+   - Validates that primary values form a valid state
+   - Called FIRST during validation (validates ONLY primary values)
+
+5. **`validate_complete_values_custom_callback`** (optional) **[NEW]**
+   - Additional custom validation across ALL values (primary + secondary)
+   - Called SECOND after primary validation and secondary computation
+   - Allows cross-validation between primary and derived values
+
+6. **`invalidate_after_update_callback`** (optional)
+   - Called after successful state changes
+   - Use for external side effects
+
+**Example: Simple Multi-Property Object**:
+```python
+import nexpy as nx
+from nexpy import XCompositeBase
+from typing import Literal
+
+class Rectangle(XCompositeBase[
+    Literal["width", "height"],  # Primary keys
+    Literal["area"],              # Secondary keys
+    float,                        # Primary value type
+    float,                        # Secondary value type
+    "Rectangle"                   # Self type
+]):
+    def __init__(self, width: float, height: float):
+        # Define how to compute area from width and height
+        def compute_area(primary_values):
+            return primary_values["width"] * primary_values["height"]
+        
+        # Validate that dimensions are positive
+        def validate_dimensions(primary_values):
+            if primary_values["width"] <= 0 or primary_values["height"] <= 0:
+                return False, "Dimensions must be positive"
+            return True, "Valid dimensions"
+        
+        super().__init__(
+            initial_hook_values={
+                "width": width,
+                "height": height
+            },
+            compute_missing_primary_values_callback=None,
+            compute_secondary_values_callback={
+                "area": compute_area
+            },
+            validate_complete_primary_values_callback=validate_dimensions
+        )
+    
+    @property
+    def width(self) -> float:
+        return self._get_primary_hook("width").value
+    
+    @width.setter
+    def width(self, value: float):
+        self._submit_primary_values({"width": value})
+    
+    @property
+    def height(self) -> float:
+        return self._get_primary_hook("height").value
+    
+    @height.setter
+    def height(self, value: float):
+        self._submit_primary_values({"height": value})
+    
+    @property
+    def area(self) -> float:
+        return self._get_secondary_hook("area").value
+
+# Usage
+rect = Rectangle(10.0, 5.0)
+print(rect.area)  # 50.0
+
+rect.width = 20.0
+print(rect.area)  # 100.0 (automatically updated)
+```
+
+**Example: With Custom Validator**:
+```python
+import nexpy as nx
+from nexpy import XCompositeBase
+from typing import Literal
+
+class BoundedValue(XCompositeBase[
+    Literal["value", "min", "max"],  # Primary
+    Literal["range"],                 # Secondary
+    float,                            # Primary type
+    float,                            # Secondary type
+    "BoundedValue"
+]):
+    def __init__(self, value: float, min_val: float, max_val: float):
+        def compute_range(primary):
+            return primary["max"] - primary["min"]
+        
+        def validate_bounds(primary):
+            if primary["min"] >= primary["max"]:
+                return False, "Min must be less than max"
+            if not (primary["min"] <= primary["value"] <= primary["max"]):
+                return False, "Value must be within bounds"
+            return True, "Valid"
+        
+        # NEW: Custom validator across all values
+        def custom_validate_all(all_values):
+            # Can validate relationships between primary and secondary
+            if all_values["range"] <= 0:
+                return False, "Range must be positive"
+            # Ensure value is centered within 10% of range
+            center = (all_values["min"] + all_values["max"]) / 2
+            if abs(all_values["value"] - center) > all_values["range"] * 0.1:
+                return False, "Value must be near center"
+            return True, "Valid"
+        
+        super().__init__(
+            initial_hook_values={
+                "value": value,
+                "min": min_val,
+                "max": max_val
+            },
+            compute_missing_primary_values_callback=None,
+            compute_secondary_values_callback={
+                "range": compute_range
+            },
+            validate_complete_primary_values_callback=validate_bounds,
+            validate_complete_values_custom_callback=custom_validate_all  # NEW
+        )
+
+# Usage
+bounded = BoundedValue(5.0, 0.0, 10.0)
+print(bounded._get_primary_hook("value").value)  # 5.0
+print(bounded._get_secondary_hook("range").value)  # 10.0
+```
+
+---
+
+### Custom Validator Feature
+
+**What's New:** All X objects now support an optional `custom_validator` callback that provides additional validation beyond the standard internal validation.
+
+**Validation Order:**
+
+1. **Primary Validation** (`validate_complete_primary_values_callback`)
+   - Validates primary values only
+   - Checks basic invariants (e.g., key exists in dict)
+
+2. **Secondary Computation**
+   - Secondary values are computed from validated primary values
+
+3. **Custom Validation** (`validate_complete_values_custom_callback`) **[NEW]**
+   - Validates ALL values (primary + secondary)
+   - Allows cross-validation between primary and derived values
+   - Optional additional validation logic
+
+**Use Cases for Custom Validators:**
+
+1. **Cross-validation between primary and derived values**
+   ```python
+   def custom_validate(all_values):
+       # Ensure computed value meets criteria
+       if all_values["computed_metric"] < all_values["threshold"]:
+           return False, "Computed metric below threshold"
+       return True, "Valid"
+   ```
+
+2. **Complex business rules**
+   ```python
+   def custom_validate(all_values):
+       # Complex rule involving multiple values
+       if all_values["status"] == "active":
+           if all_values["count"] == 0:
+               return False, "Active items must have count > 0"
+       return True, "Valid"
+   ```
+
+3. **Consistency checks across all properties**
+   ```python
+   def custom_validate(all_values):
+       # Ensure consistency across object
+       total = sum(all_values[f"part_{i}"] for i in range(5))
+       if abs(total - all_values["total"]) > 0.001:
+           return False, "Parts don't sum to total"
+       return True, "Valid"
+   ```
+
+**Example 1: Selection with Custom Validator**:
+```python
+import nexpy as nx
+from nexpy import XCompositeBase
+from typing import Literal
+
+class ValidatedSelection(XCompositeBase[
+    Literal["options", "selection"],
+    Literal["count"],
+    set[str] | str,
+    int,
+    "ValidatedSelection"
+]):
+    def __init__(self, options: set[str], selection: str):
+        def compute_count(primary):
+            return len(primary["options"])
+        
+        def validate_primary(primary):
+            if primary["selection"] not in primary["options"]:
+                return False, "Selection not in options"
+            return True, "Valid"
+        
+        # NEW: Custom validator ensures minimum options
+        def custom_validate(all_values):
+            if all_values["count"] < 2:
+                return False, "Must have at least 2 options"
+            return True, "Valid"
+        
+        super().__init__(
+            initial_hook_values={
+                "options": options,
+                "selection": selection
+            },
+            compute_missing_primary_values_callback=None,
+            compute_secondary_values_callback={
+                "count": compute_count
+            },
+            validate_complete_primary_values_callback=validate_primary,
+            validate_complete_values_custom_callback=custom_validate
+        )
+
+# Usage
+sel = ValidatedSelection({"a", "b", "c"}, "a")  # OK
+
+# This would fail the custom validator:
+# sel2 = ValidatedSelection({"a"}, "a")  # Error: Must have at least 2 options
+```
+
+**Example 2: XSubscriber - Using Custom Validator Only**:
+```python
+import nexpy as nx
+from nexpy import XCompositeBase, Publisher
+from typing import Mapping
+
+# XSubscriber shows a pattern where you may want ONLY custom validation
+# (no primary validation needed)
+
+class XSubscriber(XCompositeBase[str, None, float, None, "XSubscriber"]):
+    def __init__(
+        self,
+        publisher: Publisher,
+        on_publication_callback: Callable[[None|Publisher], Mapping[str, float]],
+        custom_validator: Optional[Callable[[Mapping[str, float]], tuple[bool, str]]] = None
+    ):
+        initial_values = on_publication_callback(None)
+        
+        # Use custom_validator to validate the complete mapping
+        super().__init__(
+            initial_hook_values=initial_values,
+            compute_missing_primary_values_callback=None,
+            compute_secondary_values_callback={},
+            validate_complete_primary_values_callback=None,  # No primary validation
+            validate_complete_values_custom_callback=custom_validator,  # Only custom validation
+            invalidate_after_update_callback=None
+        )
+        
+        publisher.add_subscriber(self)
+
+# Usage
+def get_sensor_data(pub):
+    if pub is None:
+        return {"temp": 20.0, "humidity": 50.0}
+    return {"temp": read_temp(), "humidity": read_humidity()}
+
+def validate_sensor_data(values):
+    if values["temp"] < -50 or values["temp"] > 100:
+        return False, "Temperature out of range"
+    if values["humidity"] < 0 or values["humidity"] > 100:
+        return False, "Humidity out of range"
+    return True, "Valid"
+
+sensor = XSubscriber(
+    publisher=my_publisher,
+    on_publication_callback=get_sensor_data,
+    custom_validator=validate_sensor_data
+)
 ```
 
 ---

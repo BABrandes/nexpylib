@@ -148,8 +148,8 @@ class XSingleValue(XSimpleBase[T], XSingleValueProtocol[T, Hook[T]], CarriesSing
         # Initialize the base class
         super().__init__(
             value_or_hook=value_or_hook,
-            validation_in_isolation_callback=validator,
-            invalidate_callback=None,
+            validate_value_callback=validator,
+            invalidate_after_update_callback=None,
             logger=logger,
             nexus_manager=nexus_manager
         )

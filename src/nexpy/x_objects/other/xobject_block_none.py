@@ -218,8 +218,8 @@ class XBlockNone(XCompositeBase[Literal["value_without_none", "value_with_none"]
             compute_missing_primary_values_callback=_compute_missing_primary_values_callback,
             compute_secondary_values_callback=None,
             validate_complete_primary_values_callback=_validate_complete_primary_values_callback,
-            invalidate_after_update_custom_callback=custom_validator, # type: ignore
-            validate_complete_values_custom_callback=None,
+            invalidate_after_update_callback=custom_validator, # type: ignore
+            custom_validator=None,
             logger=logger,
             nexus_manager=nexus_manager
         )

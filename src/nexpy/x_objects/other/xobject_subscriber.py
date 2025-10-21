@@ -35,7 +35,9 @@ from ...x_objects_base.x_composite_base import XCompositeBase
 from ...core.publisher_subscriber.publisher import Publisher
 from ...core.publisher_subscriber.subscriber import Subscriber
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
+from ...core.nexus_system.submission_error import SubmissionError
+from ..._utils import make_weak_callback
 
 HK = TypeVar("HK")
 HV = TypeVar("HV")
@@ -144,6 +146,7 @@ class XSubscriber(XCompositeBase[HK, None, HV, None, "XSubscriber"], Subscriber,
         on_publication_callback: Callable[[None|Publisher], Mapping[HK, HV]],
         *,
         custom_validator: Optional[Callable[[Mapping[HK, HV]], tuple[bool, str]]] = None,
+        raise_submission_error_flag: bool = True,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ) -> None:
@@ -210,22 +213,15 @@ class XSubscriber(XCompositeBase[HK, None, HV, None, "XSubscriber"], Subscriber,
             should handle the None case appropriately.
         """
 
-        self._on_publication_callback = on_publication_callback
-        self._custom_validator = custom_validator
+        self._on_publication_callback = make_weak_callback(on_publication_callback)
+        self._raise_submission_error_flag = raise_submission_error_flag
 
-        initial_values: Mapping[HK, HV] = self._on_publication_callback(None)
-
-        def _validate_complete_values_in_isolation_callback(values: Mapping[HK, HV], custom_validator: Optional[Callable[[Mapping[HK, HV]], tuple[bool, str]]]) -> tuple[bool, str]:
-            """
-            Validate the complete values in isolation. return False when any value is None or the values do not match.
-            """
-
-            if custom_validator is not None:
-                success, msg = custom_validator(values)
-                if not success:
-                    return False, msg
-
-            return True, "Values are valid"
+        if self._on_publication_callback is None:
+            raise ValueError("on_publication_callback is None")
+        try:
+            initial_values: Mapping[HK, HV] = self._on_publication_callback(None)
+        except Exception as e:
+            raise ValueError(f"Error in on_publication_callback: {e}")
 
         Subscriber.__init__(self)
 
@@ -234,8 +230,9 @@ class XSubscriber(XCompositeBase[HK, None, HV, None, "XSubscriber"], Subscriber,
             initial_hook_values=initial_values,
             compute_missing_primary_values_callback=None,
             compute_secondary_values_callback={},
-            validate_complete_primary_values_callback=lambda values, custom_validator = custom_validator: _validate_complete_values_in_isolation_callback(values, custom_validator),
-            invalidate_after_update_custom_callback=None,
+            validate_complete_primary_values_callback=None,
+            custom_validator=custom_validator,
+            invalidate_after_update_callback=None,
             logger=logger,
             nexus_manager=nexus_manager)
         
@@ -279,5 +276,12 @@ class XSubscriber(XCompositeBase[HK, None, HV, None, "XSubscriber"], Subscriber,
             This is an internal method called automatically by the Subscriber
             base class. Users don't need to call it directly.
         """
-        values: Mapping[HK, HV] = self._on_publication_callback(publisher)
-        self.submit_values_by_keys(values) # type: ignore
+
+        if self._on_publication_callback is not None:
+            try:
+                values: Mapping[HK, HV] = self._on_publication_callback(publisher)
+            except Exception as e:
+                raise ValueError(f"Error in on_publication_callback: {e}")
+            success, msg = self._submit_values(values) # type: ignore
+            if not success and self._raise_submission_error_flag:
+                raise SubmissionError(msg, values)

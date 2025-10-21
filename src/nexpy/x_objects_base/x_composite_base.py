@@ -164,8 +164,8 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
             compute_missing_primary_values_callback: Optional[Callable[[O, UpdateFunctionValues[PHK, PHV]], Mapping[PHK, PHV]]],
             compute_secondary_values_callback: Optional[Mapping[SHK, Callable[[Mapping[PHK, PHV]], SHV]]],
             validate_complete_primary_values_callback: Optional[Callable[[Mapping[PHK, PHV]], tuple[bool, str]]],
-            invalidate_after_update_custom_callback: Optional[Callable[[], None]] = None,
-            validate_complete_values_custom_callback: Optional[Callable[[Mapping[PHK|SHK, PHV|SHV]], tuple[bool, str]]] = None,
+            invalidate_after_update_callback: Optional[Callable[[], None]] = None,
+            custom_validator: Optional[Callable[[Mapping[PHK|SHK, PHV|SHV]], tuple[bool, str]]] = None,
             output_value_wrapper: Optional[Mapping[PHK|SHK, Callable[[PHV|SHV], PHV|SHV]]] = None,
             logger: Optional[Logger] = None,
             nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER):
@@ -258,7 +258,7 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
             
         validate_complete_primary_values_callback : Optional[Callable[[Mapping[PHK, PHV]], tuple[bool, str]]] (required)
             Validation function that verifies all primary values together represent
-            a valid state. Called FIRST during validation, before validate_complete_values_custom_callback.
+            a valid state. Called FIRST during validation, before custom_validator.
             Operates on primary values only.
             This parameter is mandatory but can be set to None if no validation is needed.
             
@@ -309,7 +309,7 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
             ...     # Log state change
             ...     logger.info("X object state changed")
             
-        validate_complete_values_custom_callback : Optional[Callable[[Mapping[PHK|SHK, PHV|SHV]], tuple[bool, str]]], optional
+        custom_validator : Optional[Callable[[Mapping[PHK|SHK, PHV|SHV]], tuple[bool, str]]], optional
             Optional validation function that validates all hook values (primary and secondary).
             Called SECOND during validation, after validate_complete_primary_values_callback and after 
             secondary values have been computed. This allows validation across all values.
@@ -388,7 +388,7 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
         
         Error Handling:
         - Raises ValueError if primary and secondary hook keys overlap
-        - Raises ValueError if validate_complete_primary_values_callback or validate_complete_values_custom_callback returns False
+        - Raises ValueError if validate_complete_primary_values_callback or custom_validator returns False
         - Raises ValueError if compute_missing_primary_values_callback returns invalid keys
         - Logs errors from invalidate_after_update_custom_callback but doesn't raise them
         """
@@ -424,9 +424,9 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
         #--------------------------------Initialize BaseCarriesHooks--------------------------------
 
         def internal_invalidate_callback(self_ref: O) -> tuple[bool, str]:
-            if invalidate_after_update_custom_callback is not None:
+            if invalidate_after_update_callback is not None:
                 try:
-                    invalidate_after_update_custom_callback()
+                    invalidate_after_update_callback()
                 except Exception as e:
                     log(self_ref, "invalidate", self_ref._logger, False, f"Error in the act_on_invalidation_callback: {e}")
                     raise ValueError(f"Error in the act_on_invalidation_callback: {e}")
@@ -452,8 +452,8 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
                     return False, msg
             
             # Then, do the custom validator
-            if validate_complete_values_custom_callback is not None:
-                success, msg = validate_complete_values_custom_callback(values)
+            if custom_validator is not None:
+                success, msg = custom_validator(values)
                 if not success:
                     return False, msg
             return True, "Values are valid"
@@ -499,9 +499,9 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
         XBase.__init__( # type: ignore
             self,
             logger=logger,
-            invalidate_callback=internal_invalidate_callback,
-            validate_complete_values_in_isolation_callback=internal_validation_in_isolation_callback,
-            add_values_to_be_updated_callback=internal_add_values_to_be_updated_callback,
+            invalidate_after_update_callback=internal_invalidate_callback,
+            validate_complete_values_callback=internal_validation_in_isolation_callback,
+            compute_missing_values_callback=internal_add_values_to_be_updated_callback,
             nexus_manager=nexus_manager
         )
 

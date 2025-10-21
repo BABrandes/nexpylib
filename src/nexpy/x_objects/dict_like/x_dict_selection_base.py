@@ -116,11 +116,11 @@ class XDictSelectionBase(
             },
             validate_complete_primary_values_callback=self._create_validation_callback(),
             compute_missing_primary_values_callback=self._create_add_values_callback(),
-            invalidate_after_update_custom_callback=invalidate_callback,
+            invalidate_after_update_callback=invalidate_callback,
             output_value_wrapper={
                 "dict": lambda x: dict(x) # type: ignore
             },
-            validate_complete_values_custom_callback=custom_validator,
+            custom_validator=custom_validator,
             logger=logger,
             nexus_manager=nexus_manager
         )

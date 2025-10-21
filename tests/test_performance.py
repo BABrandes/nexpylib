@@ -9,6 +9,7 @@ from typing import Any, Callable
 from logging import basicConfig, getLogger, DEBUG
 
 import time
+import gc
 import pytest   
 
 from nexpy import XValue, XList, XDictSelect
@@ -27,6 +28,13 @@ def time_operation(func: Callable[..., Any], *args: Any, **kwargs: Any) -> tuple
 
 class TestCachePerformance:
     """Test performance of the O(1) cache optimizations."""
+
+    def setup_method(self):
+        """Clean up before each test for consistent performance measurements."""
+        # Force garbage collection to clear any accumulated objects
+        gc.collect()
+        # Small delay to let system stabilize
+        time.sleep(0.01)
 
     def test_get_key_cache_performance(self):
         """Test that get_key operations use O(1) cache after first access."""
@@ -137,6 +145,11 @@ class TestCachePerformance:
 
 class TestScalabilityPerformance:
     """Test that performance scales appropriately with observable complexity."""
+
+    def setup_method(self):
+        """Clean up before each test for consistent performance measurements."""
+        gc.collect()
+        time.sleep(0.01)
 
     @pytest.mark.slow
     @pytest.mark.skip(reason="Known performance limitation - O(n²) behavior in hook connection system")
@@ -273,6 +286,11 @@ class TestScalabilityPerformance:
 
 class TestPerformanceRegression:
     """Test for performance regressions in core operations."""
+
+    def setup_method(self):
+        """Clean up before each test for consistent performance measurements."""
+        gc.collect()
+        time.sleep(0.01)
 
     def test_value_setting_performance(self):
         """Test that basic value setting operations are fast."""

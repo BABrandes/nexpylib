@@ -70,16 +70,16 @@ class XFunction(ListeningBase, XBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
             completed_values: dict[SHK, SHV] = {}
             for key in self_ref._sync_hooks.keys():
                 if key in update_values.submitted:
-                    completed_values[key] = update_values.submitted[key] # type: ignore
+                    completed_values[key] = update_values.submitted[key]
                 elif key in synced_values:
-                    completed_values[key] = synced_values[key] # type: ignore
+                    completed_values[key] = synced_values[key]
                 else:
-                    completed_values[key] = update_values.current[key] # type: ignore
+                    completed_values[key] = update_values.current[key]
 
             # Add all synced values to the values to be added, if they are not already in the submitted values
-            for key in synced_values: # type: ignore
+            for key in synced_values:
                 if not key in update_values.submitted:
-                    values_to_be_added[key] = synced_values[key] # type: ignore
+                    values_to_be_added[key] = synced_values[key]
 
             # Call the function again with completed values to validate the final state
             try:
@@ -95,15 +95,15 @@ class XFunction(ListeningBase, XBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
         XBase.__init__( # type: ignore
             self,
             logger=logger,
-            invalidate_callback=None,
-            validate_complete_values_in_isolation_callback=None,
-            add_values_to_be_updated_callback=add_values_to_be_updated_callback
+            invalidate_after_update_callback=None,
+            validate_complete_values_callback=None,
+            compute_missing_values_callback=add_values_to_be_updated_callback
         )
 
         # Connect internal hooks to external hooks if provided
         for key, external_hook_or_value in complete_variables_per_key.items():
             internal_hook = self._sync_hooks[key]
-            if isinstance(external_hook_or_value, ManagedHookProtocol): # type: ignore
+            if isinstance(external_hook_or_value, ManagedHookProtocol):
                 internal_hook.join(external_hook_or_value, "use_caller_value") # type: ignore
 
     #########################################################################
@@ -120,7 +120,7 @@ class XFunction(ListeningBase, XBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
             The hook associated with the key.
         """
         if key in self._sync_hooks:
-            return self._sync_hooks[key] # type: ignore
+            return self._sync_hooks[key]
         else:
             raise ValueError(f"Key {key} not found in hooks")
 
@@ -135,7 +135,7 @@ class XFunction(ListeningBase, XBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
         """
 
         if key in self._sync_hooks:
-            return self._sync_hooks[key].value # type: ignore
+            return self._sync_hooks[key].value
         else:
             raise ValueError(f"Key {key} not found in hooks")
 
