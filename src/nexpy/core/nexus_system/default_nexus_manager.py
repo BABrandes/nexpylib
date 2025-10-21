@@ -9,23 +9,23 @@ Configurable Tolerance
 The floating-point comparison tolerance can be customized by modifying FLOAT_ACCURACY
 before creating observables. This affects all float/int comparisons in the system.
 
-Ways to Configure:
-    >>> # Method 1: Via core module (recommended for users)
-    >>> from observables import core
-    >>> core.default_nexus_manager.FLOAT_ACCURACY = 1e-6
+How to Configure:
+    >>> # Recommended: Via default module (clean and discoverable)
+    >>> from nexpy import default
+    >>> default.FLOAT_ACCURACY = 1e-6
     >>> 
-    >>> # Method 2: Direct import (for advanced users)
-    >>> from observables._utils import default_nexus_manager
+    >>> # Alternative: Direct import (for advanced users)
+    >>> from nexpy.core.nexus_system import default_nexus_manager
     >>> default_nexus_manager.FLOAT_ACCURACY = 1e-12
-    >>> 
-    >>> # Method 3: Import and modify
-    >>> import observables.core as obs_core
-    >>> obs_core.default_nexus_manager.FLOAT_ACCURACY = 1e-8
 """
 
 import math
+from typing import TYPE_CHECKING
 
-from .nexus_manager import NexusManager
+if TYPE_CHECKING:
+    from .nexus_manager import NexusManager
+else:
+    from .nexus_manager import NexusManager
 
 FLOAT_ACCURACY: float = 1e-9
 """Tolerance for floating-point equality comparisons (configurable).
@@ -49,8 +49,8 @@ How to Change
 -------------
 Modify this value at runtime before creating observables:
 
-    >>> from observables import core
-    >>> core.default_nexus_manager.FLOAT_ACCURACY = 1e-6  # More lenient
+    >>> from nexpy import default
+    >>> default.FLOAT_ACCURACY = 1e-6  # More lenient
     
 Important Notes
 ---------------
@@ -64,19 +64,20 @@ Important Notes
 # Built-in equality callbacks
 # =============================================================================
 
-def _value_equality_callback_float(value1: float, value2: float) -> bool:
+def _value_equality_callback_float(value1: float, value2: float, float_accuracy: float = 1e-9) -> bool:
     """
     Check equality for float values with special NaN handling and tolerance.
     
     Args:
         value1: First float value to compare
         value2: Second float value to compare
+        float_accuracy: Tolerance for floating-point comparison (default: 1e-9)
         
     Returns:
         True if values are equal, False otherwise.
         Note: NaN is considered equal to NaN for the purposes of this library.
     """
-    if abs(value1 - value2) < FLOAT_ACCURACY:
+    if abs(value1 - value2) < float_accuracy:
         return True
     if math.isnan(value1) and math.isnan(value2):
         return True
@@ -87,13 +88,14 @@ def _value_equality_callback_float(value1: float, value2: float) -> bool:
     return value1 == value2
 
 
-def _value_equality_callback_int(value1: int, value2: int) -> bool:
+def _value_equality_callback_int(value1: int, value2: int, float_accuracy: float = 1e-9) -> bool:
     """
     Check equality for int values.
     
     Args:
         value1: First int value to compare
         value2: Second int value to compare
+        float_accuracy: Ignored for int comparison (parameter required for API consistency)
         
     Returns:
         True if values are exactly equal, False otherwise.
@@ -101,36 +103,38 @@ def _value_equality_callback_int(value1: int, value2: int) -> bool:
     return value1 == value2
 
 
-def _value_equality_callback_float_int(value1: float, value2: int) -> bool:
+def _value_equality_callback_float_int(value1: float, value2: int, float_accuracy: float = 1e-9) -> bool:
     """
     Check equality between float and int values with tolerance.
     
     Args:
         value1: Float value to compare
         value2: Int value to compare
+        float_accuracy: Tolerance for floating-point comparison (default: 1e-9)
         
     Returns:
         True if values are equal within tolerance, False otherwise.
     """
     if math.isnan(value1):
         return False
-    return abs(value1 - value2) < FLOAT_ACCURACY
+    return abs(value1 - value2) < float_accuracy
 
 
-def _value_equality_callback_int_float(value1: int, value2: float) -> bool:
+def _value_equality_callback_int_float(value1: int, value2: float, float_accuracy: float = 1e-9) -> bool:
     """
     Check equality between int and float values with tolerance.
     
     Args:
         value1: Int value to compare
         value2: Float value to compare
+        float_accuracy: Tolerance for floating-point comparison (default: 1e-9)
         
     Returns:
         True if values are equal within tolerance, False otherwise.
     """
     if math.isnan(value2):
         return False
-    return abs(value1 - value2) < FLOAT_ACCURACY
+    return abs(value1 - value2) < float_accuracy
 
 
 # Build value equality callbacks dictionary
@@ -154,21 +158,27 @@ _value_equality_callbacks = {
 try:
     from united_system import RealUnitedScalar # type: ignore
     
-    def _value_equality_callback_real_united_scalar(value1: RealUnitedScalar, value2: RealUnitedScalar) -> bool: # type: ignore
+    def _value_equality_callback_real_united_scalar(value1: RealUnitedScalar, value2: RealUnitedScalar, float_accuracy: float = 1e-9) -> bool: # type: ignore
         """Check equality for RealUnitedScalar values.
         
         Args:
             value1: First RealUnitedScalar value to compare
             value2: Second RealUnitedScalar value to compare
+            float_accuracy: Tolerance for floating-point comparison (default: 1e-9)
             
         Returns:
             True if values have the same dimension and equal canonical values, False otherwise.
         """
         if value1.dimension != value2.dimension: # type: ignore
             return False
-        return _value_equality_callback_float(value1.value_in_canonical_unit(), value2.value_in_canonical_unit()) # type: ignore
+        # Use float equality with tolerance
+        return _value_equality_callback_float(
+            value1.value_in_canonical_unit(),  # type: ignore
+            value2.value_in_canonical_unit(),  # type: ignore
+            float_accuracy=float_accuracy
+        )
     
-    _value_equality_callbacks[(RealUnitedScalar, RealUnitedScalar)] = _value_equality_callback_real_united_scalar # type: ignore
+    _DEFAULT_NEXUS_MANAGER.add_value_equality_callback((RealUnitedScalar, RealUnitedScalar), _value_equality_callback_real_united_scalar) # type: ignore
 
 except ImportError:
     # united_system is not available, skip RealUnitedScalar support
@@ -191,10 +201,13 @@ except ImportError:
 
 
 # =============================================================================
-# Default nexus manager instance
+# Default nexus manager instance (private - access via nexpy.default module)
 # =============================================================================
 
-DEFAULT_NEXUS_MANAGER: "NexusManager" = NexusManager(
+_DEFAULT_NEXUS_MANAGER: "NexusManager" = NexusManager(
     value_equality_callbacks=_value_equality_callbacks,
     registered_immutable_types=set()
 )
+
+# For backward compatibility (deprecated - use nexpy.default.NEXUS_MANAGER instead)
+DEFAULT_NEXUS_MANAGER = _DEFAULT_NEXUS_MANAGER

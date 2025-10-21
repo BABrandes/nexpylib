@@ -10,8 +10,10 @@ This directory contains demonstration scripts and examples showing how to use Ne
 ## Available Demos
 
 - `basic_usage.py` - Basic functionality demonstration
-- `advanced_features.py` - Advanced features showcase
-- `data_analysis.py` - Data analysis examples
+- `configuring_float_accuracy.py` - How to configure float comparison tolerance
+- `custom_equality_callbacks.py` - Register custom equality functions for your types
+- `custom_nexus_managers.py` - Create and use custom nexus managers with clone_manager() and create_manager()
+- `custom_numerical_types.py` - Implement custom numerical types that respect manager's FLOAT_ACCURACY
 
 ## Contributing Demos
 

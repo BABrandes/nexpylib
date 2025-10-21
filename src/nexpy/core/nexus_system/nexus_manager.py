@@ -83,8 +83,9 @@ class NexusManager:
 
     def __init__(
         self,
-        value_equality_callbacks: dict[tuple[type[Any], type[Any]], Callable[[Any, Any], bool]] = {},
-        registered_immutable_types: set[type[Any]] = set()
+        value_equality_callbacks: dict[tuple[type[Any], type[Any]], Callable[[Any, Any, float], bool]] | None = None,
+        registered_immutable_types: set[type[Any]] | None = None,
+        float_accuracy: Optional[float] = None
         ):
 
         # ----------- Thread Safety -----------
@@ -94,21 +95,59 @@ class NexusManager:
 
         # ----------- Equality Callbacks -----------
 
-        self._value_equality_callbacks: dict[tuple[type[Any], type[Any]], Callable[[Any, Any], bool]] = {}
-        self._value_equality_callbacks.update(value_equality_callbacks)
+        self._value_equality_callbacks: dict[tuple[type[Any], type[Any]], Callable[[Any, Any, float], bool]] = {}
+        if value_equality_callbacks is not None:
+            self._value_equality_callbacks.update(value_equality_callbacks)
+        
+        # Note: registered_immutable_types is not currently used but kept for future support
+        if registered_immutable_types is None:
+            registered_immutable_types = set()
+
+        # ----------- Float Accuracy -----------
+        
+        self._float_accuracy = float_accuracy  # None means use module-level default
 
         # ----------------------------------------
+
+    ##################################################################################################################
+    # Float Accuracy Property
+    ##################################################################################################################
+    
+    @property
+    def FLOAT_ACCURACY(self) -> float:
+        """Get the float accuracy tolerance for this manager.
+        
+        If not explicitly set, returns the module-level default from default_nexus_manager.
+        This allows per-manager customization while defaulting to the global setting.
+        
+        Returns:
+            float: The float comparison tolerance to use
+        """
+        if self._float_accuracy is not None:
+            return self._float_accuracy
+        # Import here to avoid circular dependency
+        from . import default_nexus_manager
+        return default_nexus_manager.FLOAT_ACCURACY
+    
+    @FLOAT_ACCURACY.setter
+    def FLOAT_ACCURACY(self, value: float) -> None:
+        """Set the float accuracy tolerance for this manager.
+        
+        Args:
+            value: The new float comparison tolerance
+        """
+        self._float_accuracy = value
 
     ##################################################################################################################
     # Equality Callbacks
     ##################################################################################################################
 
-    def add_value_equality_callback(self, value_type_pair: tuple[type[Any], type[Any]], value_equality_callback: Callable[[Any, Any], bool]) -> None:
+    def add_value_equality_callback(self, value_type_pair: tuple[type[Any], type[Any]], value_equality_callback: Callable[[Any, Any, float], bool]) -> None:
         """Add a value equality callback for a specific pair of value types.
         
         Args:
             value_type_pair: Tuple of (type1, type2) for the comparison
-            value_equality_callback: Callback function that takes (value1: type1, value2: type2) and returns bool
+            value_equality_callback: Callback function that takes (value1: type1, value2: type2, float_accuracy: float) and returns bool
         """
 
         if value_type_pair in self._value_equality_callbacks:
@@ -122,8 +161,13 @@ class NexusManager:
             raise ValueError(f"Value equality callback for {value_type_pair} does not exist")
         del self._value_equality_callbacks[value_type_pair]
 
-    def replace_value_equality_callback(self, value_type_pair: tuple[type[Any], type[Any]], value_equality_callback: Callable[[Any, Any], bool]) -> None:
-        """Replace a value equality callback for a specific pair of value types."""
+    def replace_value_equality_callback(self, value_type_pair: tuple[type[Any], type[Any]], value_equality_callback: Callable[[Any, Any, float], bool]) -> None:
+        """Replace a value equality callback for a specific pair of value types.
+        
+        Args:
+            value_type_pair: Tuple of (type1, type2) for the comparison
+            value_equality_callback: Callback function that takes (value1: type1, value2: type2, float_accuracy: float) and returns bool
+        """
         if value_type_pair not in self._value_equality_callbacks:
             raise ValueError(f"Value equality callback for {value_type_pair} does not exist")
         self._value_equality_callbacks[value_type_pair] = value_equality_callback
@@ -144,6 +188,8 @@ class NexusManager:
         
         This method supports cross-type comparisons using registered equality callbacks.
         For example, you can compare float with int using appropriate tolerance.
+        
+        All registered callbacks receive the manager's FLOAT_ACCURACY as a third parameter.
         """
 
         type1: type[Any] = type(value1) # type: ignore
@@ -152,7 +198,9 @@ class NexusManager:
 
         # Check if we have a registered callback for this type pair
         if type_pair in self._value_equality_callbacks:
-            return self._value_equality_callbacks[type_pair](value1, value2)
+            callback = self._value_equality_callbacks[type_pair]
+            # All callbacks must accept float_accuracy parameter
+            return callback(value1, value2, float_accuracy=self.FLOAT_ACCURACY)  # type: ignore
 
         # Fall back to built-in equality
         return value1 == value2
@@ -783,11 +831,11 @@ class NexusManager:
         
         if overlapping_nexuses:
             raise RuntimeError(
-                f"Recursive submit_values call detected with overlapping nexuses! "
-                f"This indicates an incorrect implementation. "
-                f"User-implemented callbacks (validation, completion, invalidation, reaction, listeners) "
-                f"attempted to modify {len(overlapping_nexuses)} nexus(es) that are already being modified "
-                f"in the current submission. Each nexus can only be modified once per atomic submission. "
+                f"Recursive submit_values call detected with overlapping nexuses! " +
+                f"This indicates an incorrect implementation. " +
+                f"User-implemented callbacks (validation, completion, invalidation, reaction, listeners) " +
+                f"attempted to modify {len(overlapping_nexuses)} nexus(es) that are already being modified " +
+                f"in the current submission. Each nexus can only be modified once per atomic submission. " +
                 f"Independent submissions to different nexuses are allowed."
             )
         

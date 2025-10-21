@@ -233,22 +233,23 @@ options.value = 15
 print(options.dict)  # {"low": 1, "medium": 5, "high": 15}
 ```
 
-#### 5. Custom Equality for Floating-Point Numbers
+#### 5. Configuring Floating-Point Tolerance
 
 ```python
 import nexpy as nx
-from nexpy.core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
+from nexpy import default
 
-# Configure BEFORE creating any hooks or x_objects
-# Standard practice: 1e-9 tolerance for floating-point equality
-def float_equality(a: float, b: float) -> bool:
-    return abs(a - b) < 1e-9
+# Configure BEFORE creating any observables
+# Adjust tolerance based on your use case:
+# - UI applications: 1e-6 to 1e-3 (more lenient)
+# - General purpose: 1e-9 (default)
+# - Scientific: 1e-12 to 1e-15 (high precision)
 
-DEFAULT_NEXUS_MANAGER.add_value_equality_callback((float, float), float_equality)
+default.FLOAT_ACCURACY = 1e-6  # Lenient for UI work
 
-# Now floating-point comparisons use tolerance
+# Now floating-point comparisons use the configured tolerance
 temperature = nx.XValue(20.0)
-temperature.value = 20.0000000001  # No update (within tolerance)
+temperature.value = 20.0000001  # No update (within tolerance)
 temperature.value = 20.001  # Update triggered (exceeds tolerance)
 ```
 
@@ -292,10 +293,10 @@ temperature.value = 20.001  # Update triggered (exceeds tolerance)
 3. **Hooks (Bidirectional Validation)** — Enforce constraints across objects
 
 ### 🎯 Custom Equality Checks
-- Register custom equality callbacks at the NexusManager level
-- Standard practice: floating-point tolerance (e.g., 1e-9) to avoid spurious updates
+- Built-in floating-point tolerance (configurable via `default.FLOAT_ACCURACY`)
+- Standard practice: 1e-9 tolerance to avoid spurious updates
 - Cross-type comparison support (e.g., `float` vs `int`)
-- Per-manager configuration for different precision requirements
+- Register custom equality callbacks for specialized types at the NexusManager level
 
 ---
 

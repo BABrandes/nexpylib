@@ -4,11 +4,9 @@ Tests for custom equality checks in NexPy.
 Based on the documentation in docs/usage.md and docs/api_reference.md.
 """
 
-import pytest
 import nexpy as nx
 from typing import Mapping
 from nexpy.core.nexus_system.nexus_manager import NexusManager
-from nexpy.core.nexus_system.default_nexus_manager import DEFAULT_NEXUS_MANAGER
 from test_base import ObservableTestCase
 
 
@@ -18,8 +16,8 @@ class TestCustomEquality(ObservableTestCase):
     def test_float_equality_standard_tolerance(self):
         """Test standard 1e-9 tolerance for floating-point equality."""
         # Configure custom equality on test manager
-        def float_eq(a: float, b: float) -> bool:
-            return abs(a - b) < 1e-9
+        def float_eq(a: float, b: float, float_accuracy: float = 1e-9) -> bool:
+            return abs(a - b) < float_accuracy
         
         self.test_manager.add_value_equality_callback((float, float), float_eq)
         
@@ -45,8 +43,8 @@ class TestCustomEquality(ObservableTestCase):
     
     def test_float_equality_xvalue(self):
         """Test float equality with XValue objects."""
-        def float_eq(a: float, b: float) -> bool:
-            return abs(a - b) < 1e-9
+        def float_eq(a: float, b: float, float_accuracy: float = 1e-9) -> bool:
+            return abs(a - b) < float_accuracy
         
         self.test_manager.add_value_equality_callback((float, float), float_eq)
         
@@ -65,12 +63,12 @@ class TestCustomEquality(ObservableTestCase):
     
     def test_cross_type_float_int_equality(self):
         """Test cross-type equality between float and int."""
-        def float_int_eq(a: float, b: int) -> bool:
-            return abs(a - b) < 1e-9
+        def float_int_eq(a: float, b: int, float_accuracy: float = 1e-9) -> bool:
+            return abs(a - b) < float_accuracy
         
-        self.test_manager.add_value_equality_callback((float, float), lambda a, b: abs(a - b) < 1e-9)
+        self.test_manager.add_value_equality_callback((float, float), lambda a, b, float_accuracy=1e-9: abs(a - b) < float_accuracy)
         self.test_manager.add_value_equality_callback((float, int), float_int_eq)
-        self.test_manager.add_value_equality_callback((int, float), lambda a, b: float_int_eq(b, a))
+        self.test_manager.add_value_equality_callback((int, float), lambda a, b, float_accuracy=1e-9: float_int_eq(b, a, float_accuracy))
         
         value = nx.XValue(10.0, nexus_manager=self.test_manager)
         updates: list[float] = []
@@ -94,14 +92,14 @@ class TestCustomEquality(ObservableTestCase):
         high_precision = NexusManager()
         high_precision.add_value_equality_callback(
             (float, float),
-            lambda a, b: abs(a - b) < 1e-12
+            lambda a, b, float_accuracy: abs(a - b) < 1e-12
         )
         
         # Low precision manager
         low_precision = NexusManager()
         low_precision.add_value_equality_callback(
             (float, float),
-            lambda a, b: abs(a - b) < 1e-6
+            lambda a, b, float_accuracy: abs(a - b) < 1e-6
         )
         
         precise = nx.XValue(1.0, nexus_manager=high_precision)
@@ -123,8 +121,8 @@ class TestCustomEquality(ObservableTestCase):
     
     def test_equality_prevents_unnecessary_updates(self):
         """Test that custom equality prevents unnecessary updates."""
-        def float_eq(a: float, b: float) -> bool:
-            return abs(a - b) < 1e-9
+        def float_eq(a: float, b: float, float_accuracy: float = 1e-9) -> bool:
+            return abs(a - b) < float_accuracy
         
         self.test_manager.add_value_equality_callback((float, float), float_eq)
         
@@ -151,8 +149,8 @@ class TestCustomEquality(ObservableTestCase):
     
     def test_equality_with_validation(self):
         """Test that equality checks happen before validation."""
-        def float_eq(a: float, b: float) -> bool:
-            return abs(a - b) < 1e-9
+        def float_eq(a: float, b: float, float_accuracy: float = 1e-9) -> bool:
+            return abs(a - b) < float_accuracy
         
         self.test_manager.add_value_equality_callback((float, float), float_eq)
         
@@ -176,7 +174,7 @@ class TestCustomEquality(ObservableTestCase):
         """Test custom equality with XDict."""
         from types import MappingProxyType
         
-        def dict_eq(a: Mapping[str, int], b: Mapping[str, int]) -> bool:
+        def dict_eq(a: Mapping[str, int], b: Mapping[str, int], float_accuracy: float = 1e-9) -> bool:
             # Handle MappingProxyType
             if isinstance(a, MappingProxyType):
                 a = dict(a)
@@ -204,8 +202,8 @@ class TestCustomEquality(ObservableTestCase):
     
     def test_remove_equality_callback(self):
         """Test removing custom equality callbacks."""
-        def float_eq(a: float, b: float) -> bool:
-            return abs(a - b) < 1e-9
+        def float_eq(a: float, b: float, float_accuracy: float = 1e-9) -> bool:
+            return abs(a - b) < float_accuracy
         
         self.test_manager.add_value_equality_callback((float, float), float_eq)
         
@@ -229,7 +227,7 @@ class TestCustomEquality(ObservableTestCase):
         # Start with tight tolerance
         self.test_manager.add_value_equality_callback(
             (float, float),
-            lambda a, b: abs(a - b) < 1e-12
+            lambda a, b, float_accuracy: abs(a - b) < 1e-12
         )
         
         hook = nx.FloatingHook(1.0, nexus_manager=self.test_manager)
@@ -243,7 +241,7 @@ class TestCustomEquality(ObservableTestCase):
         # Replace with loose tolerance
         self.test_manager.replace_value_equality_callback(
             (float, float),
-            lambda a, b: abs(a - b) < 1e-6
+            lambda a, b, float_accuracy: abs(a - b) < 1e-6
         )
         
         # Same small change now doesn't trigger update
@@ -256,7 +254,7 @@ class TestCustomEquality(ObservableTestCase):
         
         self.test_manager.add_value_equality_callback(
             (float, float),
-            lambda a, b: abs(a - b) < 1e-9
+            lambda a, b, float_accuracy: abs(a - b) < 1e-9
         )
         
         assert self.test_manager.exists_value_equality_callback((float, float))
@@ -271,11 +269,11 @@ class TestCustomEquality(ObservableTestCase):
         
         self.test_manager.add_value_equality_callback(
             (float, float),
-            lambda a, b: abs(a - b) < 1e-9
+            lambda a, b, float_accuracy: abs(a - b) < 1e-9
         )
         self.test_manager.add_value_equality_callback(
             (int, int),
-            lambda a, b: a == b
+            lambda a, b, float_accuracy: a == b
         )
         
         types_after = self.test_manager.types_of_value_equality_callbacks()

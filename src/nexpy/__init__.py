@@ -244,6 +244,9 @@ from .core.nexus_system.system_analysis import write_report
 
 from .x_objects_base.x_object_serializable_mixin import XObjectSerializableMixin
 
+# Configuration module
+from . import default
+
 __all__ = [
     # Modern clean aliases
     'XValue',
@@ -294,6 +297,9 @@ __all__ = [
     # Utilities
     'XObjectSerializableMixin',
     'write_report',
+    
+    # Configuration
+    'default',
 ]
 
 # Package metadata

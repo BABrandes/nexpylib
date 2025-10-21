@@ -19,8 +19,6 @@ Core Components:
 - HookWithIsolatedValidationProtocol: Protocol for hooks with custom validation
 - HookWithReactionProtocol: Protocol for hooks that react to changes
 - BaseListening/BaseListeningProtocol: Base classes for listener management
-- DEFAULT_NEXUS_MANAGER: The default nexus manager instance
-- default_nexus_manager: Module containing configuration (e.g., FLOAT_ACCURACY)
 
 Example Usage with New Protocol-Based Architecture:
     >>> from observables.core import BaseXObject, OwnedHook, HookWithOwnerProtocol
@@ -62,9 +60,9 @@ Advanced Usage with FloatingHook:
     ... )
 
 Configuring Float Tolerance:
-    >>> from observables import core
+    >>> from nexpy import default
     >>> # Adjust tolerance for your use case
-    >>> core.default_nexus_manager.FLOAT_ACCURACY = 1e-6  # More lenient for UI
+    >>> default.FLOAT_ACCURACY = 1e-6  # More lenient for UI
     >>> # This must be done before creating observables
 
 For normal usage of the library, import from the main package:
@@ -81,15 +79,11 @@ from .auxiliary.listening_base import ListeningBase
 from .auxiliary.listening_protocol import ListeningProtocol
 from .nexus_system.nexus_manager import NexusManager
 from .publisher_subscriber.subscriber import Subscriber
-from .nexus_system import default_nexus_manager
 from .nexus_system.submission_error import SubmissionError
 from .nexus_system.update_function_values import UpdateFunctionValues
 
-# Re-export the module for easy access to configuration
-# Users should modify: observables.core.default_nexus_manager.FLOAT_ACCURACY
-# or import directly: from observables._utils import default_nexus_manager
-
-DEFAULT_NEXUS_MANAGER = default_nexus_manager.DEFAULT_NEXUS_MANAGER
+# Re-export the module for advanced configuration
+# Note: For user-facing configuration, use: from nexpy import default
 
 __all__ = [
     'XComplexBase',
@@ -101,8 +95,6 @@ __all__ = [
     'ListeningBase',
     'ListeningProtocol',
     'NexusManager',
-    'DEFAULT_NEXUS_MANAGER',
-    'default_nexus_manager',  # Export module for configuration access
     'Subscriber',
     'SubmissionError',
     'UpdateFunctionValues',
