@@ -1,4 +1,4 @@
-from typing import Literal, Optional, Sequence, TypeVar
+from typing import Optional, Sequence, TypeVar, Callable
 from collections.abc import Set as AbstractSet
 from logging import Logger
 
@@ -40,6 +40,10 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
         - None (if hook_set_or_value is provided)
         At least one parameter must be provided.
         
+    sort_callable : Callable[[AbstractSet[T]], Sequence[T]], default=sorted
+        Function to convert an AbstractSet to a Sequence. Defaults to `sorted` which
+        returns a sorted list. Must return a sequence with the same elements as the input set.
+        
     logger : Optional[Logger], default=None
         Optional logger for debugging and tracking value changes.
         
@@ -72,8 +76,18 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
     ... )
     >>> adapter.hook_set.value
     {1, 2, 3}
-    >>> sorted(adapter.hook_sequence.value)
+    >>> adapter.hook_sequence.value  # Uses sorted() by default
     [1, 2, 3]
+    
+    Custom sorting function:
+    
+    >>> adapter = XSetSequenceAdapter[int](
+    ...     hook_set_or_value={3, 1, 2},
+    ...     hook_sequence=None,
+    ...     sort_callable=lambda s: list(reversed(sorted(s)))
+    ... )
+    >>> adapter.hook_sequence.value
+    [3, 2, 1]
     
     Updating with a unique sequence:
     
@@ -105,7 +119,7 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
     -----
     - Both internal hooks are always kept synchronized
     - Sequences must have unique elements (no duplicates)
-    - Order from set to sequence is not guaranteed
+    - Order from set to sequence is controlled by the sort_callable parameter
     - The adapter handles automatic conversion between set and sequence types
     - Useful for connecting collection hooks with different type signatures
     
@@ -120,17 +134,21 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
         hook_set_or_value: Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]] | AbstractSet[T] | None,
         hook_sequence: Hook[Sequence[T]] | ReadOnlyHook[Sequence[T]] | Sequence[T] | None = None,
         *,
+        sort_callable: Callable[[AbstractSet[T]], Sequence[T]] = sorted,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ):
+        # Store the sort callable
+        self._sort_callable = sort_callable
+        
         # Collect the external hooks
         external_hook_set: Optional[ManagedHookProtocol[AbstractSet[T]]] = None
         external_hook_sequence: Optional[ManagedHookProtocol[Sequence[T]]] = None
         
         if isinstance(hook_set_or_value, ManagedHookProtocol):
-            external_hook_set = hook_set_or_value  # type: ignore
+            external_hook_set = hook_set_or_value
         if isinstance(hook_sequence, ManagedHookProtocol):
-            external_hook_sequence = hook_sequence  # type: ignore
+            external_hook_sequence = hook_sequence
         
         # Determine initial value
         initial_set: AbstractSet[T]
@@ -153,7 +171,7 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
             else:
                 initial_set = hook_set_or_value
             
-            initial_sequence = tuple(initial_set)
+            initial_sequence = self._sort_callable(initial_set)
         
         elif hook_sequence is not None and hook_set_or_value is not None:
             if isinstance(hook_set_or_value, ManagedHookProtocol):
@@ -193,8 +211,8 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
     #########################################################################
     
     def _convert_left_to_right(self, left_value: AbstractSet[T]) -> Sequence[T]:
-        """Convert set to sequence (order not guaranteed)."""
-        return tuple(left_value)
+        """Convert set to sequence using the configured sort_callable."""
+        return self._sort_callable(left_value)
     
     def _convert_right_to_left(self, right_value: Sequence[T]) -> AbstractSet[T]:
         """Convert sequence to set (must have unique elements)."""
@@ -205,13 +223,13 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
     
     def _validate_left(self, left_value: AbstractSet[T]) -> tuple[bool, str]:
         """Validate set value (any set is valid)."""
-        if not isinstance(left_value, AbstractSet):
+        if not isinstance(left_value, AbstractSet): # type: ignore
             return False, f"Left value must be AbstractSet, got {type(left_value)}"
         return True, "Set value is valid"
     
     def _validate_right(self, right_value: Sequence[T]) -> tuple[bool, str]:
         """Validate sequence value (must have unique elements)."""
-        if not isinstance(right_value, Sequence) or isinstance(right_value, (str, bytes)):
+        if not isinstance(right_value, Sequence) or isinstance(right_value, (str, bytes)): # type: ignore
             return False, f"Right value must be Sequence (not str/bytes), got {type(right_value)}"
         
         try:
