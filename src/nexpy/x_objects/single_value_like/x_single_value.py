@@ -137,7 +137,7 @@ class XSingleValue(XSingletonBase[T], XSingleValueProtocol[T, Hook[T]], CarriesS
 
     def __init__(
         self,
-        value_or_hook: T | Hook[T] | ReadOnlyHook[T] | CarriesSingleHookProtocol[T],
+        value: T | Hook[T] | ReadOnlyHook[T] | CarriesSingleHookProtocol[T],
         *,
         validator: Optional[Callable[[T], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
@@ -147,7 +147,7 @@ class XSingleValue(XSingletonBase[T], XSingleValueProtocol[T, Hook[T]], CarriesS
 
         # Initialize the base class
         super().__init__(
-            value_or_hook=value_or_hook,
+            value_or_hook=value,
             validate_value_callback=validator,
             invalidate_after_update_callback=None,
             logger=logger,

@@ -22,24 +22,24 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], i
 
     def __init__(
         self,
-        observable_or_hook_or_value: AbstractSet[T] | Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]] | XSetProtocol[T] | None = None,
+        value: AbstractSet[T] | Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]] | XSetProtocol[T] | None = None,
         *,
         custom_validator: Optional[Callable[[Mapping[Literal["value", "length"], AbstractSet[T] | int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
 
-        if observable_or_hook_or_value is None:
+        if value is None:
             initial_value: AbstractSet[T] = set()
             hook: Optional[Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]]] = None 
-        elif isinstance(observable_or_hook_or_value, XSetProtocol):
-            initial_value = observable_or_hook_or_value.set
-            hook = observable_or_hook_or_value.set_hook
-        elif isinstance(observable_or_hook_or_value, ManagedHookProtocol):
-            initial_value = observable_or_hook_or_value.value
-            hook = observable_or_hook_or_value
+        elif isinstance(value, XSetProtocol):
+            initial_value = value.set
+            hook = value.set_hook
+        elif isinstance(value, ManagedHookProtocol):
+            initial_value = value.value
+            hook = value
         else:
             # Pass set directly - nexus system will convert to frozenset
-            initial_value = observable_or_hook_or_value
+            initial_value = value
             hook = None
         
         super().__init__(

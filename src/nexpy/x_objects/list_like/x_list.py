@@ -21,7 +21,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
     """
     def __init__(
         self,
-        observable_or_hook_or_value: Sequence[T] | Hook[Sequence[T]] | ReadOnlyHook[Sequence[T]] | XListProtocol[T] | None = None,
+        value: Sequence[T] | Hook[Sequence[T]] | ReadOnlyHook[Sequence[T]] | XListProtocol[T] | None = None,
         *,
         logger: Optional[Logger] = None,
         custom_validator: Optional[Callable[[Mapping[Literal["value", "length"], Any]], tuple[bool, str]]] = None,
@@ -29,21 +29,23 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         ) -> None:
 
 
-        if observable_or_hook_or_value is None:
+        if value is None:
             initial_value: Sequence[T] = ()
             hook: Optional[ManagedHookProtocol[Sequence[T]]] = None
 
-        elif isinstance(observable_or_hook_or_value, XListProtocol):
-            initial_value = observable_or_hook_or_value.list
-            hook = observable_or_hook_or_value.list_hook
+        elif isinstance(value, XListProtocol):
+            initial_value = value.list
+            hook = value.list_hook
 
-        elif isinstance(observable_or_hook_or_value, ManagedHookProtocol):
-            initial_value = observable_or_hook_or_value.value
-            hook = observable_or_hook_or_value
+        elif isinstance(value, ManagedHookProtocol):
+            initial_value = value.value
+            hook = value
 
-        elif isinstance(observable_or_hook_or_value, Sequence): # type: ignore
+        elif isinstance(value, Sequence): # type: ignore
             # It's a sequence
-            initial_value = observable_or_hook_or_value
+            if isinstance(value, (str, bytes)):
+                raise ValueError("String and bytes are not valid initial values for XList")
+            initial_value = value
             hook = None
         else:
             raise ValueError("Invalid initial value")
