@@ -7,7 +7,7 @@ from logging import Logger
 from ..._utils import log
 
 if TYPE_CHECKING:
-    from ...x_objects_base.carries_some_hooks_protocol import CarriesSomeHooksProtocol
+    from ...foundations.carries_some_hooks_protocol import CarriesSomeHooksProtocol
 
 from ..hooks.hook_aliases import Hook
 from ..auxiliary.listening_protocol import ListeningProtocol

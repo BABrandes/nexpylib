@@ -17,9 +17,9 @@ from .x_base import XBase
 
 T = TypeVar("T")
 
-class XSimpleBase(ListeningBase, XBase[Literal["value"], T, "XSimpleBase[T]"], CarriesSingleHookProtocol[T], XObjectSerializableMixin[Literal["value"], T], Generic[T]):
+class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T]"], CarriesSingleHookProtocol[T], XObjectSerializableMixin[Literal["value"], T], Generic[T]):
     """
-    Base class for simple X objects (single value) with transitive synchronization via Nexus fusion.
+    Base class for singleton X objects (single value) with transitive synchronization via Nexus fusion.
     
     This class provides the core implementation for X objects that wrap a single value,
     including hook management, validation, and synchronization. It serves as the foundation
@@ -45,7 +45,7 @@ class XSimpleBase(ListeningBase, XBase[Literal["value"], T, "XSimpleBase[T]"], C
             logger: Optional[Logger] = None,
             nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER):
         """
-        Initialize the XSimpleBase.
+        Initialize the XSingletonBase.
         
         Args:
             value_or_hook: Initial value or Hook to join to
@@ -86,7 +86,7 @@ class XSimpleBase(ListeningBase, XBase[Literal["value"], T, "XSimpleBase[T]"], C
         # Create validation callback wrapper for XBase
         # This captures the user's validation callback directly (no need to store it separately)
         def validate_complete_values_callback_wrapper(
-            self_ref: "XSimpleBase[T]", 
+            self_ref: "XSingletonBase[T]", 
             values: Mapping[Literal["value"], T]
         ) -> tuple[bool, str]:
             """Validate the complete values using the user's validation method."""
@@ -108,7 +108,7 @@ class XSimpleBase(ListeningBase, XBase[Literal["value"], T, "XSimpleBase[T]"], C
 
         # Create invalidation callback wrapper for XBase
         def xbase_invalidate_after_update_callback_wrapper(
-            self_ref: "XSimpleBase[T]"
+            self_ref: "XSingletonBase[T]"
         ) -> tuple[bool, str]:
             """Call user's invalidate callback if provided."""
             if invalidate_after_update_callback is not None:

@@ -1,4 +1,5 @@
-from typing import Iterable, TypeVar, Optional, Protocol, Mapping, runtime_checkable
+from typing import TypeVar, Optional, Protocol, Mapping, Sequence, runtime_checkable
+from collections.abc import Set as AbstractSet
 from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
@@ -63,7 +64,7 @@ class XDictProtocol(Protocol[K, V]):
         ...
     
     @property
-    def keys_hook(self) -> ReadOnlyHook[Iterable[K]]:
+    def keys_hook(self) -> ReadOnlyHook[AbstractSet[K]]:
         """
         Get the hook for the dictionary keys.
         """
@@ -79,7 +80,7 @@ class XDictProtocol(Protocol[K, V]):
         ...
     
     @property
-    def values_hook(self) -> ReadOnlyHook[Iterable[V]]:
+    def values_hook(self) -> ReadOnlyHook[Sequence[V]]:
         """
         Get the hook for the dictionary values.
         """

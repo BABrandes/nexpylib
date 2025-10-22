@@ -11,7 +11,7 @@ from ...auxiliary.listening_base import ListeningBase
 from nexpy.core.nexus_system.nexus_manager import NexusManager
 from nexpy.core.nexus_system.nexus import Nexus
 from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER as DEFAULT_NEXUS_MANAGER
-from ....x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol
+from ....foundations.carries_single_hook_protocol import CarriesSingleHookProtocol
 from ...publisher_subscriber.publisher import Publisher
 
 T = TypeVar("T")

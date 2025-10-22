@@ -1,37 +1,36 @@
 
 
 from typing import Generic, Optional, TypeVar, Any, Literal, Mapping, Callable
-from collections.abc import Iterable
+from collections.abc import Set as AbstractSet
 from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_composite_base import XCompositeBase
+from ...foundations.x_composite_base import XCompositeBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from .protocols import XSelectionOptionsProtocol
-from .utils import likely_settable
 
 T = TypeVar("T")
 
-class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options"], Literal["number_of_available_options"], T | Iterable[T], int, "XSelectionSet[T]"], XSelectionOptionsProtocol[T], Generic[T]):
+class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options"], Literal["number_of_available_options"], T | AbstractSet[T], int, "XSelectionSet[T]"], XSelectionOptionsProtocol[T], Generic[T]):
 
     def __init__(
         self,
         selected_option: T | Hook[T] | ReadOnlyHook[T] | XSelectionOptionsProtocol[T],
-        available_options: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | None = None,
+        available_options: AbstractSet[T] | Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]] | None = None,
         *,
-        custom_validator: Optional[Callable[[Mapping[Literal["selected_option", "available_options", "number_of_available_options"], T | Iterable[T] | int]], tuple[bool, str]]] = None,
+        custom_validator: Optional[Callable[[Mapping[Literal["selected_option", "available_options", "number_of_available_options"], T | AbstractSet[T] | int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
 
         
         if isinstance(selected_option, XSelectionOptionsProtocol):
             initial_selected_option: T = selected_option.selected_option # type: ignore
-            initial_available_options: Iterable[T] = selected_option.available_options # type: ignore
+            initial_available_options: AbstractSet[T] = selected_option.available_options # type: ignore
             hook_selected_option: Optional[Hook[T]] = selected_option.selected_option_hook # type: ignore
-            hook_available_options: Optional[Hook[Iterable[T]]] = selected_option.available_options_hook # type: ignore
+            hook_available_options: Optional[Hook[AbstractSet[T]]] = selected_option.available_options_hook # type: ignore
 
         else:
             if selected_option is None:
@@ -55,15 +54,15 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
                 hook_available_options = available_options # type: ignore
 
             else:
-                # available_options is an Iterable[T]
-                initial_available_options: Iterable[T] = set(available_options)
+                # available_options is an AbstractSet[T]
+                initial_available_options: AbstractSet[T] = set(available_options)
                 hook_available_options = None
                 
         def is_valid_value(x: Mapping[Literal["selected_option", "available_options"], Any]) -> tuple[bool, str]:
             selected_option = x["selected_option"]
             available_options = x["available_options"]
 
-            if not likely_settable(available_options):
+            if not isinstance(available_options, AbstractSet):
                 return False, f"Available options '{available_options}' cannot be used as a set!"
 
             if selected_option not in available_options:
@@ -96,7 +95,7 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
     #-------------------------------- available options --------------------------------
     
     @property
-    def available_options_hook(self) -> Hook[Iterable[T]]:
+    def available_options_hook(self) -> Hook[AbstractSet[T]]:
         return self._primary_hooks["available_options"] # type: ignore
 
     @property
@@ -104,10 +103,10 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
         return self._primary_hooks["available_options"].value # type: ignore
 
     @available_options.setter
-    def available_options(self, available_options: Iterable[T]) -> None:
+    def available_options(self, available_options: AbstractSet[T]) -> None:
         self.change_available_options(available_options)
 
-    def change_available_options(self, available_options: Iterable[T]) -> None:        
+    def change_available_options(self, available_options: AbstractSet[T]) -> None:        
         success, msg = self._submit_value("available_options", set(available_options))
         if not success:
             raise SubmissionError(msg, available_options, "available_options")
@@ -134,7 +133,7 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
         if not success and raise_submission_error_flag:
             raise SubmissionError(msg, selected_option, "selected_option")
     
-    def change_selected_option_and_available_options(self, selected_option: T, available_options: Iterable[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
+    def change_selected_option_and_available_options(self, selected_option: T, available_options: AbstractSet[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         if selected_option == self._primary_hooks["selected_option"].value and available_options == self._primary_hooks["available_options"].value:
             return
         
@@ -160,7 +159,7 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
         if not success:
             raise SubmissionError(msg, option, "available_options")
 
-    def add_available_options(self, options: Iterable[T]) -> None:
+    def add_available_options(self, options: AbstractSet[T]) -> None:
         """Add an option to the available options set."""
         success, msg = self._submit_values({"available_options": self._primary_hooks["available_options"].value | set(options)}) # type: ignore
         if not success:
@@ -172,7 +171,7 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
         if not success:
             raise SubmissionError(msg, option, "available_options")
 
-    def remove_available_options(self, options: Iterable[T]) -> None:
+    def remove_available_options(self, options: AbstractSet[T]) -> None:
         """Remove an option from the available options set."""
         success, msg = self._submit_values({"available_options": self._primary_hooks["available_options"].value - set(options)}) # type: ignore
         if not success:

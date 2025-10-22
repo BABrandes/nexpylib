@@ -69,13 +69,12 @@ For normal usage of the library, import from the main package:
     >>> from observables import ObservableSingleValue, ObservableList
 """
 
-from nexpy.core.nexus_system.nexus import Nexus
+from .nexus_system.nexus import Nexus
 from .auxiliary.listening_base import ListeningBase
 from .auxiliary.listening_protocol import ListeningProtocol
-from nexpy.core.nexus_system.nexus_manager import NexusManager
+from .nexus_system.nexus_manager import NexusManager
 from .publisher_subscriber.subscriber import Subscriber
-from nexpy.core.nexus_system.submission_error import SubmissionError
-from nexpy.core.nexus_system.update_function_values import UpdateFunctionValues
+from .nexus_system.submission_error import SubmissionError
 
 # Re-export the module for advanced configuration
 # Note: For user-facing configuration, use: from nexpy import default
@@ -87,6 +86,5 @@ __all__ = [
     'NexusManager',
     'Subscriber',
     'SubmissionError',
-    'UpdateFunctionValues',
 ]
 

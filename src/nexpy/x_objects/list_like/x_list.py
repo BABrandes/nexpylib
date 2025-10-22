@@ -1,20 +1,19 @@
-from typing import Generic, TypeVar, Sequence, Callable, Literal, Optional, Any, Mapping
-from collections.abc import Iterable, Iterator
+from typing import Generic, TypeVar, Callable, Literal, Optional, Any, Mapping
+from collections.abc import Iterator, Sequence
 from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_composite_base import XCompositeBase
+from ...foundations.x_composite_base import XCompositeBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from .protocols import XListProtocol
-from .utils import can_be_list
 
 T = TypeVar("T")
   
 
-class XList(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int, "XList"], XListProtocol[T], Generic[T]):
+class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int, "XList"], XListProtocol[T], Generic[T]):
     """
     Acting like a list.
 
@@ -22,7 +21,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int
     """
     def __init__(
         self,
-        observable_or_hook_or_value: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | XListProtocol[T] | None = None,
+        observable_or_hook_or_value: Sequence[T] | Hook[Sequence[T]] | ReadOnlyHook[Sequence[T]] | XListProtocol[T] | None = None,
         *,
         logger: Optional[Logger] = None,
         custom_validator: Optional[Callable[[Mapping[Literal["value", "length"], Any]], tuple[bool, str]]] = None,
@@ -32,23 +31,28 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int
 
         if observable_or_hook_or_value is None:
             initial_value: Sequence[T] = ()
-            hook: Optional[ManagedHookProtocol[Iterable[T]]] = None
+            hook: Optional[ManagedHookProtocol[Sequence[T]]] = None
+
         elif isinstance(observable_or_hook_or_value, XListProtocol):
             initial_value = observable_or_hook_or_value.list
             hook = observable_or_hook_or_value.list_hook
+
         elif isinstance(observable_or_hook_or_value, ManagedHookProtocol):
-            initial_value = observable_or_hook_or_value.value # type: ignore
+            initial_value = observable_or_hook_or_value.value
             hook = observable_or_hook_or_value
-        else:
-            # Pass sequence directly - nexus system will convert to tuple
-            initial_value = observable_or_hook_or_value # type: ignore
+
+        elif isinstance(observable_or_hook_or_value, Sequence): # type: ignore
+            # It's a sequence
+            initial_value = observable_or_hook_or_value
             hook = None
+        else:
+            raise ValueError("Invalid initial value")
 
         super().__init__(
             initial_hook_values={"value": initial_value},
             compute_missing_primary_values_callback=None,
-            compute_secondary_values_callback={"length": lambda x: len(x["value"])}, # type: ignore
-            validate_complete_primary_values_callback=lambda x: (True, "Verification method passed") if can_be_list(x) else (False, "Value has not been converted to a list!"),
+            compute_secondary_values_callback={"length": lambda x: len(x["value"])},
+            validate_complete_primary_values_callback=lambda x: (True, "Verification method passed") if isinstance(x["value"], Sequence) else (False, "Value has not been converted to a list!"), # type: ignore
             output_value_wrapper={
                 "value": lambda x: list(x) # type: ignore
             },
@@ -67,7 +71,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int
     #-------------------------------- list value --------------------------------   
 
     @property
-    def list_hook(self) -> Hook[Iterable[T]]:
+    def list_hook(self) -> Hook[Sequence[T]]:
         """
         Get the hook for the list (contains Sequence).
         """
@@ -82,10 +86,10 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int
         return list(value)
 
     @list.setter
-    def list(self, value: Iterable[T]) -> None:
+    def list(self, value: Sequence[T]) -> None:
         self.change_list(value)
 
-    def change_list(self, value: Iterable[T]) -> None:
+    def change_list(self, value: Sequence[T]) -> None:
         """
         Change the list value (lambda-friendly method).
         """
@@ -93,7 +97,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int
         if not success:
             raise SubmissionError(msg, value, "value")
     
-    def change_value(self, new_value: Iterable[T]) -> None:
+    def change_value(self, new_value: Sequence[T]) -> None:
         """
         Change the list value (lambda-friendly method).
         
@@ -115,7 +119,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int
         """
         Get the current length of the list.
         """
-        return len(self._primary_hooks["value"].value) # type: ignore
+        return len(self._primary_hooks["value"].value)
 
     #########################################################
     # Standard list methods
@@ -135,7 +139,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int
         new_list: list[T] = list(current_value) + [item]
         self.change_list(new_list)
     
-    def extend(self, iterable: Iterable[T]) -> None:
+    def extend(self, iterable: Sequence[T]) -> None:
         """
         Extend the list by appending elements from the iterable.
         

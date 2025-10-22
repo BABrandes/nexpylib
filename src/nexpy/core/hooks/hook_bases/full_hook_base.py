@@ -8,7 +8,7 @@ from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER
 from ..mixin_protocols.hook_with_getter_protocol import HookWithGetterProtocol
 
 if TYPE_CHECKING:
-    from ....x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol
+    from ....foundations.carries_single_hook_protocol import CarriesSingleHookProtocol
 
 T = TypeVar("T")
 

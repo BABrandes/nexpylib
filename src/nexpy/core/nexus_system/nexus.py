@@ -6,7 +6,7 @@ from ..._utils import log
 
 if TYPE_CHECKING:
     from ..hooks.mixin_protocols.hook_with_connection_protocol import HookWithConnectionProtocol
-    from ...x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol
+    from ...foundations.carries_single_hook_protocol import CarriesSingleHookProtocol
     from .nexus_manager import NexusManager
     
 T = TypeVar("T")

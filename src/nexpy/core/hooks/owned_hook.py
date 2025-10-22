@@ -6,7 +6,7 @@ from .hook_protocols.owned_full_hook_protocol import OwnedFullHookProtocol
 from ..auxiliary.listening_base import ListeningBase
 from nexpy.core.nexus_system.nexus_manager import NexusManager
 from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
-from ...x_objects_base.carries_some_hooks_protocol import CarriesSomeHooksProtocol
+from ...foundations.carries_some_hooks_protocol import CarriesSomeHooksProtocol
 
 from .hook_bases.full_hook_base import FullHookBase
 

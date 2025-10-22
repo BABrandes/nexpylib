@@ -1,36 +1,35 @@
 from typing import Generic, TypeVar, Optional, Literal, Mapping, Callable
-from collections.abc import Iterable
+from collections.abc import Set as AbstractSet
 from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_composite_base import XCompositeBase
+from ...foundations.x_composite_base import XCompositeBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from .protocols import XMultiSelectionOptionsProtocol
-from .utils import likely_settable
 
 T = TypeVar("T")
 
-class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_options"], Literal["number_of_selected_options", "number_of_available_options"], Iterable[T], int, "XMultiSelectionSet"], XMultiSelectionOptionsProtocol[T], Generic[T]):
+class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_options"], Literal["number_of_selected_options", "number_of_available_options"], AbstractSet[T], int, "XMultiSelectionSet"], XMultiSelectionOptionsProtocol[T], Generic[T]):
 
 
     def __init__(
         self,
-        selected_options: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | XMultiSelectionOptionsProtocol[T], available_options: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | None = None,
+        selected_options: AbstractSet[T] | Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]] | XMultiSelectionOptionsProtocol[T], available_options: AbstractSet[T] | Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]] | None = None,
         *,
-        custom_validator: Optional[Callable[[Mapping[Literal["selected_options", "available_options", "number_of_selected_options", "number_of_available_options"], Iterable[T] | int]], tuple[bool, str]]] = None,
+        custom_validator: Optional[Callable[[Mapping[Literal["selected_options", "available_options", "number_of_selected_options", "number_of_available_options"], AbstractSet[T] | int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
 
         # Handle initialization from XMultiSelectionOptionsProtocol
         if isinstance(selected_options, XMultiSelectionOptionsProtocol):            
             source_observable = selected_options
-            initial_selected_options: Iterable[T] = source_observable.selected_options
-            initial_available_options: Iterable[T] = source_observable.available_options
-            selected_options_hook: Optional[ManagedHookProtocol[Iterable[T]]] = None
-            available_options_hook: Optional[ManagedHookProtocol[Iterable[T]]] = None
+            initial_selected_options: AbstractSet[T] = source_observable.selected_options
+            initial_available_options: AbstractSet[T] = source_observable.available_options
+            selected_options_hook: Optional[ManagedHookProtocol[AbstractSet[T]]] = None
+            available_options_hook: Optional[ManagedHookProtocol[AbstractSet[T]]] = None
             observable: Optional[XMultiSelectionOptionsProtocol[T]] = selected_options
         else:
             observable = None
@@ -52,11 +51,11 @@ class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_o
                 initial_selected_options = set(selected_options)
                 selected_options_hook = None
 
-        def is_valid_value(x: Mapping[Literal["selected_options", "available_options"], Iterable[T]]) -> tuple[bool, str]:
+        def is_valid_value(x: Mapping[Literal["selected_options", "available_options"], AbstractSet[T]]) -> tuple[bool, str]:
             selected_options = set(x["selected_options"])
             available_options = x["available_options"]
             
-            if not likely_settable(available_options):
+            if not isinstance(available_options, AbstractSet): # type: ignore
                 return False, f"Available options '{available_options}' cannot be used as a set!"
             
             if not selected_options.issubset(available_options):
@@ -67,7 +66,7 @@ class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_o
         super().__init__(
             initial_hook_values={"selected_options": initial_selected_options, "available_options": initial_available_options},
             compute_missing_primary_values_callback=None,
-            compute_secondary_values_callback={"number_of_selected_options": lambda x: len(x["selected_options"]), "number_of_available_options": lambda x: len(x["available_options"])}, # type: ignore
+            compute_secondary_values_callback={"number_of_selected_options": lambda x: len(x["selected_options"]), "number_of_available_options": lambda x: len(x["available_options"])},
             validate_complete_primary_values_callback=is_valid_value,
             output_value_wrapper={
                 "available_options": lambda x: set(x) # type: ignore
@@ -93,19 +92,19 @@ class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_o
     #-------------------------------- available options --------------------------------
 
     @property
-    def available_options_hook(self) -> Hook[Iterable[T]]:
+    def available_options_hook(self) -> Hook[AbstractSet[T]]:
         return self._primary_hooks["available_options"]
 
     @property
-    def available_options(self) -> Iterable[T]: # type: ignore
+    def available_options(self) -> AbstractSet[T]: # type: ignore
         """Get the available options as an immutable set."""
         return self._value_wrapped("available_options") # type: ignore
     
     @available_options.setter
-    def available_options(self, available_options: Iterable[T]) -> None:
+    def available_options(self, available_options: AbstractSet[T]) -> None:
         self.change_available_options(available_options)
     
-    def change_available_options(self, available_options: Iterable[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
+    def change_available_options(self, available_options: AbstractSet[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Set the available options (automatically converted to set by nexus system)."""
         success, msg = self._submit_value("available_options", available_options, logger=logger)
         if not success and raise_submission_error_flag:
@@ -114,18 +113,18 @@ class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_o
     #-------------------------------- selected options --------------------------------
 
     @property
-    def selected_options_hook(self) -> Hook[Iterable[T]]:
+    def selected_options_hook(self) -> Hook[AbstractSet[T]]:
         return self._primary_hooks["selected_options"]
 
     @property
-    def selected_options(self) -> Iterable[T]: # type: ignore
+    def selected_options(self) -> AbstractSet[T]: # type: ignore
         return self._value_wrapped("selected_options") # type: ignore
     
     @selected_options.setter
-    def selected_options(self, selected_options: Iterable[T]) -> None:
+    def selected_options(self, selected_options: AbstractSet[T]) -> None:
         self.change_selected_options(selected_options)
     
-    def change_selected_options(self, selected_options: Iterable[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
+    def change_selected_options(self, selected_options: AbstractSet[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Set the selected options (automatically converted to set by nexus system)."""
         # Let nexus system handle immutability conversion
         success, msg = self._submit_value("selected_options", set(selected_options), logger=logger)
@@ -164,7 +163,7 @@ class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_o
 
     #-------------------------------- Convenience methods --------------------------------
 
-    def change_selected_options_and_available_options(self, selected_options: Iterable[T], available_options: Iterable[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
+    def change_selected_options_and_available_options(self, selected_options: AbstractSet[T], available_options: AbstractSet[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """
         Set both the selected options and available options atomically.
         
@@ -183,7 +182,7 @@ class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_o
         if not success and raise_submission_error_flag:
             raise SubmissionError(msg, option, "available_options")
 
-    def add_available_options(self, options: Iterable[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
+    def add_available_options(self, options: AbstractSet[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Add an option to the available options set."""
         success, msg = self._submit_value("available_options", set(self._primary_hooks["available_options"].value) | set(options))
         if not success and raise_submission_error_flag:
@@ -195,7 +194,7 @@ class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_o
         if not success and raise_submission_error_flag:
             raise SubmissionError(msg, option, "available_options")
 
-    def remove_available_options(self, option: Iterable[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
+    def remove_available_options(self, option: AbstractSet[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Remove an option from the available options set."""
         success, msg = self._submit_value("available_options", set(self._primary_hooks["available_options"].value) - set(option))
         if not success and raise_submission_error_flag:
@@ -213,7 +212,7 @@ class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_o
         if not success and raise_submission_error_flag:
             raise SubmissionError(msg, option, "selected_options")
 
-    def add_selected_options(self, options: Iterable[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
+    def add_selected_options(self, options: AbstractSet[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Add an option to the selected options set."""
         success, msg = self._submit_value("selected_options", set(self._primary_hooks["selected_options"].value) | set(options))
         if not success and raise_submission_error_flag:
@@ -225,7 +224,7 @@ class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_o
         if not success and raise_submission_error_flag:
             raise SubmissionError(msg, option, "selected_options")
 
-    def remove_selected_options(self, option: Iterable[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
+    def remove_selected_options(self, option: AbstractSet[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Remove an option from the selected options set."""
         success, msg = self._submit_value("selected_options", set(self._primary_hooks["selected_options"].value) - set(option))
         if not success and raise_submission_error_flag:

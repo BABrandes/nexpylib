@@ -4,7 +4,7 @@ from logging import Logger
 from ..auxiliary.listening_base import ListeningBase
 from nexpy.core.nexus_system.nexus_manager import NexusManager
 from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER as DEFAULT_NEXUS_MANAGER
-from ...x_objects_base.carries_some_hooks_protocol import CarriesSomeHooksProtocol
+from ...foundations.carries_some_hooks_protocol import CarriesSomeHooksProtocol
 
 from .hook_bases.managed_hook_base import ManagedHookBase
 from .hook_protocols.owned_read_only_hook_protocol import OwnedReadOnlyHookProtocol

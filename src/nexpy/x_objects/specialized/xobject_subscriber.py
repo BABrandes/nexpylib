@@ -31,7 +31,7 @@ Example:
 
 from typing import Generic, TypeVar, Callable, Mapping, Optional, Literal
 from logging import Logger
-from ...x_objects_base.x_composite_base import XCompositeBase
+from ...foundations.x_composite_base import XCompositeBase
 from ...core.publisher_subscriber.publisher import Publisher
 from ...core.publisher_subscriber.subscriber import Subscriber
 from ...core.nexus_system.nexus_manager import NexusManager
