@@ -1,5 +1,6 @@
 from typing import Mapping, Any, Optional, TYPE_CHECKING, Callable, Literal, Sequence
 from types import MappingProxyType
+import weakref
 
 from threading import RLock, local
 from logging import Logger
@@ -92,6 +93,11 @@ class NexusManager:
 
         self._lock = RLock()  # Thread-safe lock for submit_values operations
         self._thread_local = local()  # Thread-local storage for tracking active hook nexuses
+
+        # ----------- Nexus Tracking -----------
+
+        self._registered_nexuses: list[weakref.ref["Nexus[Any]"]] = []  # Weak references to all registered nexuses
+        self._next_nexus_id: int = 1  # Counter for generating unique nexus IDs
 
         # ----------- Equality Callbacks -----------
 
@@ -216,6 +222,78 @@ class NexusManager:
     def reset(self) -> None:
         """Reset the nexus manager state for testing purposes."""
         pass
+
+    ##################################################################################################################
+    # Nexus Tracking Methods
+    ##################################################################################################################
+
+    def _generate_nexus_id(self) -> str:
+        """Generate a unique nexus ID.
+        
+        Returns:
+            A unique string identifier for a nexus in the format "nexus_{id}".
+        """
+        nexus_id = f"nexus_{self._next_nexus_id}"
+        self._next_nexus_id += 1
+        return nexus_id
+
+    def _register_nexus(self, nexus: "Nexus[Any]") -> None:
+        """Register a nexus with this manager for tracking purposes (internal use only).
+        
+        Args:
+            nexus: The nexus to register. A weak reference will be stored.
+        """
+        self._registered_nexuses.append(weakref.ref(nexus))
+
+    def _unregister_nexus(self, nexus: "Nexus[Any]") -> None:
+        """Unregister a nexus from this manager (internal use only).
+        
+        Args:
+            nexus: The nexus to unregister.
+        """
+        # Remove the weak reference to this nexus
+        nexus_ref_to_remove = None
+        for nexus_ref in self._registered_nexuses:
+            if nexus_ref() is nexus:
+                nexus_ref_to_remove = nexus_ref
+                break
+        
+        if nexus_ref_to_remove is not None:
+            self._registered_nexuses.remove(nexus_ref_to_remove)
+
+    def _cleanup_dead_nexus_references(self) -> None:
+        """Remove dead weak references from the registered nexuses list."""
+        alive_refs: list[weakref.ref["Nexus[Any]"]] = []
+        for nexus_ref in self._registered_nexuses:
+            if nexus_ref() is not None:
+                alive_refs.append(nexus_ref)
+        
+        self._registered_nexuses = alive_refs
+
+    def get_active_nexuses(self) -> list["Nexus[Any]"]:
+        """Get all currently active nexuses registered with this manager.
+        
+        Returns:
+            List of active nexuses. Dead references are automatically cleaned up.
+        """
+        self._cleanup_dead_nexus_references()
+        
+        active_nexuses: list["Nexus[Any]"] = []
+        for nexus_ref in self._registered_nexuses:
+            nexus = nexus_ref()
+            if nexus is not None:
+                active_nexuses.append(nexus)
+        
+        return active_nexuses
+
+    def get_nexus_count(self) -> int:
+        """Get the number of currently active nexuses.
+        
+        Returns:
+            Number of active nexuses registered with this manager.
+        """
+        self._cleanup_dead_nexus_references()
+        return len(self._registered_nexuses)
 
     ##################################################################################################################
     # Synchronization of Nexus and Values

@@ -120,7 +120,7 @@ class TestXSetSequenceAdapterErrorHandling:
         )
 
         with pytest.raises(SubmissionError, match="Cannot convert sequence with duplicates"):
-            obs.submit_values_by_keys({"right": [1, 2, 2]}) # type: ignore
+            obs.submit_values_by_keys({"right": [1, 2, 2]})
 
     def test_update_hook_set_with_duplicates_raises_error(self):
         """Test that updating hook_set with duplicates raises SubmissionError."""
@@ -132,7 +132,7 @@ class TestXSetSequenceAdapterErrorHandling:
         )
 
         with pytest.raises(SubmissionError, match="Left value must be AbstractSet"):
-            obs.submit_values_by_keys({"left": [1, 2, 2]}) # type: ignore
+            obs.submit_values_by_keys({"left": [1, 2, 2]})
 
     def test_update_both_hooks_with_duplicates_raises_error(self):
         """Test that updating both hooks with duplicates raises SubmissionError."""
@@ -144,7 +144,7 @@ class TestXSetSequenceAdapterErrorHandling:
         )
 
         with pytest.raises(SubmissionError, match="Left value must be AbstractSet"):
-            obs.submit_values_by_keys({"left": [1, 1, 2], "right": [3, 3, 4]}) # type: ignore
+            obs.submit_values_by_keys({"left": [1, 1, 2], "right": [3, 3, 4]})
 
     def test_update_both_hooks_with_mismatched_values(self):
         """Test updating both hooks with different values."""
@@ -167,7 +167,7 @@ class TestXSetSequenceAdapterErrorHandling:
         )
 
         with pytest.raises(SubmissionError, match="Sequence contains duplicate elements"):
-            obs.submit_values_by_keys({"left": frozenset([10, 11, 12]), "right": [20, 21, 21]}) # type: ignore
+            obs.submit_values_by_keys({"left": frozenset([10, 11, 12]), "right": [20, 21, 21]})
 
 
 class TestXSetSequenceAdapterHookAccess:
@@ -250,7 +250,7 @@ class TestXSetSequenceAdapterValidation:
 
         # Access the validation callback directly
         is_valid, message = obs._validate_values( # type: ignore
-            {"left": frozenset([1, 2, 3]), "right": [1, 2, 3]} # type: ignore
+            {"left": frozenset([1, 2, 3]), "right": [1, 2, 3]}
         )
 
         assert is_valid is True
@@ -264,7 +264,7 @@ class TestXSetSequenceAdapterValidation:
         )
 
         is_valid, message = obs._validate_values( # type: ignore
-            {"left": frozenset([1, 2, 3]), "right": [4, 5, 6]} # type: ignore
+            {"left": frozenset([1, 2, 3]), "right": [4, 5, 6]}
         )
         
         # Validation fails - both hooks must have matching values since they're joined
@@ -279,7 +279,7 @@ class TestXSetSequenceAdapterValidation:
         )
 
         is_valid, message = obs._validate_values( # type: ignore
-            {"left": frozenset([1, 2, 2]), "right": [1, 2, 2]} # type: ignore
+            {"left": frozenset([1, 2, 2]), "right": [1, 2, 2]}
         )
         
         assert is_valid is False
@@ -293,7 +293,7 @@ class TestXSetSequenceAdapterValidation:
         )
 
         is_valid, message = obs._validate_values( # type: ignore
-            {"left": frozenset([1, 2, 3])} # type: ignore
+            {"left": frozenset([1, 2, 3])}
         )
 
         assert is_valid is True
@@ -424,7 +424,7 @@ class TestXSetSequenceAdapterEdgeCases:
 
     def test_multiple_sequential_updates(self):
         """Test multiple updates in sequence."""
-        obs = XSetSequenceAdapter(
+        obs = XSetSequenceAdapter[int](
             hook_set_or_value=frozenset(),
             hook_sequence=None
         )

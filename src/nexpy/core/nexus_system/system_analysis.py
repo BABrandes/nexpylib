@@ -65,7 +65,7 @@ def write_report(dict_of_carries_hooks: dict[str, CarriesSomeHooksProtocol[Any, 
         is_shared = len(owner_name_and_hooks) > 1
         nexus_type = "🔗 SHARED" if is_shared else "🔸 INDIVIDUAL"
         
-        report += f"{i:2d}. {nexus_type} Nexus\n"
+        report += f"{i:2d}. {nexus_type} Nexus (ID: {hook_nexus.nexus_id})\n"
         report += f"    Value: {repr(hook_nexus.stored_value)}\n"
         report += f"    Connections: {len(owner_name_and_hooks)}\n"
         report += f"    Used by:\n"

@@ -1,6 +1,7 @@
 from typing import Generic, Optional, TypeVar, TYPE_CHECKING, Any
 import logging
 import weakref
+import time
 
 from ..._utils import log
 
@@ -112,6 +113,10 @@ class Nexus(Generic[T]):
         if nexus_manager is None:
             nexus_manager = _DEFAULT_NEXUS_MANAGER
 
+        # Generate a meaningful ID for this nexus using the manager's counter
+        self._nexus_id: str = nexus_manager._generate_nexus_id() # type: ignore
+        self._creation_time: float = time.time()
+        
         self._nexus_manager: "NexusManager" = nexus_manager
         self._hooks: set[weakref.ref["HookWithConnectionProtocol[T]"]] = {weakref.ref(hook) for hook in hooks}
         self._stored_value: T = value
@@ -120,7 +125,20 @@ class Nexus(Generic[T]):
         self._submit_depth_counter: int = 0
         self._submit_touched_hooks: set["HookWithConnectionProtocol[T]"] = set()
 
-        log(self, "HookNexus.__init__", self._logger, True, "Successfully initialized hook nexus")
+        # Register this nexus with the manager for tracking
+        self._nexus_manager._register_nexus(self) # type: ignore
+
+        log(self, "HookNexus.__init__", self._logger, True, f"Successfully initialized hook nexus with ID {self._nexus_id}")
+
+    def __del__(self) -> None:
+        """Cleanup when nexus is destroyed."""
+        try:
+            # Unregister from manager if it still exists
+            if hasattr(self, '_nexus_manager') and hasattr(self._nexus_manager, '_unregister_nexus'):
+                self._nexus_manager._unregister_nexus(self) # type: ignore
+        except Exception:
+            # Ignore errors during cleanup - the manager might already be destroyed
+            pass
 
     def _get_hooks(self) -> set["HookWithConnectionProtocol[T]"]:
         """Get the actual hooks from weak references, filtering out dead references."""
@@ -187,6 +205,26 @@ class Nexus(Generic[T]):
             The previous value stored in this Nexus.
         """
         return self._previous_stored_value
+
+    @property
+    def nexus_id(self) -> str:
+        """
+        Get the unique ID of this nexus.
+
+        Returns:
+            A unique string identifier for this nexus, useful for tracking and debugging.
+        """
+        return self._nexus_id
+
+    @property
+    def creation_time(self) -> float:
+        """
+        Get the creation timestamp of this nexus.
+
+        Returns:
+            Unix timestamp when this nexus was created.
+        """
+        return self._creation_time
 
     @staticmethod
     def _create_merged_nexuses(*nexuses: "Nexus[T]") -> "Nexus[T]":
@@ -365,8 +403,8 @@ class Nexus(Generic[T]):
 
     def __repr__(self) -> str:
         """Get the string representation of this hook nexus."""
-        return f"HookNexus(v={self.stored_value}, id={id(self)}, {len(self._get_hooks())} hooks)"
+        return f"Nexus(id={self._nexus_id}, v={self.stored_value}, {len(self._get_hooks())} hooks)"
     
     def __str__(self) -> str:
         """Get the string representation of this hook nexus."""
-        return f"HookNexus(v={self.stored_value}, id={id(self)})"
+        return f"Nexus(id={self._nexus_id}, v={self.stored_value})"
