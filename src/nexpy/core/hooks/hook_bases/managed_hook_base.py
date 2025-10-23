@@ -6,11 +6,11 @@ import inspect
 from ..hook_protocols.managed_hook_protocol import ManagedHookProtocol
 from ..mixin_protocols.hook_with_connection_protocol import HookWithConnectionProtocol
 
-from ...._utils import log
+from ...utils import log
 from ...auxiliary.listening_base import ListeningBase
 from nexpy.core.nexus_system.nexus_manager import NexusManager
 from nexpy.core.nexus_system.nexus import Nexus
-from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER as DEFAULT_NEXUS_MANAGER
+from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ....foundations.carries_single_hook_protocol import CarriesSingleHookProtocol
 from ...publisher_subscriber.publisher import Publisher
 
@@ -79,7 +79,7 @@ class ManagedHookBase(ManagedHookProtocol[T], Publisher, ListeningBase, Generic[
     def __init__(
         self,
         value: T,
-        nexus_manager: "NexusManager" = DEFAULT_NEXUS_MANAGER,
+        nexus_manager: "NexusManager" = _DEFAULT_NEXUS_MANAGER,
         logger: Optional[logging.Logger] = None
         ) -> None:
         """

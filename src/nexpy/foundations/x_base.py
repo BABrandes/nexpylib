@@ -12,7 +12,7 @@ from ..core.hooks.hook_protocols.owned_hook_protocol import OwnedHookProtocol
 from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ..core.nexus_system.has_nexus_manager_protocol import HasNexusManagerProtocol
 from ..core.hooks.hook_aliases import Hook, ReadOnlyHook
-from .._utils import make_weak_callback
+from ..core.utils import make_weak_callback
 
 from .carries_some_hooks_protocol import CarriesSomeHooksProtocol
 from .carries_single_hook_protocol import CarriesSingleHookProtocol

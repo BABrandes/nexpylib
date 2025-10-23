@@ -37,7 +37,7 @@ from ...core.publisher_subscriber.subscriber import Subscriber
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ...core.nexus_system.submission_error import SubmissionError
-from ..._utils import make_weak_callback
+from ...core.utils import make_weak_callback
 
 HK = TypeVar("HK")
 HV = TypeVar("HV")

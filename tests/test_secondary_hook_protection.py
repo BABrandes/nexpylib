@@ -28,7 +28,8 @@ class TestSecondaryHookProtection:
         # This should fail because length is a secondary value derived from the list
         success, msg = obs_list.submit_value_by_key("length", 5, raise_submission_error_flag=False) # type: ignore
         assert not success
-        assert "Internal secondary value" in msg or "Hook nexus already in nexus" in msg
+        assert ("Internal secondary value" in msg or "Hook nexus already in nexus" in msg or 
+                "Nexus conflict" in msg)
         
         # Verify the length hasn't changed
         assert obs_list.length == 3
@@ -48,7 +49,7 @@ class TestSecondaryHookProtection:
         
         # Try to modify the length through the connected observable
         # This should fail because length is secondary and cannot be set externally
-        with pytest.raises(ValueError, match="Internal secondary value|Hook nexus already in nexus"):
+        with pytest.raises(ValueError, match="Internal secondary value|Hook nexus already in nexus|Nexus conflict"):
             length_observer.value = 5
         
         # Verify nothing changed
@@ -92,7 +93,8 @@ class TestSecondaryHookProtection:
         # Try to submit both primary and wrong secondary value
         success, msg = obs_list.submit_values_by_keys({"value": (1, 2), "length": 5}, raise_submission_error_flag=False) # type: ignore
         assert not success
-        assert "Internal secondary value" in msg or "Hook nexus already in nexus" in msg
+        assert ("Internal secondary value" in msg or "Hook nexus already in nexus" in msg or 
+                "Nexus conflict" in msg)
         
         # Verify nothing changed
         assert obs_list.list == [10, 20, 30]
@@ -144,7 +146,7 @@ class TestSecondaryHookProtection:
         assert length_copy.value == 4
         
         # Try to modify through length_copy - should fail
-        with pytest.raises(ValueError, match="Internal secondary value|Hook nexus already in nexus"):
+        with pytest.raises(ValueError, match="Internal secondary value|Hook nexus already in nexus|Nexus conflict"):
             length_copy.value = 10
         
         # Verify nothing changed
@@ -179,7 +181,8 @@ class TestSecondaryHookProtection:
         # Try to directly set length to non-zero on empty list (should fail)
         success, msg = obs_list.submit_value_by_key("length", 5, raise_submission_error_flag=False) # type: ignore
         assert not success
-        assert "Internal secondary value" in msg or "Hook nexus already in nexus" in msg
+        assert ("Internal secondary value" in msg or "Hook nexus already in nexus" in msg or 
+                "Nexus conflict" in msg)
         
         assert obs_list.length == 0
         

@@ -12,7 +12,7 @@ from ..core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ..core.nexus_system.nexus import Nexus
 from ..core.nexus_system.nexus_manager import NexusManager
 from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
-from .._utils import log
+from ..core.utils import log
 from ..core.nexus_system.submission_error import SubmissionError
 
 from .x_base import XBase

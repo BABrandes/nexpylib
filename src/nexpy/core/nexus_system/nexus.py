@@ -3,7 +3,7 @@ import logging
 import weakref
 import time
 
-from ..._utils import log
+from ..utils import log
 
 if TYPE_CHECKING:
     from ..hooks.mixin_protocols.hook_with_connection_protocol import HookWithConnectionProtocol
@@ -107,6 +107,7 @@ class Nexus(Generic[T]):
                 assert hook1.value == 42
                 assert hook2.value == 42
         """
+        super().__init__()
         
         from .default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
         
