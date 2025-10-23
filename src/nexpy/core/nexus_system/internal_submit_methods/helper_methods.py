@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from ..nexus import Nexus
     from ....foundations.carries_some_hooks_protocol import CarriesSomeHooksProtocol
     from ...hooks.hook_aliases import Hook
-    from ..update_function_values import UpdateFunctionValues
 else:
     # Import Hook for runtime use
     from ...hooks.hook_aliases import Hook

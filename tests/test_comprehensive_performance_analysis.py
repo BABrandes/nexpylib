@@ -9,17 +9,18 @@ This test analyzes performance across different combinations of:
 This will help determine optimal thresholds for adaptive submission.
 """
 
+from typing import Any
 import time
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from nexpy import FloatingHook, XValue, XList
+from nexpy import FloatingHook
 from nexpy.core.nexus_system.nexus_manager import NexusManager
 from nexpy.core.nexus_system.internal_submit_methods.internal_submit_1 import internal_submit_values as internal_submit_1
 from nexpy.core.nexus_system.internal_submit_methods.internal_submit_2 import internal_submit_values as internal_submit_2
 from test_base import ObservableTestCase
-import pytest
+from nexpy.core.nexus_system.nexus import Nexus
 
 
 class TestComprehensivePerformanceAnalysis(ObservableTestCase):
@@ -29,10 +30,10 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
         super().setup_method()
         self.manager = NexusManager()
     
-    def create_test_scenario(self, nexus_count: int, hooks_per_nexus: int):
+    def create_test_scenario(self, nexus_count: int, hooks_per_nexus: int) -> tuple[list[Nexus[Any]], list[FloatingHook[Any]]]:
         """Create a test scenario with specified nexus and hook counts."""
-        nexuses = []
-        all_hooks = []
+        nexuses: list[Nexus[Any]] = []
+        all_hooks: list[FloatingHook[Any]] = []
         
         for nexus_idx in range(nexus_count):
             # Create hooks for this nexus
@@ -42,7 +43,7 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
             for i in range(1, len(nexus_hooks)):
                 nexus_hooks[0].join(nexus_hooks[i], "use_caller_value")
             
-            nexuses.append(nexus_hooks[0]._get_nexus())
+            nexuses.append(nexus_hooks[0]._get_nexus()) # type: ignore
             all_hooks.extend(nexus_hooks)
         
         return nexuses, all_hooks
@@ -87,13 +88,13 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
             (10, 100, "10 nexuses, 100 hooks each"),
         ]
         
-        results = []
+        results: list[dict[str, Any]] = []
         
         for nexus_count, hooks_per_nexus, description in test_scenarios:
             print(f"\nTesting: {description}")
             
             # Create test scenario
-            nexuses, all_hooks = self.create_test_scenario(nexus_count, hooks_per_nexus)
+            nexuses, _ = self.create_test_scenario(nexus_count, hooks_per_nexus)
             
             # Calculate metrics
             total_hooks = nexus_count * hooks_per_nexus
@@ -105,12 +106,12 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
             
             # Test Internal Submit 1
             start_time = time.perf_counter()
-            success_1, msg_1 = internal_submit_1(self.manager, nexus_and_values_1, "Normal submission")
+            success_1, _ = internal_submit_1(self.manager, nexus_and_values_1, "Normal submission")
             time_1 = time.perf_counter() - start_time
             
             # Test Internal Submit 2
             start_time = time.perf_counter()
-            success_2, msg_2 = internal_submit_2(self.manager, nexus_and_values_2, "Normal submission")
+            success_2, _ = internal_submit_2(self.manager, nexus_and_values_2, "Normal submission")
             time_2 = time.perf_counter() - start_time
             
             # Calculate performance metrics
@@ -118,7 +119,7 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
             winner = "Submit 1" if time_1 < time_2 else "Submit 2"
             
             # Store results
-            result = {
+            result: dict[str, Any] = {
                 'nexus_count': nexus_count,
                 'hooks_per_nexus': hooks_per_nexus,
                 'total_hooks': total_hooks,
@@ -142,10 +143,8 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
         
         # Analyze results
         self.analyze_performance_patterns(results)
-        
-        return results
     
-    def analyze_performance_patterns(self, results):
+    def analyze_performance_patterns(self, results: list[dict[str, Any]]):
         """Analyze performance patterns from the test results."""
         print("\n" + "=" * 80)
         print("PERFORMANCE PATTERN ANALYSIS")
@@ -153,7 +152,7 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
         
         # Group by total hooks
         print("\n=== Performance by Total Hook Count ===")
-        hook_groups = {}
+        hook_groups: dict[int, list[dict[str, Any]]] = {}
         for result in results:
             total_hooks = result['total_hooks']
             if total_hooks not in hook_groups:
@@ -170,7 +169,7 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
         
         # Group by nexus count
         print("\n=== Performance by Nexus Count ===")
-        nexus_groups = {}
+        nexus_groups: dict[int, list[dict[str, Any]]] = {}
         for result in results:
             nexus_count = result['nexus_count']
             if nexus_count not in nexus_groups:
@@ -187,7 +186,7 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
         
         # Group by hooks per nexus
         print("\n=== Performance by Hooks per Nexus ===")
-        hooks_per_nexus_groups = {}
+        hooks_per_nexus_groups: dict[int, list[dict[str, Any]]] = {}
         for result in results:
             hooks_per_nexus = result['hooks_per_nexus']
             if hooks_per_nexus not in hooks_per_nexus_groups:
@@ -205,7 +204,7 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
         # Find optimal thresholds
         self.find_optimal_thresholds(results)
     
-    def find_optimal_thresholds(self, results):
+    def find_optimal_thresholds(self, results: list[dict[str, Any]]):
         """Find optimal thresholds for adaptive selection."""
         print("\n=== Optimal Threshold Analysis ===")
         
@@ -237,7 +236,7 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
         print("\n=== Crossover Point Analysis ===")
         
         # Find where Submit 2 starts winning consistently
-        submit_2_wins_by_hooks = {}
+        submit_2_wins_by_hooks: dict[int, list[bool]] = {}
         for result in results:
             total_hooks = result['total_hooks']
             if total_hooks not in submit_2_wins_by_hooks:
@@ -256,7 +255,7 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
         print("EDGE CASE ANALYSIS")
         print("=" * 80)
         
-        edge_cases = [
+        edge_cases: list[tuple[int, int, str]] = [
             (1, 1, "Single hook, single nexus"),
             (1, 2, "Two hooks, single nexus"),
             (2, 1, "Two nexuses, single hook each"),
@@ -267,7 +266,7 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
         for nexus_count, hooks_per_nexus, description in edge_cases:
             print(f"\nTesting edge case: {description}")
             
-            nexuses, all_hooks = self.create_test_scenario(nexus_count, hooks_per_nexus)
+            nexuses, _ = self.create_test_scenario(nexus_count, hooks_per_nexus)
             total_hooks = nexus_count * hooks_per_nexus
             
             nexus_and_values_1 = {nexus: nexus.stored_value + 1000 for nexus in nexuses}
@@ -275,11 +274,11 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
             
             # Test both implementations
             start_time = time.perf_counter()
-            success_1, msg_1 = internal_submit_1(self.manager, nexus_and_values_1, "Normal submission")
+            success_1, _ = internal_submit_1(self.manager, nexus_and_values_1, "Normal submission")
             time_1 = time.perf_counter() - start_time
             
             start_time = time.perf_counter()
-            success_2, msg_2 = internal_submit_2(self.manager, nexus_and_values_2, "Normal submission")
+            success_2, _ = internal_submit_2(self.manager, nexus_and_values_2, "Normal submission")
             time_2 = time.perf_counter() - start_time
             
             speedup = time_1 / time_2 if time_2 > 0 else float('inf')
@@ -300,7 +299,7 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
         
         import tracemalloc
         
-        test_cases = [
+        test_cases: list[tuple[int, int, str]] = [
             (1, 50, "1 nexus, 50 hooks"),
             (10, 5, "10 nexuses, 5 hooks each"),
             (1, 500, "1 nexus, 500 hooks"),
@@ -309,7 +308,7 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
         for nexus_count, hooks_per_nexus, description in test_cases:
             print(f"\nMemory analysis: {description}")
             
-            nexuses, all_hooks = self.create_test_scenario(nexus_count, hooks_per_nexus)
+            nexuses, _ = self.create_test_scenario(nexus_count, hooks_per_nexus)
             total_hooks = nexus_count * hooks_per_nexus
             
             nexus_and_values_1 = {nexus: nexus.stored_value + 1000 for nexus in nexuses}
@@ -317,14 +316,14 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
             
             # Test Submit 1 memory usage
             tracemalloc.start()
-            success_1, msg_1 = internal_submit_1(self.manager, nexus_and_values_1, "Normal submission")
-            current_1, peak_1 = tracemalloc.get_traced_memory()
+            success_1, _ = internal_submit_1(self.manager, nexus_and_values_1, "Normal submission")
+            _, peak_1 = tracemalloc.get_traced_memory()
             tracemalloc.stop()
             
             # Test Submit 2 memory usage
             tracemalloc.start()
-            success_2, msg_2 = internal_submit_2(self.manager, nexus_and_values_2, "Normal submission")
-            current_2, peak_2 = tracemalloc.get_traced_memory()
+            success_2, _ = internal_submit_2(self.manager, nexus_and_values_2, "Normal submission")
+            _, peak_2 = tracemalloc.get_traced_memory()
             tracemalloc.stop()
             
             print(f"  Total hooks: {total_hooks}, Total nexuses: {nexus_count}")
@@ -345,7 +344,7 @@ if __name__ == "__main__":
     print("Hook Count × Nexus Count Performance Matrix")
     print("=" * 80)
     
-    results = test_instance.test_performance_matrix()
+    _ = test_instance.test_performance_matrix()
     test_instance.test_edge_cases()
     test_instance.test_memory_usage_analysis()
     
