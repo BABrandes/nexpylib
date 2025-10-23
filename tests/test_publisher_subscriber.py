@@ -15,7 +15,7 @@ from test_base import ObservableTestCase
 from run_tests import console_logger as logger
 import pytest
 
-class TestSubscriber(Subscriber):
+class MockSubscriber(Subscriber):
     """Test implementation of Subscriber that tracks publications."""
     
     def __init__(self):
@@ -43,15 +43,14 @@ class TestPublisherSubscriberBasics(ObservableTestCase):
     def setup_method(self):
         super().setup_method()
         self.publisher = Publisher(logger=logger)
-        self.subscriber = TestSubscriber()
+        self.subscriber = MockSubscriber()
         # Set up event loop for async operations
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
     
-    def tearDown(self):
+    def teardown_method(self):
         # Clean up event loop
         self.loop.close()
-        super().tearDown()
     
     def test_add_subscriber(self):
         """Test adding a subscriber to a publisher"""
@@ -60,7 +59,7 @@ class TestPublisherSubscriberBasics(ObservableTestCase):
     
     def test_is_subscribed_false(self):
         """Test is_subscribed returns False for non-subscribed subscriber"""
-        other_subscriber = TestSubscriber()
+        other_subscriber = MockSubscriber()
         assert not self.publisher.is_subscribed(other_subscriber)
     
     def test_remove_subscriber(self):
@@ -90,8 +89,8 @@ class TestPublisherSubscriberBasics(ObservableTestCase):
     
     def test_publish_to_multiple_subscribers(self):
         """Test publishing to multiple subscribers"""
-        subscriber2 = TestSubscriber()
-        subscriber3 = TestSubscriber()
+        subscriber2 = MockSubscriber()
+        subscriber3 = MockSubscriber()
         
         self.publisher.add_subscriber(self.subscriber)
         self.publisher.add_subscriber(subscriber2)
@@ -144,16 +143,15 @@ class TestPublisherSubscriberWeakReferences(ObservableTestCase):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
     
-    def tearDown(self):
+    def teardown_method(self):
         self.loop.close()
-        super().tearDown()
     
     def test_subscriber_cleanup_on_deletion(self):
         """Test that deleted subscribers are cleaned up"""
         publisher = Publisher(logger=logger)
-        subscriber1 = TestSubscriber()
-        subscriber2 = TestSubscriber()
-        subscriber3 = TestSubscriber()
+        subscriber1 = MockSubscriber()
+        subscriber2 = MockSubscriber()
+        subscriber3 = MockSubscriber()
         
         publisher.add_subscriber(subscriber1)
         publisher.add_subscriber(subscriber2)
@@ -182,7 +180,7 @@ class TestPublisherSubscriberWeakReferences(ObservableTestCase):
         """Test that deleted publishers are cleaned up from subscribers"""
         publisher1 = Publisher(logger=logger)
         publisher2 = Publisher(logger=logger)
-        subscriber = TestSubscriber()
+        subscriber = MockSubscriber()
         
         publisher1.add_subscriber(subscriber)
         publisher2.add_subscriber(subscriber)
@@ -211,14 +209,13 @@ class TestPublisherSubscriberErrorHandling(ObservableTestCase):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
     
-    def tearDown(self):
+    def teardown_method(self):
         self.loop.close()
-        super().tearDown()
     
     def test_subscriber_error_with_logger(self):
         """Test that subscriber errors are logged when logger is provided"""
         publisher = Publisher(logger=logger)
-        subscriber = TestSubscriber()
+        subscriber = MockSubscriber()
         subscriber.should_raise = True
         
         publisher.add_subscriber(subscriber)
@@ -230,7 +227,7 @@ class TestPublisherSubscriberErrorHandling(ObservableTestCase):
     def test_subscriber_error_without_logger(self):
         """Test that subscriber errors raise when no logger is provided"""
         publisher = Publisher(preferred_publish_mode="async")  # No logger, async mode
-        subscriber = TestSubscriber()
+        subscriber = MockSubscriber()
         subscriber.should_raise = True
         
         publisher.add_subscriber(subscriber)
@@ -252,11 +249,11 @@ class TestPublisherSubscriberErrorHandling(ObservableTestCase):
         """Test that error in one subscriber doesn't prevent others from reacting"""
         publisher = Publisher(logger=logger)
         
-        subscriber1 = TestSubscriber()
+        subscriber1 = MockSubscriber()
         subscriber1.should_raise = True
         
-        subscriber2 = TestSubscriber()
-        subscriber3 = TestSubscriber()
+        subscriber2 = MockSubscriber()
+        subscriber3 = MockSubscriber()
         
         publisher.add_subscriber(subscriber1)
         publisher.add_subscriber(subscriber2)
@@ -278,9 +275,8 @@ class TestPublisherSubscriberCleanup(ObservableTestCase):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
     
-    def tearDown(self):
+    def teardown_method(self):
         self.loop.close()
-        super().tearDown()
     
     def test_time_based_cleanup(self):
         """Test cleanup triggers after time threshold"""
@@ -289,8 +285,8 @@ class TestPublisherSubscriberCleanup(ObservableTestCase):
         # Use short cleanup interval for testing
         publisher = Publisher(logger=logger, cleanup_interval=0.1)
         
-        subscriber1 = TestSubscriber()
-        subscriber2 = TestSubscriber()
+        subscriber1 = MockSubscriber()
+        subscriber2 = MockSubscriber()
         
         publisher.add_subscriber(subscriber1)
         publisher.add_subscriber(subscriber2)
@@ -314,8 +310,8 @@ class TestPublisherSubscriberCleanup(ObservableTestCase):
         # Use small max_subscribers for testing
         publisher = Publisher(logger=logger, max_subscribers_before_cleanup=3)
         
-        sub1 = TestSubscriber()
-        sub2 = TestSubscriber()
+        sub1 = MockSubscriber()
+        sub2 = MockSubscriber()
         
         # Add 2 subscribers
         publisher.add_subscriber(sub1)
@@ -332,7 +328,7 @@ class TestPublisherSubscriberCleanup(ObservableTestCase):
         
         # Publisher still has 2 dead refs, now add one more to reach threshold of 3
         # This should trigger cleanup
-        publisher.add_subscriber(TestSubscriber())
+        publisher.add_subscriber(MockSubscriber())
         
         # The dead refs should have been cleaned up after reaching threshold
         # The cleanup happens in add_subscriber when threshold is reached
@@ -348,9 +344,8 @@ class TestPublisherSubscriberAsync(ObservableTestCase):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
     
-    def tearDown(self):
+    def teardown_method(self):
         self.loop.close()
-        super().tearDown()
     
     def test_async_execution(self):
         """Test that reactions execute asynchronously"""
@@ -406,15 +401,14 @@ class TestBidirectionalReferences(ObservableTestCase):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
     
-    def tearDown(self):
+    def teardown_method(self):
         self.loop.close()
-        super().tearDown()
     
     def test_subscriber_tracks_publishers(self):
         """Test that subscribers track their publishers"""
         publisher1 = Publisher(logger=logger)
         publisher2 = Publisher(logger=logger)
-        subscriber = TestSubscriber()
+        subscriber = MockSubscriber()
         
         publisher1.add_subscriber(subscriber)
         publisher2.add_subscriber(subscriber)
@@ -425,7 +419,7 @@ class TestBidirectionalReferences(ObservableTestCase):
     def test_remove_updates_both_sides(self):
         """Test that removing a subscriber updates both sides"""
         publisher = Publisher(logger=logger)
-        subscriber = TestSubscriber()
+        subscriber = MockSubscriber()
         
         publisher.add_subscriber(subscriber)
         
