@@ -159,6 +159,8 @@ class Publisher(PublisherProtocol):
                 # With publishing disabled by default
                 pub4 = Publisher(preferred_publish_mode="off")
         """
+        super().__init__()
+
         self._logger: Optional[Logger] = logger
         self._preferred_publish_mode: Literal["async", "sync", "direct", "off"] = preferred_publish_mode
 
