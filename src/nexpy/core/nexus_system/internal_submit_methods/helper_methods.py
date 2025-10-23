@@ -129,6 +129,7 @@ def complete_nexus_and_values_dict(nexus_manager: "NexusManager", nexus_and_valu
 
         # Step 2: Get the additional values from the owner method
         current_values_of_owner: Mapping[Any, Any] = owner._get_dict_of_values() # type: ignore
+        from ..update_function_values import UpdateFunctionValues
         update_values = UpdateFunctionValues(current=current_values_of_owner, submitted=MappingProxyType(value_dict)) # Wrap the value_dict in MappingProxyType to prevent mutation by the owner function!
 
         try:

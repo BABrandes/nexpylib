@@ -125,6 +125,9 @@ class Nexus(Generic[T]):
         self._logger: Optional[logging.Logger] = logger
         self._submit_depth_counter: int = 0
         self._submit_touched_hooks: set["HookWithConnectionProtocol[T]"] = set()
+        
+        # Track hook count for performance optimization
+        self._hook_count: int = len(hooks)
 
         # Register this nexus with the manager for tracking
         self._nexus_manager._register_nexus(self) # type: ignore
@@ -153,13 +156,16 @@ class Nexus(Generic[T]):
             else:
                 dead_refs.add(hook_ref)
         
-        # Remove dead references
-        self._hooks -= dead_refs
+        # Remove dead references and update count
+        if dead_refs:
+            self._hooks -= dead_refs
+            self._hook_count -= len(dead_refs)
         
         return alive_hooks
 
     def add_hook(self, hook: "HookWithConnectionProtocol[T]") -> tuple[bool, str]:
         self._hooks.add(weakref.ref(hook))
+        self._hook_count += 1
         log(self, "add_hook", self._logger, True, "Successfully added hook")
         return True, "Successfully added hook"
 
@@ -174,6 +180,7 @@ class Nexus(Generic[T]):
             
             if hook_ref_to_remove is not None:
                 self._hooks.remove(hook_ref_to_remove)
+                self._hook_count -= 1
                 log(self, "remove_hook", self._logger, True, "Successfully removed hook")
                 return True, "Successfully removed hook"
             else:
@@ -185,6 +192,16 @@ class Nexus(Generic[T]):
     @property
     def hooks(self) -> tuple["HookWithConnectionProtocol[T]", ...]:
         return tuple(self._get_hooks())
+    
+    @property
+    def hook_count(self) -> int:
+        """
+        Get the number of hooks in this nexus.
+        
+        Returns:
+            The number of hooks currently connected to this nexus.
+        """
+        return self._hook_count
     
     @property
     def stored_value(self) -> Any:
