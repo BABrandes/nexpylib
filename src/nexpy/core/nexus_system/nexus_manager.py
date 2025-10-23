@@ -88,6 +88,7 @@ class NexusManager:
         registered_immutable_types: set[type[Any]] | None = None,
         float_accuracy: Optional[float] = None
         ):
+        super().__init__()
 
         # ----------- Thread Safety -----------
 
