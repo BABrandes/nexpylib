@@ -19,6 +19,7 @@ from nexpy import FloatingHook
 from nexpy.core.nexus_system.nexus_manager import NexusManager
 from nexpy.core.nexus_system.internal_submit_methods.internal_submit_1 import internal_submit_values as internal_submit_1
 from nexpy.core.nexus_system.internal_submit_methods.internal_submit_2 import internal_submit_values as internal_submit_2
+from nexpy.core.nexus_system.internal_submit_methods.internal_submit_3 import internal_submit_values as internal_submit_3
 from test_base import ObservableTestCase
 from nexpy.core.nexus_system.nexus import Nexus
 
@@ -103,6 +104,7 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
             # Prepare submission data
             nexus_and_values_1 = {nexus: nexus.stored_value + 1000 for nexus in nexuses}
             nexus_and_values_2 = {nexus: nexus.stored_value + 1000 for nexus in nexuses}
+            nexus_and_values_3 = {nexus: nexus.stored_value + 1000 for nexus in nexuses}
             
             # Test Internal Submit 1
             start_time = time.perf_counter()
@@ -114,9 +116,24 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
             success_2, _ = internal_submit_2(self.manager, nexus_and_values_2, "Normal submission")
             time_2 = time.perf_counter() - start_time
             
+            # Test Internal Submit 3
+            start_time = time.perf_counter()
+            success_3, _ = internal_submit_3(self.manager, nexus_and_values_3, "Normal submission")
+            time_3 = time.perf_counter() - start_time
+            
             # Calculate performance metrics
-            speedup = time_1 / time_2 if time_2 > 0 else float('inf')
-            winner = "Submit 1" if time_1 < time_2 else "Submit 2"
+            speedup_2 = time_1 / time_2 if time_2 > 0 else float('inf')
+            speedup_3 = time_1 / time_3 if time_3 > 0 else float('inf')
+            speedup_3_vs_2 = time_2 / time_3 if time_3 > 0 else float('inf')
+            
+            # Determine winner
+            fastest_time = min(time_1, time_2, time_3)
+            if fastest_time == time_1:
+                winner = "Submit 1"
+            elif fastest_time == time_2:
+                winner = "Submit 2"
+            else:
+                winner = "Submit 3"
             
             # Store results
             result: dict[str, Any] = {
@@ -127,19 +144,27 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
                 'description': description,
                 'time_1': time_1,
                 'time_2': time_2,
-                'speedup': speedup,
+                'time_3': time_3,
+                'speedup_2': speedup_2,
+                'speedup_3': speedup_3,
+                'speedup_3_vs_2': speedup_3_vs_2,
                 'winner': winner,
                 'success_1': success_1,
-                'success_2': success_2
+                'success_2': success_2,
+                'success_3': success_3
             }
             results.append(result)
             
             print(f"  Total hooks: {total_hooks}, Total nexuses: {total_nexuses}")
             print(f"  Submit 1: {time_1:.6f}s")
             print(f"  Submit 2: {time_2:.6f}s")
-            print(f"  Winner: {winner} ({speedup:.2f}x speedup)")
+            print(f"  Submit 3: {time_3:.6f}s")
+            print(f"  Winner: {winner}")
+            print(f"  Speedup (2 vs 1): {speedup_2:.2f}x")
+            print(f"  Speedup (3 vs 1): {speedup_3:.2f}x")
+            print(f"  Speedup (3 vs 2): {speedup_3_vs_2:.2f}x")
             
-            assert success_1 and success_2
+            assert success_1 and success_2 and success_3
         
         # Analyze results
         self.analyze_performance_patterns(results)
@@ -163,9 +188,12 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
             group_results = hook_groups[total_hooks]
             submit_1_wins = sum(1 for r in group_results if r['winner'] == 'Submit 1')
             submit_2_wins = sum(1 for r in group_results if r['winner'] == 'Submit 2')
-            avg_speedup = sum(r['speedup'] for r in group_results) / len(group_results)
+            submit_3_wins = sum(1 for r in group_results if r['winner'] == 'Submit 3')
+            avg_speedup_2 = sum(r['speedup_2'] for r in group_results) / len(group_results)
+            avg_speedup_3 = sum(r['speedup_3'] for r in group_results) / len(group_results)
+            avg_speedup_3_vs_2 = sum(r['speedup_3_vs_2'] for r in group_results) / len(group_results)
             
-            print(f"  {total_hooks:4d} hooks: Submit 1 wins: {submit_1_wins}, Submit 2 wins: {submit_2_wins}, Avg speedup: {avg_speedup:.2f}x")
+            print(f"  {total_hooks:4d} hooks: S1: {submit_1_wins}, S2: {submit_2_wins}, S3: {submit_3_wins} | Avg speedup 2: {avg_speedup_2:.2f}x, 3: {avg_speedup_3:.2f}x, 3vs2: {avg_speedup_3_vs_2:.2f}x")
         
         # Group by nexus count
         print("\n=== Performance by Nexus Count ===")
@@ -180,9 +208,12 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
             group_results = nexus_groups[nexus_count]
             submit_1_wins = sum(1 for r in group_results if r['winner'] == 'Submit 1')
             submit_2_wins = sum(1 for r in group_results if r['winner'] == 'Submit 2')
-            avg_speedup = sum(r['speedup'] for r in group_results) / len(group_results)
+            submit_3_wins = sum(1 for r in group_results if r['winner'] == 'Submit 3')
+            avg_speedup_2 = sum(r['speedup_2'] for r in group_results) / len(group_results)
+            avg_speedup_3 = sum(r['speedup_3'] for r in group_results) / len(group_results)
+            avg_speedup_3_vs_2 = sum(r['speedup_3_vs_2'] for r in group_results) / len(group_results)
             
-            print(f"  {nexus_count:2d} nexuses: Submit 1 wins: {submit_1_wins}, Submit 2 wins: {submit_2_wins}, Avg speedup: {avg_speedup:.2f}x")
+            print(f"  {nexus_count:2d} nexuses: S1: {submit_1_wins}, S2: {submit_2_wins}, S3: {submit_3_wins} | Avg speedup 2: {avg_speedup_2:.2f}x, 3: {avg_speedup_3:.2f}x, 3vs2: {avg_speedup_3_vs_2:.2f}x")
         
         # Group by hooks per nexus
         print("\n=== Performance by Hooks per Nexus ===")
@@ -197,9 +228,12 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
             group_results = hooks_per_nexus_groups[hooks_per_nexus]
             submit_1_wins = sum(1 for r in group_results if r['winner'] == 'Submit 1')
             submit_2_wins = sum(1 for r in group_results if r['winner'] == 'Submit 2')
-            avg_speedup = sum(r['speedup'] for r in group_results) / len(group_results)
+            submit_3_wins = sum(1 for r in group_results if r['winner'] == 'Submit 3')
+            avg_speedup_2 = sum(r['speedup_2'] for r in group_results) / len(group_results)
+            avg_speedup_3 = sum(r['speedup_3'] for r in group_results) / len(group_results)
+            avg_speedup_3_vs_2 = sum(r['speedup_3_vs_2'] for r in group_results) / len(group_results)
             
-            print(f"  {hooks_per_nexus:3d} hooks/nexus: Submit 1 wins: {submit_1_wins}, Submit 2 wins: {submit_2_wins}, Avg speedup: {avg_speedup:.2f}x")
+            print(f"  {hooks_per_nexus:3d} hooks/nexus: S1: {submit_1_wins}, S2: {submit_2_wins}, S3: {submit_3_wins} | Avg speedup 2: {avg_speedup_2:.2f}x, 3: {avg_speedup_3:.2f}x, 3vs2: {avg_speedup_3_vs_2:.2f}x")
         
         # Find optimal thresholds
         self.find_optimal_thresholds(results)
@@ -213,24 +247,26 @@ class TestComprehensivePerformanceAnalysis(ObservableTestCase):
         for result in results:
             total_hooks = result['total_hooks']
             winner = result['winner']
-            speedup = result['speedup']
-            print(f"  {total_hooks:4d} hooks: {winner} ({speedup:.2f}x)")
+            speedup_2 = result['speedup_2']
+            speedup_3 = result['speedup_3']
+            speedup_3_vs_2 = result['speedup_3_vs_2']
+            print(f"  {total_hooks:4d} hooks: {winner} | 2: {speedup_2:.0f}x, 3: {speedup_3:.0f}x, 3vs2: {speedup_3_vs_2:.2f}x")
         
         # Analyze by nexus count
         print("\nBy Nexus Count:")
         for result in results:
             nexus_count = result['nexus_count']
             winner = result['winner']
-            speedup = result['speedup']
-            print(f"  {nexus_count:2d} nexuses: {winner} ({speedup:.2f}x)")
+            speedup_3_vs_2 = result['speedup_3_vs_2']
+            print(f"  {nexus_count:2d} nexuses: {winner} (3vs2: {speedup_3_vs_2:.2f}x)")
         
         # Analyze by hooks per nexus
         print("\nBy Hooks per Nexus:")
         for result in results:
             hooks_per_nexus = result['hooks_per_nexus']
             winner = result['winner']
-            speedup = result['speedup']
-            print(f"  {hooks_per_nexus:3d} hooks/nexus: {winner} ({speedup:.2f}x)")
+            speedup_3_vs_2 = result['speedup_3_vs_2']
+            print(f"  {hooks_per_nexus:3d} hooks/nexus: {winner} (3vs2: {speedup_3_vs_2:.2f}x)")
         
         # Find crossover points
         print("\n=== Crossover Point Analysis ===")

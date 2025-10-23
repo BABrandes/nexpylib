@@ -306,7 +306,7 @@ class NexusManager:
         
         Therefore, we always use the optimized implementation.
         """
-        from .internal_submit_methods.internal_submit_2 import internal_submit_values
+        from .internal_submit_methods.internal_submit_3 import internal_submit_values
         return internal_submit_values(self, nexus_and_values, mode, logger)
 
     def submit_values(
