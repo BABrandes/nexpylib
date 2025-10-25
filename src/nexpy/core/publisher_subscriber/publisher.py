@@ -159,6 +159,8 @@ class Publisher(PublisherProtocol):
                 # With publishing disabled by default
                 pub4 = Publisher(preferred_publish_mode="off")
         """
+        super().__init__()
+
         self._logger: Optional[Logger] = logger
         self._preferred_publish_mode: Literal["async", "sync", "direct", "off"] = preferred_publish_mode
 
@@ -218,11 +220,11 @@ class Publisher(PublisherProtocol):
         if isinstance(subscriber, Subscriber):
             self._subscriber_storage.cleanup()
             subscriber._add_publisher_called_by_subscriber(self) # type: ignore
-            self._subscriber_storage.add_reference(weakref.ref(subscriber)) # type: ignore
+            self._subscriber_storage.add_reference(weakref.ref(subscriber))
 
         elif callable(subscriber):
             # It's a callback function
-            self._callback_storage.add(subscriber) # type: ignore
+            self._callback_storage.add(subscriber)
 
         else:
             raise ValueError(f"Subscriber must be a Subscriber instance or callable, got: {type(subscriber)}")
@@ -574,14 +576,14 @@ class Publisher(PublisherProtocol):
                 for subscriber_ref in self._subscriber_storage.weak_references:
                     subscriber: Subscriber | None = subscriber_ref()
                     if subscriber is not None:
-                        task: asyncio.Task[None] = subscriber.react_to_publication_task(self, "async") # type: ignore
+                        task: asyncio.Task[None] = subscriber.react_to_publication_task(self, "async")
                         task.add_done_callback(
                             lambda task, subscriber=subscriber: self._handle_task_exception(task, subscriber)
                         )
                 for callback in self._callback_storage:
                     # Handle both sync and async callbacks
                     if asyncio.iscoroutinefunction(callback):
-                        task = asyncio.create_task(callback()) # type: ignore
+                        task = asyncio.create_task(callback())
                         task.add_done_callback(
                             lambda t, c=callback: self._handle_task_exception(t, callback)
                         )
@@ -589,7 +591,7 @@ class Publisher(PublisherProtocol):
                         # Wrap sync callback in async task
                         async def run_sync_callback(cb: Callable[[], None]) -> None:
                             cb()
-                        task = asyncio.create_task(run_sync_callback(callback)) # type: ignore
+                        task = asyncio.create_task(run_sync_callback(callback))
                         task.add_done_callback(
                             lambda task, callback=callback: self._handle_task_exception(task, callback)
                         )
@@ -597,7 +599,7 @@ class Publisher(PublisherProtocol):
             case "sync":
                 # Synchronous mode: wait for each subscriber reaction to complete
                 try:
-                    loop = asyncio.get_event_loop()
+                    loop = asyncio.get_running_loop()
                 except RuntimeError:
                     # No event loop in this thread, create a new one
                     loop = asyncio.new_event_loop()

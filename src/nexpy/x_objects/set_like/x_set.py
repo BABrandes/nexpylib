@@ -1,19 +1,19 @@
-from typing import Any, Generic, Optional, TypeVar, Iterable, Literal, Iterator, Set, Callable, Mapping
+from typing import Any, Generic, Optional, TypeVar, Literal, Iterator, Set, Callable, Mapping, Iterable
+from collections.abc import Set as AbstractSet
 from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_composite_base import XCompositeBase
+from ...foundations.x_composite_base import XCompositeBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from .protocols import XSetProtocol
-from .utils import likely_settable
 
 
 T = TypeVar("T")
    
-class XSet(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int, "XSet"], XSetProtocol[T], Set[T], Generic[T]):
+class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], int, "XSet"], XSetProtocol[T], Set[T], Generic[T]):
     """
     Acting like a set.
 
@@ -22,31 +22,31 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int,
 
     def __init__(
         self,
-        observable_or_hook_or_value: Iterable[T] | Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]] | XSetProtocol[T] | None = None,
+        value: AbstractSet[T] | Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]] | XSetProtocol[T] | None = None,
         *,
-        custom_validator: Optional[Callable[[Mapping[Literal["value", "length"], Iterable[T] | int]], tuple[bool, str]]] = None,
+        custom_validator: Optional[Callable[[Mapping[Literal["value", "length"], AbstractSet[T] | int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
 
-        if observable_or_hook_or_value is None:
-            initial_value: Iterable[T] = set()
-            hook: Optional[Hook[Iterable[T]] | ReadOnlyHook[Iterable[T]]] = None 
-        elif isinstance(observable_or_hook_or_value, XSetProtocol):
-            initial_value = observable_or_hook_or_value.set
-            hook = observable_or_hook_or_value.set_hook
-        elif isinstance(observable_or_hook_or_value, ManagedHookProtocol):
-            initial_value = observable_or_hook_or_value.value
-            hook = observable_or_hook_or_value
+        if value is None:
+            initial_value: AbstractSet[T] = set()
+            hook: Optional[Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]]] = None 
+        elif isinstance(value, XSetProtocol):
+            initial_value = value.set
+            hook = value.set_hook
+        elif isinstance(value, ManagedHookProtocol):
+            initial_value = value.value
+            hook = value
         else:
             # Pass set directly - nexus system will convert to frozenset
-            initial_value = observable_or_hook_or_value
+            initial_value = value
             hook = None
         
         super().__init__(
             initial_hook_values={"value": initial_value},
             compute_missing_primary_values_callback=None,
             compute_secondary_values_callback={"length": lambda x: len(x["value"])}, # type: ignore
-            validate_complete_primary_values_callback=lambda x: (True, "Verification method passed") if likely_settable(x["value"]) else (False, "Value cannot be used as a set!"),
+            validate_complete_primary_values_callback=lambda x: (True, "Verification method passed") if isinstance(x["value"], AbstractSet) else (False, "Value cannot be used as a set!"),
             output_value_wrapper={"value": lambda x: set(x)}, # type: ignore
             custom_validator=custom_validator,
             logger=logger,
@@ -63,7 +63,7 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int,
     #-------------------------------- set value --------------------------------
 
     @property
-    def set_hook(self) -> Hook[Iterable[T]]:
+    def set_hook(self) -> Hook[AbstractSet[T]]:
         """
         Get the hook for the set.
 
@@ -86,10 +86,10 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], Iterable[T], int,
         return self._value_wrapped("value") # type: ignore
     
     @set.setter
-    def set(self, value: Iterable[T]) -> None:
+    def set(self, value: AbstractSet[T]) -> None:
         self.change_set(value)
     
-    def change_set(self, value: Iterable[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
+    def change_set(self, value: AbstractSet[T], *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """
         Set the current value of the set.
         

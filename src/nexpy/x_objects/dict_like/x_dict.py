@@ -1,9 +1,10 @@
-from typing import Generic, TypeVar, Optional, Literal, Any, Mapping, Iterable
+from typing import Generic, TypeVar, Optional, Literal, Any, Mapping, Sequence
+from collections.abc import Set as AbstractSet
 from logging import Logger
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_composite_base import XCompositeBase
+from ...foundations.x_composite_base import XCompositeBase
 from .protocols import XDictProtocol
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER
@@ -109,7 +110,7 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         return frozenset(self._value_wrapped("dict").keys()) # type: ignore
     
     @property
-    def keys_hook(self) -> ReadOnlyHook[Iterable[K]]:
+    def keys_hook(self) -> ReadOnlyHook[AbstractSet[K]]:
         """Get the hook for the dictionary keys."""
         return self._secondary_hooks["keys"] # type: ignore
 
@@ -121,7 +122,7 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         return list(self._value_wrapped("dict").values()) # type: ignore
     
     @property
-    def values_hook(self) -> ReadOnlyHook[Iterable[V]]:
+    def values_hook(self) -> ReadOnlyHook[Sequence[V]]:
         """Get the hook for the dictionary values."""
         return self._secondary_hooks["values"] # type: ignore
 

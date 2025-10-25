@@ -2,8 +2,8 @@ from typing import Generic, TypeVar, Optional, Mapping, Callable
 from pathlib import Path
 from logging import Logger
 
-from ...x_objects_base.x_base import XBase
-from ...x_objects_base.x_object_serializable_mixin import XObjectSerializableMixin
+from ...foundations.x_base import XBase
+from ...foundations.x_object_serializable_mixin import XObjectSerializableMixin
 from ...core.hooks.owned_hook import OwnedHook
 from ...core.hooks.hook_protocols.owned_full_hook_protocol import OwnedFullHookProtocol
 from ...core.nexus_system.nexus import Nexus

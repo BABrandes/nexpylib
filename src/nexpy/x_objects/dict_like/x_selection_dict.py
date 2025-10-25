@@ -1,4 +1,5 @@
-from typing import Literal, TypeVar, Generic, Mapping, Any, Callable
+from typing import Literal, TypeVar, Generic, Mapping, Any, Callable, Optional
+from logging import Logger
 
 from .x_dict_selection_base import XDictSelectionBase, Hook
 from .protocols import XSelectionDictProtocol
@@ -167,12 +168,11 @@ class XSelectionDict(XDictSelectionBase[K, V, K, V], XSelectionDictProtocol[K, V
         """Set the current key."""
         self.change_key(value)
 
-    def change_key(self, new_value: K) -> None:
+    def change_key(self, value: K, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current key."""
-
-        success, msg = self._submit_value("key", new_value)
-        if not success:
-            raise SubmissionError(msg, new_value, "key")
+        success, msg = self._submit_value("key", value, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, value, "key")
 
     #-------------------------------- Value --------------------------------
 
@@ -193,20 +193,20 @@ class XSelectionDict(XDictSelectionBase[K, V, K, V], XSelectionDictProtocol[K, V
         """Set the current value."""
         self.change_value(value)
 
-    def change_value(self, new_value: V) -> None:
+    def change_value(self, value: V, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the current value."""
         
-        success, msg = self._submit_value("value", new_value)
-        if not success:
-            raise SubmissionError(msg, new_value, "value")
+        success, msg = self._submit_value("value", value, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, value, "value")
 
     #-------------------------------- Convenience methods -------------------
     
-    def change_dict_and_key(self, new_dict_value: Mapping[K, V], new_key_value: K) -> None:
+    def change_dict_and_key(self, dict_value: Mapping[K, V], key_value: K, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> None:
         """Change the dictionary and key behind this hook."""
         
-        success, msg = self._submit_values({"dict": new_dict_value, "key": new_key_value})
-        if not success:
-            raise SubmissionError(msg, {"dict": new_dict_value, "key": new_key_value}, "dict and key")
+        success, msg = self._submit_values({"dict": dict_value, "key": key_value}, logger=logger)
+        if not success and raise_submission_error_flag:
+            raise SubmissionError(msg, {"dict": dict_value, "key": key_value}, "dict and key")
 
     #------------------------------------------------------------------------

@@ -5,7 +5,7 @@ from ...core.hooks.owned_hook import OwnedHook
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
 from ...core.auxiliary.listening_base import ListeningBase
-from ...x_objects_base.x_base import XBase
+from ...foundations.x_base import XBase
 from ...core.nexus_system.nexus import Nexus
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.submission_error import SubmissionError

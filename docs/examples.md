@@ -10,6 +10,7 @@ This document provides practical, runnable examples demonstrating NexPy's featur
 - [Hook Fusion Examples](#hook-fusion-examples)
 - [Reactive Collections](#reactive-collections)
 - [Selection Objects](#selection-objects)
+- [Adapter Objects](#adapter-objects)
 - [Internal Synchronization](#internal-synchronization)
 - [Validation and Error Handling](#validation-and-error-handling)
 - [Listeners and Callbacks](#listeners-and-callbacks)
@@ -432,6 +433,215 @@ Selected features: {'feature_a', 'feature_c'}
 
 After selecting feature_b: {'feature_a', 'feature_c', 'feature_b'}
 After deselecting feature_a: {'feature_c', 'feature_b'}
+```
+
+---
+
+## Adapter Objects
+
+Adapter objects bridge between incompatible types, enabling connections between hooks with different type signatures while maintaining type safety and validation.
+
+### Example 1: Optional Value Adapter
+
+```python
+import nexpy as nx
+
+# Create an adapter that bridges between int and Optional[int]
+# The T side (hook_t) never allows None, while the Optional side allows None
+adapter = nx.XOptionalAdapter[int](
+    hook_t_or_value=42,
+    hook_optional=None
+)
+
+print(f"Initial T value: {adapter.hook_t.value}")        # 42
+print(f"Initial Optional value: {adapter.hook_optional.value}")  # 42
+
+# Update via T hook
+adapter.hook_t.value = 100
+print(f"After T update: {adapter.hook_t.value}")         # 100
+print(f"Optional value synced: {adapter.hook_optional.value}")  # 100
+
+# Update via Optional hook
+adapter.hook_optional.value = 200
+print(f"After Optional update: {adapter.hook_t.value}")  # 200
+print(f"T value synced: {adapter.hook_t.value}")         # 200
+
+# Try to set None on T hook (this will fail)
+try:
+    adapter.hook_t.value = None
+except Exception as e:
+    print(f"Error setting None on T hook: {e}")
+```
+
+**Output:**
+```
+Initial T value: 42
+Initial Optional value: 42
+After T update: 100
+Optional value synced: 100
+After Optional update: 200
+T value synced: 200
+Error setting None on T hook: Left validation failed: Cannot convert None
+```
+
+### Example 2: Integer-Float Adapter
+
+```python
+import nexpy as nx
+
+# Create an adapter that bridges between int and float
+# The float side only accepts integer-valued floats
+adapter = nx.XIntFloatAdapter(
+    hook_int_or_value=42,
+    hook_float=None
+)
+
+print(f"Initial int value: {adapter.hook_int.value}")    # 42
+print(f"Initial float value: {adapter.hook_float.value}") # 42.0
+
+# Update via int hook
+adapter.hook_int.value = 100
+print(f"After int update: {adapter.hook_int.value}")     # 100
+print(f"Float value synced: {adapter.hook_float.value}") # 100.0
+
+# Update via float hook (integer-valued)
+adapter.hook_float.value = 200.0
+print(f"After float update: {adapter.hook_int.value}")   # 200
+print(f"Int value synced: {adapter.hook_int.value}")     # 200
+
+# Try to set non-integer float (this will fail)
+try:
+    adapter.hook_float.value = 42.5
+except Exception as e:
+    print(f"Error setting non-integer float: {e}")
+```
+
+**Output:**
+```
+Initial int value: 42
+Initial float value: 42.0
+After int update: 100
+Float value synced: 100.0
+After float update: 200
+Int value synced: 200
+Error setting non-integer float: Cannot convert non-integer float 42.5 to int
+```
+
+### Example 3: Set-Sequence Adapter with Custom Sorting
+
+```python
+import nexpy as nx
+
+# Create an adapter that bridges between set and sequence
+# The sequence side only accepts sequences with unique elements
+adapter = nx.XSetSequenceAdapter[int](
+    hook_set_or_value={3, 1, 2},
+    hook_sequence=None
+)
+
+print(f"Initial set: {adapter.hook_set.value}")          # {3, 1, 2}
+print(f"Initial sequence (sorted): {adapter.hook_sequence.value}")  # [1, 2, 3]
+
+# Update via set hook
+adapter.hook_set.value = {6, 4, 5}
+print(f"After set update: {adapter.hook_set.value}")     # {6, 4, 5}
+print(f"Sequence synced: {adapter.hook_sequence.value}") # [4, 5, 6]
+
+# Update via sequence hook
+adapter.hook_sequence.value = [7, 8, 9]
+print(f"After sequence update: {adapter.hook_set.value}") # {7, 8, 9}
+print(f"Set synced: {adapter.hook_set.value}")           # {7, 8, 9}
+
+# Try to set sequence with duplicates (this will fail)
+try:
+    adapter.hook_sequence.value = [1, 2, 2]
+except Exception as e:
+    print(f"Error setting duplicate sequence: {e}")
+
+# Custom sorting example
+print("\n--- Custom Sorting Examples ---")
+
+# Reverse sorted
+reverse_adapter = nx.XSetSequenceAdapter[int](
+    hook_set_or_value={3, 1, 2},
+    hook_sequence=None,
+    sort_callable=lambda s: list(reversed(sorted(s)))
+)
+print(f"Reverse sorted: {reverse_adapter.hook_sequence.value}")  # [3, 2, 1]
+
+# Tuple output
+tuple_adapter = nx.XSetSequenceAdapter[int](
+    hook_set_or_value={3, 1, 2},
+    hook_sequence=None,
+    sort_callable=lambda s: tuple(sorted(s))
+)
+print(f"Tuple output: {tuple_adapter.hook_sequence.value}")     # (1, 2, 3)
+
+# No sorting (arbitrary order)
+list_adapter = nx.XSetSequenceAdapter[int](
+    hook_set_or_value={3, 1, 2},
+    hook_sequence=None,
+    sort_callable=list
+)
+print(f"No sorting: {list_adapter.hook_sequence.value}")        # [3, 1, 2] (arbitrary)
+```
+
+**Output:**
+```
+Initial set: {3, 1, 2}
+Initial sequence (sorted): [1, 2, 3]
+After set update: {6, 4, 5}
+Sequence synced: [4, 5, 6]
+After sequence update: {7, 8, 9}
+Set synced: {7, 8, 9}
+Error setting duplicate sequence: Cannot convert sequence with duplicates to set: [1, 2, 2]
+
+--- Custom Sorting Examples ---
+Reverse sorted: [3, 2, 1]
+Tuple output: (1, 2, 3)
+No sorting: [3, 1, 2]
+```
+
+### Example 4: Connecting Different Hook Types
+
+```python
+import nexpy as nx
+
+# Create hooks of different types
+int_hook = nx.FloatingHook(42)
+optional_hook = nx.FloatingHook(None)
+
+# Create an adapter to bridge them
+adapter = nx.XOptionalAdapter[int](
+    hook_t_or_value=int_hook,
+    hook_optional=optional_hook
+)
+
+print(f"Int hook value: {int_hook.value}")              # 42
+print(f"Optional hook value: {optional_hook.value}")    # 42 (synced)
+
+# Update the int hook directly
+int_hook.value = 100
+print(f"After int hook update: {optional_hook.value}")  # 100 (synced)
+
+# Update the optional hook directly
+optional_hook.value = 200
+print(f"After optional hook update: {int_hook.value}")  # 200 (synced)
+
+# Try to set None on the optional hook
+optional_hook.value = None
+print(f"Optional hook with None: {optional_hook.value}") # None
+print(f"Int hook still has value: {int_hook.value}")     # 200 (unchanged)
+```
+
+**Output:**
+```
+Int hook value: 42
+Optional hook value: 42
+After int hook update: 100
+After optional hook update: 200
+Optional hook with None: None
+Int hook still has value: 200
 ```
 
 ---

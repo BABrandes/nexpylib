@@ -204,9 +204,9 @@ Apache License 2.0
 Copyright (c) 2025 Benedikt Axel Brandes
 """
 
-from .x_objects_base.x_base import XBase
-from .x_objects_base.x_simple_base import XSimpleBase
-from .x_objects_base.x_composite_base import XCompositeBase
+from .foundations.x_base import XBase
+from .foundations.x_singleton_base import XSingletonBase
+from .foundations.x_composite_base import XCompositeBase
 
 from .x_objects.single_value_like.x_single_value import XSingleValue as XValue
 
@@ -214,6 +214,7 @@ from .x_objects.list_like.x_list import XList
 from .x_objects.set_like.x_set import XSet
 from .x_objects.dict_like.x_dict import XDict
 
+from .x_objects.single_value_like.protocols import XSingleValueProtocol
 from .x_objects.list_like.protocols import XListProtocol
 from .x_objects.set_like.protocols import XSetProtocol
 from .x_objects.dict_like.protocols import XDictProtocol
@@ -232,9 +233,19 @@ from .x_objects.function_like.x_function import XFunction
 from .x_objects.function_like.x_one_way_function import XOneWayFunction
 
 
-from .x_objects.other.xobject_rooted_paths import XRootedPaths
-from .x_objects.other.xobject_block_none import XBlockNone
-from .x_objects.other.xobject_subscriber import XSubscriber
+from .x_objects.specialized.xobject_rooted_paths import XRootedPaths
+from .x_objects.specialized.xobject_subscriber import XSubscriber
+
+# Adapter objects
+from .x_objects.adapters.x_optional_adapter import XOptionalAdapter
+from .x_objects.adapters.x_int_float_adapter import XIntFloatAdapter
+from .x_objects.adapters.x_set_sequence_adapter import XSetSequenceAdapter
+
+# Backward compatibility aliases
+XOptionalTransfer = XOptionalAdapter
+XFloatIntTransfer = XIntFloatAdapter
+XSetSequenceTransfer = XSetSequenceAdapter
+XBlockNone = XOptionalAdapter
 
 from .core.hooks.floating_hook import FloatingHook
 from .core.hooks.hook_aliases import Hook, ReadOnlyHook
@@ -246,7 +257,7 @@ from .core.publisher_subscriber.publisher import Publisher
 from .core.nexus_system.update_function_values import UpdateFunctionValues
 from .core.nexus_system.system_analysis import write_report
 
-from .x_objects_base.x_object_serializable_mixin import XObjectSerializableMixin
+from .foundations.x_object_serializable_mixin import XObjectSerializableMixin
 
 # Configuration module
 from . import default
@@ -273,18 +284,29 @@ __all__ = [
     # Function objects
     'XFunction',
     'XOneWayFunction',
+
+           # Adapter objects
+           'XOptionalAdapter',
+           'XIntFloatAdapter',
+           'XSetSequenceAdapter',
+    
+    # Backward compatibility aliases
+    'XOptionalTransfer',
+    'XFloatIntTransfer',
+    'XSetSequenceTransfer',
     'XBlockNone',
 
-    # Complex objects
+    # Specialized objects
     'XSubscriber',
     'XRootedPaths',
     
     # Base classes
     'XBase',
-    'XSimpleBase',
+    'XSingletonBase',
     'XCompositeBase',
 
     # Modern protocol aliases
+    'XSingleValueProtocol',
     'XDictProtocol',
     'XListProtocol',
     'XSetProtocol',

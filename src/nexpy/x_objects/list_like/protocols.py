@@ -1,4 +1,4 @@
-from typing import TypeVar, Protocol, runtime_checkable, Iterable
+from typing import TypeVar, Protocol, runtime_checkable, Sequence
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 
@@ -11,7 +11,7 @@ class XListProtocol(Protocol[T]):
     #-------------------------------- list value --------------------------------
 
     @property
-    def list_hook(self) -> Hook[Iterable[T]]:
+    def list_hook(self) -> Hook[Sequence[T]]:
         """
         Get the hook for the list - it can contain any iterable as long as it can be converted to a list.
         """
@@ -25,13 +25,13 @@ class XListProtocol(Protocol[T]):
         ...
     
     @list.setter
-    def list(self, value: Iterable[T]) -> None:
+    def list(self, value: Sequence[T]) -> None:
         """
         Set the list value (accepts any iterable).
         """
         self.change_list(value)
 
-    def change_list(self, value: Iterable[T]) -> None:
+    def change_list(self, value: Sequence[T]) -> None:
         """
         Change the list value.
         """

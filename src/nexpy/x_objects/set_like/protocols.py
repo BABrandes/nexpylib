@@ -1,7 +1,7 @@
 from typing import Any, TypeVar, Protocol, runtime_checkable, Optional
-from collections.abc import Iterable
+from collections.abc import Set as AbstractSet
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ...x_objects_base.carries_some_hooks_protocol import CarriesSomeHooksProtocol
+from ...foundations.carries_some_hooks_protocol import CarriesSomeHooksProtocol
 
 T = TypeVar("T")
 
@@ -12,7 +12,7 @@ class XSetProtocol(CarriesSomeHooksProtocol[Any, Any], Protocol[T]):
     #-------------------------------- set value --------------------------------
     
     @property
-    def set_hook(self) -> Hook[Iterable[T]]:
+    def set_hook(self) -> Hook[AbstractSet[T]]:
         """
         Get the hook for the set - it can contain any iterable as long as it can be converted to a set.
         """
@@ -26,13 +26,13 @@ class XSetProtocol(CarriesSomeHooksProtocol[Any, Any], Protocol[T]):
         ...
     
     @set.setter
-    def set(self, value: Iterable[T]) -> None:
+    def set(self, value: AbstractSet[T]) -> None:
         """
         Set the set value (accepts any iterable).
         """
         self.change_set(value)
     
-    def change_set(self, value: Iterable[T]) -> None:
+    def change_set(self, value: AbstractSet[T]) -> None:
         """
         Change the set value.
         """
@@ -60,7 +60,7 @@ class XSelectionOptionsProtocol(Protocol[T]):
     #-------------------------------- available options --------------------------------
 
     @property
-    def available_options_hook(self) -> Hook[Iterable[T]]:
+    def available_options_hook(self) -> Hook[AbstractSet[T]]:
         ...
 
     @property
@@ -68,11 +68,11 @@ class XSelectionOptionsProtocol(Protocol[T]):
         ...
     
     @available_options.setter
-    def available_options(self, available_options: Iterable[T]) -> None:
+    def available_options(self, available_options: AbstractSet[T]) -> None:
         self.change_available_options(available_options)
 
     
-    def change_available_options(self, available_options: Iterable[T]) -> None:
+    def change_available_options(self, available_options: AbstractSet[T]) -> None:
         ... 
 
     #-------------------------------- selected options --------------------------------
@@ -110,7 +110,7 @@ class XSelectionOptionsProtocol(Protocol[T]):
 
     #-------------------------------- convenience methods --------------------------------
 
-    def change_selected_option_and_available_options(self, selected_option: T, available_options: Iterable[T]) -> None:
+    def change_selected_option_and_available_options(self, selected_option: T, available_options: AbstractSet[T]) -> None:
         ...
 
 @runtime_checkable
@@ -119,7 +119,7 @@ class XOptionalSelectionOptionProtocol(Protocol[T]):
     #-------------------------------- available options --------------------------------
 
     @property
-    def available_options_hook(self) -> Hook[Iterable[T]]:
+    def available_options_hook(self) -> Hook[AbstractSet[T]]:
         ...
 
     @property
@@ -127,10 +127,10 @@ class XOptionalSelectionOptionProtocol(Protocol[T]):
         ...
     
     @available_options.setter
-    def available_options(self, available_options: Iterable[T]) -> None:
+    def available_options(self, available_options: AbstractSet[T]) -> None:
         self.change_available_options(available_options)
 
-    def change_available_options(self, available_options: Iterable[T]) -> None:
+    def change_available_options(self, available_options: AbstractSet[T]) -> None:
         ...
 
     #-------------------------------- selected options --------------------------------
@@ -168,7 +168,7 @@ class XOptionalSelectionOptionProtocol(Protocol[T]):
 
     #-------------------------------- convenience methods --------------------------------
 
-    def change_selected_option_and_available_options(self, selected_option: Optional[T], available_options: Iterable[T]) -> None:
+    def change_selected_option_and_available_options(self, selected_option: Optional[T], available_options: AbstractSet[T]) -> None:
         ...
 
 @runtime_checkable
@@ -177,7 +177,7 @@ class XMultiSelectionOptionsProtocol(Protocol[T]):
     #-------------------------------- available options --------------------------------
 
     @property
-    def available_options_hook(self) -> Hook[Iterable[T]]:
+    def available_options_hook(self) -> Hook[AbstractSet[T]]:
         ...
 
     @property
@@ -185,16 +185,16 @@ class XMultiSelectionOptionsProtocol(Protocol[T]):
         ...
     
     @available_options.setter
-    def available_options(self, available_options: Iterable[T]) -> None:
+    def available_options(self, available_options: AbstractSet[T]) -> None:
         self.change_available_options(available_options)
 
-    def change_available_options(self, available_options: Iterable[T]) -> None:
+    def change_available_options(self, available_options: AbstractSet[T]) -> None:
         ...
 
     #-------------------------------- selected options --------------------------------
 
     @property
-    def selected_options_hook(self) -> Hook[Iterable[T]]:
+    def selected_options_hook(self) -> Hook[AbstractSet[T]]:
         ...
 
     @property
@@ -202,10 +202,10 @@ class XMultiSelectionOptionsProtocol(Protocol[T]):
         ...
     
     @selected_options.setter
-    def selected_options(self, selected_options: Iterable[T]) -> None:
+    def selected_options(self, selected_options: AbstractSet[T]) -> None:
         self.change_selected_options(selected_options)
 
-    def change_selected_options(self, selected_options: Iterable[T]) -> None:
+    def change_selected_options(self, selected_options: AbstractSet[T]) -> None:
         ...
 
     #-------------------------------- length --------------------------------
@@ -240,7 +240,7 @@ class XMultiSelectionOptionsProtocol(Protocol[T]):
 
     #-------------------------------- Convenience methods --------------------------------
 
-    def change_selected_options_and_available_options(self, selected_options: Iterable[T], available_options: Iterable[T]) -> None:
+    def change_selected_options_and_available_options(self, selected_options: AbstractSet[T], available_options: AbstractSet[T]) -> None:
         ...
 
     def clear_selected_options(self) -> None:

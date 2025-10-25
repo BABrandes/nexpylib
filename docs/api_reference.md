@@ -10,6 +10,7 @@ Complete API documentation for NexPy (nexpylib).
 - [Reactive Value Objects](#reactive-value-objects)
 - [Reactive Collections](#reactive-collections)
 - [Selection Objects](#selection-objects)
+- [Adapter Objects](#adapter-objects)
 - [Creating Custom X Objects](#creating-custom-x-objects)
 - [Nexus System](#nexus-system)
 - [Publisher-Subscriber](#publisher-subscriber)
@@ -546,6 +547,216 @@ print(features.selection)  # {"b", "c"}
 
 ---
 
+## Adapter Objects
+
+Adapter objects bridge between incompatible types, enabling connections between hooks with different type signatures while maintaining type safety and validation.
+
+### XOptionalAdapter
+
+```python
+class XOptionalAdapter(Generic[T])
+```
+
+Adapter object that bridges between `T` and `Optional[T]`, blocking `None` values.
+
+**Constructor**:
+```python
+XOptionalAdapter(
+    hook_t_or_value: Hook[T] | ReadOnlyHook[T] | T | None,
+    hook_optional: Hook[Optional[T]] | ReadOnlyHook[Optional[T]] | None = None,
+    *,
+    logger: Optional[Logger] = None,
+    nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+)
+```
+
+**Parameters**:
+- `hook_t_or_value` — Either a non-None value or a Hook[T] to connect to the internal T hook
+- `hook_optional` — Either a Hook[Optional[T]] to connect to the internal Optional[T] hook, or None
+- At least one parameter must be provided
+
+**Properties**:
+- `hook_t: Hook[T]` — The T hook (left side, non-None values)
+- `hook_optional: Hook[Optional[T]]` — The Optional[T] hook (right side, allows None)
+
+**Invariants**:
+- `hook_t` never contains `None` values
+- `hook_optional` can contain `None` or non-None values
+- Both hooks are always synchronized
+
+**Example**:
+```python
+# Initialize with a non-None value
+adapter = nx.XOptionalAdapter[int](
+    hook_t_or_value=42,
+    hook_optional=None
+)
+print(adapter.hook_t.value)      # 42
+print(adapter.hook_optional.value)  # 42
+
+# Update via T hook
+adapter.hook_t.value = 100
+print(adapter.hook_optional.value)  # 100
+
+# Update via Optional hook
+adapter.hook_optional.value = 200
+print(adapter.hook_t.value)      # 200
+
+# This would raise an error - cannot set None on T hook
+# adapter.hook_t.value = None  # SubmissionError
+```
+
+---
+
+### XIntFloatAdapter
+
+```python
+class XIntFloatAdapter
+```
+
+Adapter object that bridges between `int` and `float`, validating that float values are integer-valued.
+
+**Constructor**:
+```python
+XIntFloatAdapter(
+    hook_int_or_value: Hook[int] | ReadOnlyHook[int] | int | None,
+    hook_float: Hook[float] | ReadOnlyHook[float] | None = None,
+    *,
+    logger: Optional[Logger] = None,
+    nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+)
+```
+
+**Parameters**:
+- `hook_int_or_value` — Either an integer value or a Hook[int] to connect to the internal int hook
+- `hook_float` — Either a Hook[float] to connect to the internal float hook, or None
+- At least one parameter must be provided
+
+**Properties**:
+- `hook_int: Hook[int]` — The int hook (left side, integer values)
+- `hook_float: Hook[float]` — The float hook (right side, integer-valued floats)
+
+**Invariants**:
+- `hook_int` always contains integer values
+- `hook_float` only contains integer-valued floats (where `float.is_integer() == True`)
+- Both hooks are always synchronized
+
+**Example**:
+```python
+# Initialize with an integer
+adapter = nx.XIntFloatAdapter(
+    hook_int_or_value=42,
+    hook_float=None
+)
+print(adapter.hook_int.value)    # 42
+print(adapter.hook_float.value)  # 42.0
+
+# Update via int hook
+adapter.hook_int.value = 100
+print(adapter.hook_float.value)  # 100.0
+
+# Update via float hook (integer-valued)
+adapter.hook_float.value = 200.0
+print(adapter.hook_int.value)    # 200
+
+# This would raise an error - non-integer float
+# adapter.hook_float.value = 42.5  # SubmissionError
+```
+
+---
+
+### XSetSequenceAdapter
+
+```python
+class XSetSequenceAdapter(Generic[T])
+```
+
+Adapter object that bridges between `AbstractSet` and `Sequence`, validating that sequences have unique elements.
+
+**Constructor**:
+```python
+XSetSequenceAdapter(
+    hook_set_or_value: Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]] | AbstractSet[T] | None,
+    hook_sequence: Hook[Sequence[T]] | ReadOnlyHook[Sequence[T]] | Sequence[T] | None = None,
+    *,
+    sort_callable: Callable[[AbstractSet[T]], Sequence[T]] = sorted,
+    logger: Optional[Logger] = None,
+    nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+)
+```
+
+**Parameters**:
+- `hook_set_or_value` — Either a set/frozenset value or a Hook[AbstractSet[T]] to connect to the internal set hook
+- `hook_sequence` — Either a Hook[Sequence[T]] to connect to the internal sequence hook, or None
+- `sort_callable` — Function to convert an AbstractSet to a Sequence (default: `sorted`)
+- At least one parameter must be provided
+
+**Properties**:
+- `hook_set: Hook[AbstractSet[T]]` — The set hook (left side, unique elements)
+- `hook_sequence: Hook[Sequence[T]]` — The sequence hook (right side, unique elements in sequence)
+
+**Invariants**:
+- `hook_set` contains unique elements (any set/frozenset)
+- `hook_sequence` only contains sequences with unique elements (no duplicates)
+- Both hooks are always synchronized
+- Order from set to sequence is controlled by the `sort_callable`
+
+**Example**:
+```python
+# Initialize with a set (default sorted order)
+adapter = nx.XSetSequenceAdapter[int](
+    hook_set_or_value={3, 1, 2},
+    hook_sequence=None
+)
+print(adapter.hook_set.value)      # {3, 1, 2}
+print(adapter.hook_sequence.value) # [1, 2, 3] (sorted)
+
+# Custom sorting function
+adapter = nx.XSetSequenceAdapter[int](
+    hook_set_or_value={3, 1, 2},
+    hook_sequence=None,
+    sort_callable=lambda s: list(reversed(sorted(s)))
+)
+print(adapter.hook_sequence.value) # [3, 2, 1] (reverse sorted)
+
+# Update via sequence hook
+adapter.hook_sequence.value = [4, 5, 6]
+print(adapter.hook_set.value)      # {4, 5, 6}
+
+# This would raise an error - sequence with duplicates
+# adapter.hook_sequence.value = [1, 2, 2]  # SubmissionError
+```
+
+**Sort Callable Examples**:
+```python
+# Default sorted (returns list)
+adapter = nx.XSetSequenceAdapter({3, 1, 2}, sort_callable=sorted)
+print(adapter.hook_sequence.value)  # [1, 2, 3]
+
+# Custom tuple sorting
+adapter = nx.XSetSequenceAdapter(
+    {3, 1, 2}, 
+    sort_callable=lambda s: tuple(sorted(s))
+)
+print(adapter.hook_sequence.value)  # (1, 2, 3)
+
+# Reverse order
+adapter = nx.XSetSequenceAdapter(
+    {3, 1, 2}, 
+    sort_callable=lambda s: list(reversed(sorted(s)))
+)
+print(adapter.hook_sequence.value)  # [3, 2, 1]
+
+# No sorting (preserve arbitrary order)
+adapter = nx.XSetSequenceAdapter(
+    {3, 1, 2}, 
+    sort_callable=list
+)
+print(adapter.hook_sequence.value)  # [3, 1, 2] (arbitrary order)
+```
+
+---
+
 ## Creating Custom X Objects
 
 NexPy provides two base classes for creating custom reactive objects with full integration into the synchronization system:
@@ -1040,6 +1251,42 @@ Remove a hook from this Nexus.
 
 ---
 
+### Nexus
+
+```python
+class Nexus(Generic[T])
+```
+
+Shared synchronization core for transitive hook fusion. A Nexus represents a fusion domain — a group of hooks that share the same value and are synchronized together.
+
+**Properties**:
+- `stored_value: T` — The current value stored in this nexus
+- `previous_stored_value: T` — The previous value (before last update)
+- `nexus_id: str` — Unique identifier for this nexus
+- `creation_time: float` — Unix timestamp when this nexus was created
+- `hooks: tuple[HookWithConnectionProtocol[T], ...]` — All hooks in this nexus
+
+**Methods**:
+- `add_hook(hook)` — Add a hook to this nexus
+- `remove_hook(hook)` — Remove a hook from this nexus
+
+**String Representation**:
+- `str(nexus)` — `HookNexus(id={nexus_id}, v={value})`
+- `repr(nexus)` — `HookNexus(id={nexus_id}, v={value}, {hook_count} hooks)`
+
+**Example**:
+```python
+hook = nx.FloatingHook(42)
+nexus = hook._get_nexus()
+
+print(f"Nexus ID: {nexus.nexus_id}")  # Output: nexus_1
+print(f"Created: {time.ctime(nexus.creation_time)}")
+print(f"Value: {nexus.stored_value}")
+print(f"Hooks: {len(nexus.hooks)}")
+```
+
+---
+
 ### NexusManager
 
 ```python
@@ -1104,6 +1351,71 @@ Check if two values are equal using registered equality callbacks.
 - `bool` — True if values are equal
 
 **Note**: Use this method instead of `==` for value comparisons within the hook system.
+
+#### `get_active_nexuses()`
+Get all currently active nexuses registered with this manager.
+
+**Returns**:
+- `list[Nexus[Any]]` — List of active nexuses. Dead references are automatically cleaned up.
+
+**Example**:
+```python
+manager = nx.default.NEXUS_MANAGER
+active_nexuses = manager.get_active_nexuses()
+
+for nexus in active_nexuses:
+    print(f"Nexus ID: {nexus.nexus_id}")
+    print(f"Value: {nexus.stored_value}")
+    print(f"Creation time: {nexus.creation_time}")
+    print(f"Hooks: {len(nexus.hooks)}")
+```
+
+#### `get_nexus_count()`
+Get the number of currently active nexuses.
+
+**Returns**:
+- `int` — Number of active nexuses registered with this manager.
+
+**Example**:
+```python
+manager = nx.default.NEXUS_MANAGER
+print(f"Active nexuses: {manager.get_nexus_count()}")
+```
+
+### Nexus Tracking
+
+The NexusManager automatically tracks all active nexuses using weak references, enabling runtime monitoring of fusion domain evolution. Each nexus has a unique ID and creation timestamp for debugging and analysis purposes.
+
+**Nexus Properties**:
+- `nexus_id: str` — Unique identifier (format: `nexus_{id}` where id is an incrementing counter)
+- `creation_time: float` — Unix timestamp when the nexus was created
+
+**Use Cases**:
+- **Debugging**: Track how fusion domains evolve during hook connections
+- **Performance Analysis**: Monitor nexus creation and destruction patterns
+- **System Introspection**: Understand the current state of the synchronization system
+
+**Example**:
+```python
+import nexpy as nx
+import time
+
+# Create hooks and observe nexus evolution
+hook1 = nx.FloatingHook(42)
+hook2 = nx.FloatingHook(100)
+
+manager = nx.default.NEXUS_MANAGER
+print(f"Initial nexuses: {manager.get_nexus_count()}")
+
+# Join hooks - creates fusion
+hook1.join(hook2)
+print(f"After fusion: {manager.get_nexus_count()}")
+
+# Inspect active nexuses
+for nexus in manager.get_active_nexuses():
+    print(f"Nexus {nexus.nexus_id}: {nexus.stored_value} ({len(nexus.hooks)} hooks)")
+    # Output: Nexus nexus_1: 100 (2 hooks)
+```
 
 #### `add_value_equality_callback(value_type_pair, callback)`
 Register a custom equality callback for a pair of types.

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable, TypeVar
 if TYPE_CHECKING:
-    from ....x_objects_base.carries_some_hooks_protocol import CarriesSomeHooksProtocol
+    from ....foundations.carries_some_hooks_protocol import CarriesSomeHooksProtocol
 
 T = TypeVar("T")
 

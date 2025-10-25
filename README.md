@@ -233,7 +233,36 @@ options.value = 15
 print(options.dict)  # {"low": 1, "medium": 5, "high": 15}
 ```
 
-#### 5. Configuring Floating-Point Tolerance
+#### 5. Adapter Objects for Type Bridging
+
+```python
+import nexpy as nx
+
+# Bridge between int and Optional[int] (blocks None on the T side)
+optional_adapter = nx.XOptionalAdapter[int](
+    hook_t_or_value=42,
+    hook_optional=None
+)
+
+print(optional_adapter.hook_t.value)      # 42
+print(optional_adapter.hook_optional.value)  # 42
+
+# Update via either hook - they stay synchronized
+optional_adapter.hook_t.value = 100
+print(optional_adapter.hook_optional.value)  # 100
+
+# Bridge between set and sequence with custom sorting
+set_seq_adapter = nx.XSetSequenceAdapter[int](
+    hook_set_or_value={3, 1, 2},
+    hook_sequence=None,
+    sort_callable=lambda s: list(reversed(sorted(s)))  # Reverse order
+)
+
+print(set_seq_adapter.hook_set.value)      # {3, 1, 2}
+print(set_seq_adapter.hook_sequence.value) # [3, 2, 1] (reverse sorted)
+```
+
+#### 6. Configuring Floating-Point Tolerance
 
 ```python
 import nexpy as nx
@@ -280,6 +309,13 @@ temperature.value = 20.001  # Update triggered (exceeds tolerance)
 - `XSetSingleSelect` — Select single elements from sets
 - `XSetMultiSelect` — Multiple selection support
 - Optional selection variants (allow `None` selection)
+
+### 🔄 Adapter Objects
+- `XOptionalAdapter` — Bridge between `T` and `Optional[T]` (blocks `None`)
+- `XIntFloatAdapter` — Bridge between `int` and `float` (validates integer-valued floats)
+- `XSetSequenceAdapter` — Bridge between `AbstractSet` and `Sequence` (validates unique elements)
+- Custom sorting control for set-to-sequence conversion
+- Type-safe bridging between incompatible hook types
 
 ### 🔒 Thread-Safe by Design
 - All operations protected by reentrant locks

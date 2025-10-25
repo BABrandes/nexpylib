@@ -1,12 +1,13 @@
 from typing import Generic, Optional, TypeVar, TYPE_CHECKING, Any
 import logging
 import weakref
+import time
 
-from ..._utils import log
+from ..utils import log
 
 if TYPE_CHECKING:
     from ..hooks.mixin_protocols.hook_with_connection_protocol import HookWithConnectionProtocol
-    from ...x_objects_base.carries_single_hook_protocol import CarriesSingleHookProtocol
+    from ...foundations.carries_single_hook_protocol import CarriesSingleHookProtocol
     from .nexus_manager import NexusManager
     
 T = TypeVar("T")
@@ -106,12 +107,17 @@ class Nexus(Generic[T]):
                 assert hook1.value == 42
                 assert hook2.value == 42
         """
+        super().__init__()
         
         from .default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
         
         if nexus_manager is None:
             nexus_manager = _DEFAULT_NEXUS_MANAGER
 
+        # Generate a meaningful ID for this nexus using the manager's counter
+        self._nexus_id: str = nexus_manager._generate_nexus_id() # type: ignore
+        self._creation_time: float = time.time()
+        
         self._nexus_manager: "NexusManager" = nexus_manager
         self._hooks: set[weakref.ref["HookWithConnectionProtocol[T]"]] = {weakref.ref(hook) for hook in hooks}
         self._stored_value: T = value
@@ -119,8 +125,24 @@ class Nexus(Generic[T]):
         self._logger: Optional[logging.Logger] = logger
         self._submit_depth_counter: int = 0
         self._submit_touched_hooks: set["HookWithConnectionProtocol[T]"] = set()
+        
+        # Track hook count for performance optimization
+        self._hook_count: int = len(hooks)
 
-        log(self, "HookNexus.__init__", self._logger, True, "Successfully initialized hook nexus")
+        # Register this nexus with the manager for tracking
+        self._nexus_manager._register_nexus(self) # type: ignore
+
+        log(self, "HookNexus.__init__", self._logger, True, f"Successfully initialized hook nexus with ID {self._nexus_id}")
+
+    def __del__(self) -> None:
+        """Cleanup when nexus is destroyed."""
+        try:
+            # Unregister from manager if it still exists
+            if hasattr(self, '_nexus_manager') and hasattr(self._nexus_manager, '_unregister_nexus'):
+                self._nexus_manager._unregister_nexus(self) # type: ignore
+        except Exception:
+            # Ignore errors during cleanup - the manager might already be destroyed
+            pass
 
     def _get_hooks(self) -> set["HookWithConnectionProtocol[T]"]:
         """Get the actual hooks from weak references, filtering out dead references."""
@@ -134,13 +156,16 @@ class Nexus(Generic[T]):
             else:
                 dead_refs.add(hook_ref)
         
-        # Remove dead references
-        self._hooks -= dead_refs
+        # Remove dead references and update count
+        if dead_refs:
+            self._hooks -= dead_refs
+            self._hook_count -= len(dead_refs)
         
         return alive_hooks
 
     def add_hook(self, hook: "HookWithConnectionProtocol[T]") -> tuple[bool, str]:
         self._hooks.add(weakref.ref(hook))
+        self._hook_count += 1
         log(self, "add_hook", self._logger, True, "Successfully added hook")
         return True, "Successfully added hook"
 
@@ -155,6 +180,7 @@ class Nexus(Generic[T]):
             
             if hook_ref_to_remove is not None:
                 self._hooks.remove(hook_ref_to_remove)
+                self._hook_count -= 1
                 log(self, "remove_hook", self._logger, True, "Successfully removed hook")
                 return True, "Successfully removed hook"
             else:
@@ -166,6 +192,16 @@ class Nexus(Generic[T]):
     @property
     def hooks(self) -> tuple["HookWithConnectionProtocol[T]", ...]:
         return tuple(self._get_hooks())
+    
+    @property
+    def hook_count(self) -> int:
+        """
+        Get the number of hooks in this nexus.
+        
+        Returns:
+            The number of hooks currently connected to this nexus.
+        """
+        return self._hook_count
     
     @property
     def stored_value(self) -> Any:
@@ -187,6 +223,26 @@ class Nexus(Generic[T]):
             The previous value stored in this Nexus.
         """
         return self._previous_stored_value
+
+    @property
+    def nexus_id(self) -> str:
+        """
+        Get the unique ID of this nexus.
+
+        Returns:
+            A unique string identifier for this nexus, useful for tracking and debugging.
+        """
+        return self._nexus_id
+
+    @property
+    def creation_time(self) -> float:
+        """
+        Get the creation timestamp of this nexus.
+
+        Returns:
+            Unix timestamp when this nexus was created.
+        """
+        return self._creation_time
 
     @staticmethod
     def _create_merged_nexuses(*nexuses: "Nexus[T]") -> "Nexus[T]":
@@ -365,8 +421,8 @@ class Nexus(Generic[T]):
 
     def __repr__(self) -> str:
         """Get the string representation of this hook nexus."""
-        return f"HookNexus(v={self.stored_value}, id={id(self)}, {len(self._get_hooks())} hooks)"
+        return f"Nexus(id={self._nexus_id}, v={self.stored_value}, {len(self._get_hooks())} hooks)"
     
     def __str__(self) -> str:
         """Get the string representation of this hook nexus."""
-        return f"HookNexus(v={self.stored_value}, id={id(self)})"
+        return f"Nexus(id={self._nexus_id}, v={self.stored_value})"

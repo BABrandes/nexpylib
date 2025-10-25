@@ -1,10 +1,11 @@
-from typing import Iterable, Literal, TypeVar, Generic, Optional, Mapping, Any, Callable
+from typing import Literal, TypeVar, Generic, Optional, Mapping, Any, Callable, Sequence
+from collections.abc import Set as AbstractSet
 from logging import Logger
 from abc import ABC, abstractmethod
 
 from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...x_objects_base.x_composite_base import XCompositeBase
+from ...foundations.x_composite_base import XCompositeBase
 from .protocols import XDictProtocol
 from ...core.auxiliary.listening_base import ListeningBase
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
@@ -300,7 +301,7 @@ class XDictSelectionBase(
     # ------------------------- keys -------------------------
 
     @property
-    def keys_hook(self) -> ReadOnlyHook[Iterable[K]]:
+    def keys_hook(self) -> ReadOnlyHook[AbstractSet[K]]:
         """
         Get the keys hook (read-only).
         
@@ -322,7 +323,7 @@ class XDictSelectionBase(
     # ------------------------- values -------------------------
 
     @property
-    def values_hook(self) -> ReadOnlyHook[Iterable[V]]:
+    def values_hook(self) -> ReadOnlyHook[Sequence[V]]:
         """
         Get the values hook (read-only).
         """
