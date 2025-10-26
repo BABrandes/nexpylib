@@ -20,7 +20,7 @@ class HookWithSetterMixin(HookProtocol[T], Generic[T]):
         """
         Initialize the hook with a setter.
         """
-        super().__init__()
+        pass
 
     def _change_value(self, value: T, *, logger: Optional[Logger] = None) -> tuple[bool, str]:
         """

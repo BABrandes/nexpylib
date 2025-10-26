@@ -14,7 +14,6 @@ class HookWithOwnerMixin(Generic[O]):
         """
         Initialize the hook with an owner.
         """
-        super().__init__()
         self._owner = owner
 
     def _get_owner(self) -> O:

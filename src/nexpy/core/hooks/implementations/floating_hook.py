@@ -1,5 +1,4 @@
-from typing import TypeVar, Optional, Callable, Literal
-import warnings
+from typing import TypeVar, Optional, Callable, Generic
 from logging import Logger
 
 from ...nexus_system.submission_error import SubmissionError
@@ -22,7 +21,8 @@ class FloatingHook(
     IsolatedValidatableHookProtocol[T],
     HookWithSetterMixin[T],
     HookWithReactionMixin[T],
-    HookWithIsolatedValidationMixin[T]
+    HookWithIsolatedValidationMixin[T],
+    Generic[T]
 ):
 
     def __init__(
@@ -51,6 +51,10 @@ class FloatingHook(
         HookWithReactionMixin.__init__( # type: ignore
             self=self,
             reaction_callback=reaction_callback)
+
+        HookWithIsolatedValidationMixin.__init__( # type: ignore
+            self=self,
+            isolated_validation_callback=isolated_validation_callback)
 
         #-------------------------------- Initialization complete --------------------------------
 

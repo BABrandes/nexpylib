@@ -1,6 +1,5 @@
-from typing import TypeVar, Any, Optional, Callable, Literal
+from typing import TypeVar, Any, Optional, Callable, Generic
 from logging import Logger
-import warnings
 
 from nexpy.core.nexus_system.nexus_manager import NexusManager
 from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
@@ -16,7 +15,7 @@ T = TypeVar("T")
 O = TypeVar("O", bound="CarriesSomeHooksProtocol[Any, Any]", covariant=True)
 
 
-class OwnedReadOnlyHook(HookBase[T], OwnedHookProtocol[T, O], ReactiveHookProtocol[T], HookWithReactionMixin[T], HookWithOwnerMixin[O]):
+class OwnedReadOnlyHook(HookBase[T], OwnedHookProtocol[T, O], ReactiveHookProtocol[T], HookWithReactionMixin[T], HookWithOwnerMixin[O], Generic[T, O]):
 
     def __init__(
         self,

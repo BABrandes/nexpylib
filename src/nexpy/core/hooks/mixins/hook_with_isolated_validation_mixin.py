@@ -13,7 +13,6 @@ class HookWithIsolatedValidationMixin(Generic[T]):
         """
         Initialize the hook with an isolated validation callback.
         """
-        super().__init__()
         self._isolated_validation_callback = make_weak_callback(isolated_validation_callback)
 
     def _validate_value_in_isolation(self, value: T) -> tuple[bool, str]:

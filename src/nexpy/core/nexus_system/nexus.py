@@ -72,7 +72,7 @@ class Nexus(Generic[T]):
     def __init__(
         self,
         value: T,
-        hooks: set["HookWithConnectionProtocol[T]"] = set(), # type: ignore
+        hooks: set["HookProtocol[T]"] = set(),
         logger: Optional[logging.Logger] = None,
         nexus_manager: Optional["NexusManager"] = None
         ) -> None:
@@ -286,24 +286,25 @@ class Nexus(Generic[T]):
         # Check if any nexuses have overlapping hooks (not disjoint) and collect all hooks
         # Optimize: Use a single set to track all hooks instead of O(n²) pairwise intersection
         all_hooks: set["HookProtocol[T]"] = set()
-        list_of_hook_nexus: list[set["HookProtocol[T]"]] = []
+        list_of_hook_sets: list[set["HookProtocol[T]"]] = []
         
         for hook_nexus in nexuses:
-            hook_nexus = hook_nexus._get_hooks()
-            if all_hooks & hook_nexus:  # Check for intersection with existing hooks
+            hook_set = hook_nexus._get_hooks()
+            if all_hooks & hook_set:  # Check for intersection with existing hooks
                 raise ValueError("The hook nexuses must be disjoint")
-            all_hooks.update(hook_nexus)
-            list_of_hook_nexus.append(hook_nexus)  # Store for later use
+            all_hooks.update(hook_set)
+            list_of_hook_sets.append(hook_set)  # Store for later use
         
-        # Create new merged nexus with the reference value
+        # Create new merged nexus with the reference value and empty hooks (will be added below)
         merged_nexus: Nexus[T] = Nexus[T](
             value=reference_value,
+            hooks=set(),
             nexus_manager=nexus_manager,
         )
         
         # Add all hooks to the merged nexus (reuse the already computed hook sets)
-        for hook_nexus in list_of_hook_nexus:
-            for hook in hook_nexus:
+        for hook_set in list_of_hook_sets:
+            for hook in hook_set:
                 merged_nexus.add_hook(hook)
         
         return merged_nexus
@@ -363,10 +364,10 @@ class Nexus(Generic[T]):
                 
             merged_nexus: Nexus[T] = Nexus[T]._create_merged_nexuses(hook_nexus_1, hook_nexus_2)
             
-            # Replace nexus for all hooks
+            # Update all hooks to point to the merged nexus
             # NOTE: Caller (join method) already holds locks in proper order via lock ordering
             for hook in merged_nexus._get_hooks():
-                hook._hook_nexus = merged_nexus # type: ignore  # Direct assignment bypasses _replace_nexus lock
+                hook._nexus = merged_nexus # type: ignore  # Direct assignment bypasses _replace_nexus lock
 
         return True, "Successfully linked hook pairs"
     

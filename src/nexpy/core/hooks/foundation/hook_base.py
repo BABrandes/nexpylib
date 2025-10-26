@@ -35,9 +35,11 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
 
         #-------------------------------- Initialization start --------------------------------
 
-        #-------------------------------- Initalize nexus --------------------------------
+        #-------------------------------- Initalize nexus -------------------------------------
 
-        if isinstance(value_or_nexus, "Nexus"):
+        from nexpy.core.nexus_system.nexus import Nexus
+
+        if isinstance(value_or_nexus, Nexus):
             # Nexus given for value
             if value_or_nexus._nexus_manager != nexus_manager: # type: ignore
                 raise ValueError("The nexus manager must be the same")
@@ -47,7 +49,7 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
             from nexpy.core.nexus_system.nexus import Nexus
             if nexus_manager is None:
                 raise ValueError("Nexus manager must be provided if value is given")
-            self._nexus = Nexus[T](value_or_nexus, logger=logger, nexus_manager=nexus_manager)
+            self._nexus = Nexus[T](value_or_nexus, hooks=set(), logger=logger, nexus_manager=nexus_manager)
 
         #-------------------------------- Initialize other attributes --------------------------------
 
@@ -55,6 +57,10 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
         self._lock = RLock()
 
         ListeningMixin.__init__(self)
+
+        #-------------------------------- Add hook to nexus --------------------------------
+        
+        self._nexus.add_hook(self)
 
         #-------------------------------- Initialization complete --------------------------------
 
@@ -212,6 +218,7 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
         """
 
         from nexpy.core.nexus_system.nexus import Nexus
+        from nexpy.foundations.carries_single_hook_protocol import CarriesSingleHookProtocol
 
         if target_hook is None: # type: ignore
             raise ValueError("Cannot connect to None hook")
