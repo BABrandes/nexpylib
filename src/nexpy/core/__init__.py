@@ -70,21 +70,39 @@ For normal usage of the library, import from the main package:
 """
 
 from .nexus_system.nexus import Nexus
-from .auxiliary.listening_base import ListeningBase
+from .auxiliary.listening_mixin import ListeningMixin
 from .auxiliary.listening_protocol import ListeningProtocol
 from .nexus_system.nexus_manager import NexusManager
 from .publisher_subscriber.subscriber import Subscriber
 from .nexus_system.submission_error import SubmissionError
+from .hooks import (
+    HookProtocol,
+    OwnedHookProtocol,
+    WritableHookProtocol,
+    ReactiveHookProtocol,
+    FloatingHook,
+    OwnedReadOnlyHook,
+    OwnedWritableHook,
+    HookBase,
+)
 
 # Re-export the module for advanced configuration
 # Note: For user-facing configuration, use: from nexpy import default
 
 __all__ = [
     'Nexus',
-    'ListeningBase',
+    'ListeningMixin',
     'ListeningProtocol',
     'NexusManager',
     'Subscriber',
     'SubmissionError',
+    'HookProtocol',
+    'OwnedHookProtocol',
+    'WritableHookProtocol',
+    'ReactiveHookProtocol',
+    'FloatingHook',
+    'OwnedReadOnlyHook',
+    'OwnedWritableHook',
+    'HookBase',
 ]
 

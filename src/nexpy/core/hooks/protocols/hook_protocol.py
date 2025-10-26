@@ -76,7 +76,7 @@ class HookProtocol(Protocol[T]):
 
     #-------------------------------- join --------------------------------
 
-    def join(self, target_hook: "HookProtocol[T]"|CarriesSingleHookProtocol[T], initial_sync_mode: Literal["use_caller_value", "use_target_value"], raise_join_error_flag: bool = True) -> tuple[bool, str]:
+    def join(self, target_hook: "HookProtocol[T]|CarriesSingleHookProtocol[T]", initial_sync_mode: Literal["use_caller_value", "use_target_value"], raise_join_error_flag: bool = True) -> tuple[bool, str]:
         """
         Join this hook to another hook.
 
@@ -138,7 +138,7 @@ class HookProtocol(Protocol[T]):
         """
         ...
 
-    def _join(self, target_hook: "HookProtocol[T]"|CarriesSingleHookProtocol[T], initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> tuple[bool, str]:
+    def _join(self, target_hook: "HookProtocol[T]|CarriesSingleHookProtocol[T]", initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> tuple[bool, str]:
         """
         Join this hook to another hook.
         """
@@ -175,7 +175,7 @@ class HookProtocol(Protocol[T]):
         ...
 
     @staticmethod
-    def _validate_values(values: Mapping["HookProtocol[T]"|CarriesSingleHookProtocol[T], T]) -> tuple[bool, str]:
+    def _validate_values(values: Mapping["HookProtocol[T]|CarriesSingleHookProtocol[T]", T]) -> tuple[bool, str]:
         """
         Validate if a values could be submitted to this hook, either internally or externally.
 

@@ -1,4 +1,5 @@
 from typing import Any, TypeVar, Optional, final, Mapping, Generic, Callable, Literal, Self
+import warnings
 from logging import Logger
 from abc import abstractmethod
 from threading import RLock
@@ -126,7 +127,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, SerializableProtoc
     #########################################################
 
     @final
-    def _invalidate(self) -> tuple[bool, str]:
+    def _invalidate(self, raise_error_mode: Literal["raise", "ignore", "warn"] = "raise") -> tuple[bool, str]:
         """
         Invalidate all hooks.
 
@@ -141,11 +142,24 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, SerializableProtoc
         """
 
         if self._invalidate_after_update_callback is not None:
-            success, msg = self._invalidate_after_update_callback()
-            if success == False:
-                return False, msg
-            else:
-                return True, msg
+            try:
+                success, msg = self._invalidate_after_update_callback()
+                if success == False:
+                    return False, msg
+                else:
+                    return True, msg
+            except Exception as e:
+                if raise_error_mode == "raise":
+                    raise e
+                elif raise_error_mode == "ignore":
+                    success = False
+                    msg = f"Error in invalidate callback: {e}"
+                    return success, msg
+                elif raise_error_mode == "warn":
+                    warnings.warn(f"Error in invalidate callback: {e}", stacklevel=2)
+                    success = False
+                    msg = f"Error in invalidate callback: {e}"
+                    return success, msg
         else:
             return True, "No invalidate callback provided"
 

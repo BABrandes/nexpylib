@@ -1,10 +1,6 @@
 from typing import TypeVar, Optional, Callable
+import warnings
 from logging import Logger
-from threading import RLock
-
-from nexpy.core.nexus_system.nexus_manager import NexusManager
-from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
-from ...auxiliary.utils import make_weak_callback
 
 from nexpy.core import SubmissionError
 from ..foundation.hook_base import HookBase
@@ -12,16 +8,29 @@ from ..protocols.writable_hook_protocol import WritableHookProtocol
 from ..protocols.reactive_hook_protocol import ReactiveHookProtocol
 from ..mixins.hook_with_setter_mixin import HookWithSetterMixin
 from ..mixins.hook_with_reaction_mixin import HookWithReactionMixin
+from ..mixins.hook_with_isolated_validation_mixin import HookWithIsolatedValidationMixin
+from ..protocols.isolated_validatable_hook_protocol import IsolatedValidatableHookProtocol
+from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
+from nexpy.core.nexus_system.nexus_manager import NexusManager
 
 T = TypeVar("T")
 
-class FloatingHook(HookBase[T], WritableHookProtocol[T], ReactiveHookProtocol[T], HookWithSetterMixin[T], HookWithReactionMixin[T]):
+class FloatingHook(
+    HookBase[T],
+    WritableHookProtocol[T],
+    ReactiveHookProtocol[T],
+    IsolatedValidatableHookProtocol[T],
+    HookWithSetterMixin[T],
+    HookWithReactionMixin[T],
+    HookWithIsolatedValidationMixin[T]
+):
 
     def __init__(
         self,
         value: T,
         *,
         reaction_callback: Optional[Callable[[], tuple[bool, str]]] = None,
+        isolated_validation_callback: Optional[Callable[[T], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
         ) -> None:
@@ -79,14 +88,16 @@ class FloatingHook(HookBase[T], WritableHookProtocol[T], ReactiveHookProtocol[T]
     # ReactiveHookProtocol methods
     #########################################################
 
-    def react_to_value_change(self) -> None:
+    def _react_to_value_change(self) -> None:
         """
         React to the value change.
 
-        ** Thread-safe **
+        ** This method is not thread-safe and should only be called by the _react_to_value_change method.
         """
-        with self._lock:
+        try:
             self._react_to_value_change()
+        except Exception as e:
+            warnings.warn(f"Error in '_react_to_value_change' of floating hook '{self}': {e}", stacklevel=2)
 
     def set_reaction_callback(self, reaction_callback: Callable[[], tuple[bool, str]]) -> None:
         """
@@ -114,3 +125,13 @@ class FloatingHook(HookBase[T], WritableHookProtocol[T], ReactiveHookProtocol[T]
         """
         with self._lock:
             self._remove_reaction_callback()
+
+    #########################################################
+    # HasIsolatedValidationHookProtocol methods
+    #########################################################
+
+    def _validate_value_in_isolation(self, value: T) -> tuple[bool, str]:
+        """
+        Validate the value in isolation.
+        """
+        return True, "Value is valid"

@@ -1,6 +1,6 @@
 from typing import TypeVar, Any, Optional, Callable
 from logging import Logger
-from threading import RLock
+import warnings
 
 from nexpy.core.nexus_system.nexus_manager import NexusManager
 from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
@@ -108,14 +108,16 @@ class OwnedWritableHook(HookBase[T], OwnedHookProtocol[T, O], WritableHookProtoc
     # ReactiveHookProtocol methods
     #########################################################
 
-    def react_to_value_change(self) -> None:
+    def _react_to_value_change(self) -> None:
         """
         React to the value change.
 
-        ** Thread-safe **
+        ** This method is not thread-safe and should only be called by the _react_to_value_change method.
         """
-        with self._lock:
+        try:
             self._react_to_value_change()
+        except Exception as e:
+            warnings.warn(f"Error in '_react_to_value_change' of owned writable hook '{self}': {e}", stacklevel=2)
 
     def set_reaction_callback(self, reaction_callback: Callable[[], tuple[bool, str]]) -> None:
         """

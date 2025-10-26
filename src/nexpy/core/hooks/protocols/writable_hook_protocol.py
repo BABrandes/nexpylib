@@ -1,4 +1,4 @@
-from typing import TypeVar, Optional, runtime_checkable
+from typing import TypeVar, Optional, runtime_checkable, Protocol
 from logging import Logger
 
 from .hook_protocol import HookProtocol
@@ -6,11 +6,10 @@ from .hook_protocol import HookProtocol
 T = TypeVar("T")
 
 @runtime_checkable
-class WritableHookProtocol(HookProtocol[T]):
+class WritableHookProtocol(HookProtocol[T], Protocol[T]):
     """
     Protocol for writable hook objects.
     """
-    ...
 
     #-------------------------------- value --------------------------------
 

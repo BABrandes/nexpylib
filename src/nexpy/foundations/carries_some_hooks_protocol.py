@@ -3,12 +3,12 @@ from logging import Logger
 
 from ..core.auxiliary.listening_protocol import ListeningProtocol
 from ..core.nexus_system.update_function_values import UpdateFunctionValues
-from ..core.hooks import OwnedHookProtocol, HookProtocol
 from ..core.nexus_system.nexus import Nexus
 
 if TYPE_CHECKING:
     from .carries_single_hook_protocol import CarriesSingleHookProtocol
     from ..core.nexus_system.nexus_manager import NexusManager
+    from ..core.hooks import OwnedHookProtocol, HookProtocol
 
 HK = TypeVar("HK")
 HV = TypeVar("HV")
@@ -26,7 +26,7 @@ class CarriesSomeHooksProtocol(ListeningProtocol, Protocol[HK, HV]):
     # Methods to get hooks and values
     #########################################################################
 
-    def _get_hook_by_key(self, key: HK) -> OwnedHookProtocol[HV, Self]:
+    def _get_hook_by_key(self, key: HK) -> "OwnedHookProtocol[HV, Self]":
         """
         Get a hook by its key.
         """
@@ -38,7 +38,7 @@ class CarriesSomeHooksProtocol(ListeningProtocol, Protocol[HK, HV]):
         """
         ...
 
-    def _get_key_by_hook_or_nexus(self, hook_or_nexus: OwnedHookProtocol[HV, Self]|Nexus[HV]) -> HK:
+    def _get_key_by_hook_or_nexus(self, hook_or_nexus: "OwnedHookProtocol[HV, Self]|Nexus[HV]") -> HK:
         """
         Get the key of a hook or nexus.
         """
@@ -52,7 +52,7 @@ class CarriesSomeHooksProtocol(ListeningProtocol, Protocol[HK, HV]):
         """
         ...
 
-    def _get_dict_of_hooks(self) ->  Mapping[HK, OwnedHookProtocol[HV, Self]]:
+    def _get_dict_of_hooks(self) ->  "Mapping[HK, OwnedHookProtocol[HV, Self]]":
         """
         Get a dictionary of hooks.
         """
@@ -79,7 +79,7 @@ class CarriesSomeHooksProtocol(ListeningProtocol, Protocol[HK, HV]):
         """
         ...
 
-    def _invalidate(self) -> tuple[bool, str]:
+    def _invalidate(self, raise_error_mode: Literal["raise", "ignore", "warn"] = "raise") -> tuple[bool, str]:
         """
         Invalidate all hooks.
         """
@@ -113,7 +113,7 @@ class CarriesSomeHooksProtocol(ListeningProtocol, Protocol[HK, HV]):
     # Methods to connect and disconnect hooks
     #########################################################################
 
-    def _join(self, source_hook_key: HK, target_hook: HookProtocol[HV]|"CarriesSingleHookProtocol[HV]", initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> None:
+    def _join(self, source_hook_key: HK, target_hook: "HookProtocol[HV]|CarriesSingleHookProtocol[HV]", initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> None:
         """
         Connect a hook to the observable.
 
@@ -127,7 +127,7 @@ class CarriesSomeHooksProtocol(ListeningProtocol, Protocol[HK, HV]):
         """
         ...
 
-    def _join_many(self, hooks: Mapping[HK, HookProtocol[HV]], initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> None:
+    def _join_many(self, hooks: "Mapping[HK, HookProtocol[HV]]", initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> None:
         """
         Connect a list of hooks to the observable.
 

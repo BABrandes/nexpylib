@@ -1,5 +1,6 @@
-from typing import Generic, TypeVar, Optional
+from typing import Generic, TypeVar, Optional, Literal
 from collections.abc import Callable
+import warnings
 
 from ...auxiliary.utils import make_weak_callback
 
@@ -17,7 +18,7 @@ class HookWithReactionMixin(Generic[T]):
         super().__init__()
         self._reaction_callback = make_weak_callback(reaction_callback)
 
-    def _react_to_value_change(self) -> None:
+    def _react_to_value_change(self, raise_error_mode: Literal["raise", "ignore", "warn"] = "raise") -> None:
         """
         React to the value changed.
 
@@ -26,7 +27,15 @@ class HookWithReactionMixin(Generic[T]):
         It reacts to the current value of the hook.
         """
         if self._reaction_callback is not None:
-            self._reaction_callback()
+            try:
+                self._reaction_callback()
+            except Exception as e:
+                if raise_error_mode == "raise":
+                    raise e
+                elif raise_error_mode == "ignore":
+                    pass
+                elif raise_error_mode == "warn":
+                    warnings.warn(f"Error in reaction callback: {e}", stacklevel=2)
 
     def _set_reaction_callback(self, reaction_callback: Callable[[], tuple[bool, str]]) -> None:
         """

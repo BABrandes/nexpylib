@@ -1,4 +1,5 @@
-from typing import Callable
+from typing import Callable, Literal
+import warnings
 
 from .listening_protocol import ListeningProtocol
 
@@ -67,18 +68,26 @@ class ListeningMixin(ListeningProtocol):
         """
         return len(self._listeners) > 0
 
-    def _notify_listeners(self, raise_error_flag: bool = True) -> None:
+    def _notify_listeners(self, raise_error_mode: Literal["raise", "ignore", "warn"] = "raise") -> None:
 
         # Create a copy of listeners to avoid modification during iteration
         listeners_copy = list(self._listeners)
         for callback in listeners_copy:
-            if raise_error_flag:
-                callback()
-            else:
+            if raise_error_mode == "raise":
+                try:
+                    callback()
+                except Exception as e:
+                    raise e
+            elif raise_error_mode == "ignore":
                 try:
                     callback()
                 except Exception:
                     pass
+            elif raise_error_mode == "warn":
+                try:
+                    callback()
+                except Exception as e:
+                    warnings.warn(f"Error in listener callback: {e}")
     
     def is_listening_to(self, callback: Callable[[], None]) -> bool:
         """

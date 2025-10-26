@@ -1,4 +1,4 @@
-from typing import Protocol, TypeVar, Callable, Optional, runtime_checkable
+from typing import Protocol, TypeVar, Callable, Optional, runtime_checkable, Literal
 
 T = TypeVar("T", covariant=True)
 
@@ -8,11 +8,11 @@ class ReactiveHookProtocol(Protocol[T]):
     Protocol for reactive hook objects.
     """
 
-    def react_to_value_change(self) -> None:
+    def _react_to_value_change(self, raise_error_mode: Literal["raise", "ignore", "warn"] = "raise") -> None:
         """
         React to the value change.
 
-        ** Thread-safe **
+        ** This method is not thread-safe and should only be called by the _react_to_value_change method.
         """
         ...
 
