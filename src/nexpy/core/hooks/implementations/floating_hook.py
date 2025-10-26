@@ -1,4 +1,4 @@
-from typing import TypeVar, Optional, Callable, Generic
+from typing import TypeVar, Optional, Callable, Generic, Literal
 from logging import Logger
 
 from ...nexus_system.submission_error import SubmissionError
@@ -95,6 +95,14 @@ class FloatingHook(
     #########################################################
     # ReactiveHookProtocol methods
     #########################################################
+
+    def _react_to_value_change(self, raise_error_mode: Literal["raise", "ignore", "warn"] = "raise") -> None:
+        """
+        React to the value change.
+        
+        ** This method is not thread-safe and should only be called by the _react_to_value_change method.
+        """
+        HookWithReactionMixin._react_to_value_change(self, raise_error_mode) # type: ignore
 
     def set_reaction_callback(self, reaction_callback: Callable[[], tuple[bool, str]]) -> None:
         """
