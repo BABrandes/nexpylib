@@ -24,10 +24,10 @@ class SerializableProtocol(Protocol[HK, HV]):
     
     Architecture:
     ------------
-    Observables store their state in primary hooks. The serialization system:
+    NexPy objects store their state in primary hooks. The serialization system:
     1. Extracts values from primary hooks (excluding computed/secondary hooks)
     2. Returns them as a mapping of keys to values
-    3. Can restore these values to a new observable instance
+    3. Can restore these values to a new NexPy object instance
     
     Secondary hooks (computed values like length, count, etc.) are NOT serialized
     because they are automatically recomputed from primary values.
@@ -36,7 +36,7 @@ class SerializableProtocol(Protocol[HK, HV]):
     -------------
     The serialization lifecycle follows these steps:
     
-    1. **Create and use an observable:**
+    1. **Create and use a NexPy object:**
        >>> obs = XValue(42)
        >>> obs.value = 100
     
@@ -51,7 +51,7 @@ class SerializableProtocol(Protocol[HK, HV]):
     4. **Later, load from storage:**
        >>> serialized_data = json.load(file)
     
-    5. **Create fresh observable:**
+    5. **Create fresh NexPy object:**
        >>> obs_restored = XValue(0)  # Initial value doesn't matter
     
     6. **Restore state:**
@@ -69,24 +69,24 @@ class SerializableProtocol(Protocol[HK, HV]):
        - Must include all state needed for complete reconstruction
     
     2. **set_values_from_serialization(values: Mapping[HK, HV]) -> None**
-       - Restores observable state from serialized values
+       - Restores NexPy object state from serialized values
        - Should validate values if needed
        - Should update all relevant hooks atomically
-       - Should NOT return anything (mutates the observable in place)
+       - Should NOT return anything (mutates the NexPy object in place)
     
     Example Implementations:
     -----------------------
     
-    **Simple Observable (Single Value):**
-        >>> class ObservableSingleValue(ObservableSerializable[Literal["value"], T]):
+    **Simple X Object (Single Value):**
+        >>> class XValue(XBase[Literal["value"], T]):
         ...     def get_values_for_serialization(self):
         ...         return {"value": self._hook.value}
         ...     
         ...     def set_values_from_serialization(self, values):
         ...         self.submit_values(values)
     
-    **Complex Observable (Multiple Values):**
-        >>> class ObservableRootedPaths(ObservableSerializable[str, Path|str|None]):
+    **Complex X Object (Multiple Values):**
+        >>> class XRootedPaths(XBase[str, Path|str|None]):
         ...     def get_values_for_serialization(self):
         ...         # Return root path and relative paths only
         ...         result = {"root_path": self._root_path}
@@ -112,47 +112,47 @@ class SerializableProtocol(Protocol[HK, HV]):
     - **Secondary Hooks**: Never serialize computed/secondary values. They are
       automatically recomputed from primary values.
     
-    - **Bindings**: Serialization does NOT preserve bindings between observables.
-      Only the current values are saved. Bindings must be recreated manually.
+    - **Fusion Domains**: Serialization does NOT preserve hook fusion/joins.
+      Only the current values are saved. Fusions must be recreated manually.
     
     Testing:
     -------
-    All serializable observables should follow this test pattern:
+    All serializable X objects should follow this test pattern:
     
         >>> # 1. Create and modify
-        >>> obs = ObservableXYZ(initial_value)
-        >>> obs.modify_state()
-        >>> expected = obs.get_state()
+        >>> obj = XValue(initial_value)
+        >>> obj.modify_state()
+        >>> expected = obj.get_state()
         >>> 
         >>> # 2. Serialize
-        >>> data = obs.get_values_for_serialization()
+        >>> data = obj.get_values_for_serialization()
         >>> 
         >>> # 3. Delete original
-        >>> del obs
+        >>> del obj
         >>> 
         >>> # 4. Create fresh instance
-        >>> obs_new = ObservableXYZ(different_value)
+        >>> obj_new = XValue(different_value)
         >>> 
         >>> # 5. Deserialize
-        >>> obs_new.set_values_from_serialization(data)
+        >>> obj_new.set_values_from_serialization(data)
         >>> 
         >>> # 6. Verify
-        >>> assert obs_new.get_state() == expected
+        >>> assert obj_new.get_state() == expected
     
     See Also:
     --------
     - XValue: Simple serialization example
     - XList, XDict, XSet: Collection serialization
     - XRootedPaths: Complex multi-value serialization
-    - ObservableSelectionEnum: Enum-based serialization
+    - XDictSelect, XSetSingleSelect: Selection serialization
     """
 
     def get_values_for_serialization(self) -> Mapping[HK, HV]:
         """
-        Get the observable's state as a mapping for serialization.
+        Get the NexPy object's state as a mapping for serialization.
         
         This method extracts all primary hook values needed to reconstruct
-        the observable's state. The returned mapping contains references to
+        the NexPy object's state. The returned mapping contains references to
         the actual values (not copies).
         
         Returns:
@@ -160,9 +160,9 @@ class SerializableProtocol(Protocol[HK, HV]):
                             Only primary (non-computed) values are included.
         
         Example:
-            >>> obs = XValue(42)
-            >>> obs.value = 100
-            >>> data = obs.get_values_for_serialization()
+            >>> obj = XValue(42)
+            >>> obj.value = 100
+            >>> data = obj.get_values_for_serialization()
             >>> data
             {'value': 100}
         
@@ -175,9 +175,9 @@ class SerializableProtocol(Protocol[HK, HV]):
 
     def set_values_from_serialization(self, values: Mapping[HK, HV]) -> None:
         """
-        Restore the observable's state from serialized values.
+        Restore the NexPy object's state from serialized values.
         
-        This method updates the observable to match the provided state. It should
+        This method updates the NexPy object to match the provided state. It should
         validate values if necessary and update all hooks atomically to maintain
         consistency.
         
@@ -189,16 +189,16 @@ class SerializableProtocol(Protocol[HK, HV]):
             ValueError: If the values are invalid or incompatible
         
         Example:
-            >>> obs = ObservableSingleValue(0)
+            >>> obj = XValue(0)
             >>> data = {'value': 100}
-            >>> obs.set_values_from_serialization(data)
-            >>> obs.value
+            >>> obj.set_values_from_serialization(data)
+            >>> obj.value
             100
         
         Note:
             - Values are validated before being applied
             - All hooks are updated atomically
             - Secondary/computed hooks are automatically recalculated
-            - This method mutates the observable in place
+            - This method mutates the NexPy object in place
         """
         ...

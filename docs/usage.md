@@ -41,19 +41,25 @@ temp.value = 25.0
 print(temp.value)  # 25.0
 ```
 
-#### 2. OwnedHook — Object-Owned Hooks
+#### 2. OwnedReadOnlyHook and OwnedWritableHook — Object-Owned Hooks
 
-OwnedHooks belong to reactive objects (like `XValue`, `XDict`, `XList`). They participate in the object's internal synchronization protocol.
+Owned hooks belong to reactive objects (like `XValue`, `XDict`, `XList`). They participate in the object's internal synchronization protocol. There are two types:
+
+- **OwnedReadOnlyHook**: Read-only hooks (typically used for computed/derived values)
+- **OwnedWritableHook**: Writable hooks (typically used for primary values)
 
 ```python
 import nexpy as nx
 
-# XValue internally creates an OwnedHook
+# XValue internally creates an OwnedWritableHook
 value = nx.XValue(42)
-hook = value.value_hook  # This is an OwnedHook
+hook = value.value_hook  # This is an OwnedWritableHook
 
-print(type(hook))  # OwnedHook
+print(type(hook))  # OwnedWritableHook
 print(hook.owner)  # The XValue instance
+
+# Hook is writable
+hook.value = 100  # Updates the value
 ```
 
 ### Hook Properties

@@ -1,49 +1,47 @@
 """
-Observables Core - Advanced API for extending the library
+NexPy Core - Advanced API for extending the library
 
 ⚠️ DEVELOPMENT STATUS: NOT PRODUCTION READY
 This library is under active development. API may change without notice.
 Use for experimental and development purposes only.
 
 This module contains the core components and base classes for building on top of the 
-Observables library. These are lower-level abstractions meant for users who want to 
-create custom observable types or extend the library's functionality.
+NexPy library. These are lower-level abstractions meant for users who want to 
+create custom reactive types or extend the library's functionality.
 
 Core Components:
-- BaseXObject: Base class for all observable types
-- Hook/HookProtocol: Core hook implementations and protocols
-- OwnedHook/HookWithOwnerProtocol: Owned hook implementations and protocols
-- FloatingHook: Advanced hook with validation and reaction capabilities
 - Nexus: Central storage for actual data values
-- BaseCarriesHooks/CarriesSomeHooksProtocol: Base classes for hook carriers
-- HookWithIsolatedValidationProtocol: Protocol for hooks with custom validation
-- HookWithReactionProtocol: Protocol for hooks that react to changes
-- BaseListening/BaseListeningProtocol: Base classes for listener management
+- NexusManager: Central coordinator for transitive synchronization
+- FloatingHook: Independent writable hook with validation and reaction capabilities
+- OwnedReadOnlyHook: Read-only hook owned by X objects
+- OwnedWritableHook: Writable hook owned by X objects
+- HookProtocol: Core hook protocol
+- OwnedHookProtocol: Protocol for hooks with ownership
+- WritableHookProtocol: Protocol for hooks with write access
+- ReactiveHookProtocol: Protocol for hooks with reactions
+- Subscriber: Asynchronous subscriber for receiving publications
+- ListeningMixin/ListeningProtocol: Base classes for listener management
 
-Example Usage with New Protocol-Based Architecture:
-    >>> from observables.core import BaseXObject, OwnedHook, HookWithOwnerProtocol
+Example Usage with Hook System:
+    >>> from nexpy.core import FloatingHook, OwnedWritableHook, XValue
     >>> 
-    >>> # Create a custom observable type using the new architecture
-    >>> class MyCustomObservable(BaseXObject):
-    ...     def __init__(self, value):
-    ...         # Create owned hook
-    ...         self._value_hook = OwnedHook(owner=self, value=value)
-    ...         super().__init__({"value": self._value_hook})
-    ...     
-    ...     @property
-    ...     def value(self):
-    ...         return self._value_hook.value
-    ...     
-    ...     @value.setter
-    ...     def value(self, new_value):
-    ...         self._value_hook.submit_value(new_value)
-    ...     
-    ...     @property
-    ...     def value_hook(self) -> HookWithOwnerProtocol[Any]:
-    ...         return self._value_hook
+    >>> # Create independent floating hooks
+    >>> hook1 = FloatingHook(value=42)
+    >>> hook2 = FloatingHook(value=100)
+    >>> 
+    >>> # Join them together
+    >>> hook1.join(hook2)
+    >>> print(hook1.value, hook2.value)  # 42 42
+    >>> 
+    >>> # Create X object with owned writable hook
+    >>> value = XValue(42)
+    >>> hook = value.value_hook  # OwnedWritableHook
+    >>> print(hook.value)  # 42
+    >>> hook.value = 100
+    >>> print(value.value)  # 100
 
 Advanced Usage with FloatingHook:
-    >>> from observables.core import FloatingHook
+    >>> from nexpy.core import FloatingHook
     >>> 
     >>> def validate_value(value):
     ...     return value >= 0, "Value must be non-negative"
@@ -66,7 +64,7 @@ Configuring Float Tolerance:
     >>> # This must be done before creating observables
 
 For normal usage of the library, import from the main package:
-    >>> from observables import ObservableSingleValue, ObservableList
+    >>> from nexpy import XValue, XList
 """
 
 from .nexus_system.nexus import Nexus

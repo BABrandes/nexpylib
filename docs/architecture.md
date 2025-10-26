@@ -104,7 +104,7 @@ NexPy is organized into four distinct layers:
                             ↕
 ┌─────────────────────────────────────────────────────────────┐
 │                    Hook Layer                               │
-│   FloatingHook, OwnedHook                                  │
+│   FloatingHook, OwnedReadOnlyHook, OwnedWritableHook       │
 │   - Connection points for fusion                           │
 │   - Value access interface                                 │
 │   - Listener management                                    │
@@ -141,8 +141,9 @@ NexPy is organized into four distinct layers:
 **Purpose**: Provide connection points for fusion and value access.
 
 **Components**:
-- `FloatingHook` — Independent hooks
-- `OwnedHook` — Hooks owned by X objects
+- `FloatingHook` — Independent writable hooks
+- `OwnedReadOnlyHook` — Read-only hooks owned by X objects
+- `OwnedWritableHook` — Writable hooks owned by X objects
 - Hook protocols and mixins
 
 **Responsibilities**:
