@@ -25,9 +25,9 @@ Example Usage with New Protocol-Based Architecture:
     >>> 
     >>> # Create a custom observable type using the new architecture
     >>> class MyCustomObservable(BaseXObject):
-    ...     def __init__(self, initial_value):
+    ...     def __init__(self, value):
     ...         # Create owned hook
-    ...         self._value_hook = OwnedHook(owner=self, initial_value=initial_value)
+    ...         self._value_hook = OwnedHook(owner=self, value=value)
     ...         super().__init__({"value": self._value_hook})
     ...     
     ...     @property
