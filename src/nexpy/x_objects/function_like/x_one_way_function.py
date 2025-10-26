@@ -115,6 +115,19 @@ class XOneWayFunction(XBase[IHK|OHK, IHV|OHV], Generic[IHK, OHK, IHV, OHV]):
             if isinstance(external_hook_or_value, HookProtocol):
                 internal_hook_input.join(external_hook_or_value, "use_caller_value") # type: ignore
 
+    #########################################################
+    # SerializableProtocol implementation
+    #########################################################
+
+    def get_values_for_serialization(self) -> Mapping[IHK|OHK, IHV|OHV]:
+        return {key: hook._get_value() for key, hook in self._input_hooks.items()} | {key: hook._get_value() for key, hook in self._output_hooks.items()} # type: ignore
+
+    def set_values_from_serialization(self, values: Mapping[IHK|OHK, IHV|OHV]) -> None:
+        values_to_submit: dict[IHK|OHK, IHV|OHV] = {}
+        for key, value in values.items():
+            values_to_submit[key] = value
+        self._submit_values(values_to_submit)
+
     #########################################################################
     # CarriesSomeHooksBase abstract methods
     #########################################################################

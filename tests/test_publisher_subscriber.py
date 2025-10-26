@@ -1,14 +1,14 @@
 """
 Test cases for Publisher/Subscriber system
 """
-from typing import Literal
+from typing import Literal, Any
 
 import asyncio
 import gc
 import weakref
 
 
-from nexpy import Publisher
+from nexpy.core.publisher_subscriber.value_publisher import ValuePublisher as Publisher
 from nexpy.core import Subscriber
 
 from test_base import ObservableTestCase
@@ -20,12 +20,12 @@ class MockSubscriber(Subscriber):
     
     def __init__(self):
         super().__init__()
-        self.publications: list[Publisher] = []
+        self.publications: list[Publisher[Any]] = []
         self.reaction_count = 0
         self.should_raise = False
         self.reaction_delay = 0.0
     
-    def _react_to_publication(self, publisher: Publisher, mode: str) -> None:
+    def _react_to_publication(self, publisher: Publisher[Any], mode: str) -> None:
         """Track publications and optionally raise errors."""
         if self.should_raise:
             raise ValueError(f"Test error from subscriber")
@@ -42,7 +42,7 @@ class TestPublisherSubscriberBasics(ObservableTestCase):
     
     def setup_method(self):
         super().setup_method()
-        self.publisher = Publisher(logger=logger)
+        self.publisher = Publisher(0, preferred_publish_mode="sync")
         self.subscriber = MockSubscriber()
         # Set up event loop for async operations
         self.loop = asyncio.new_event_loop()
@@ -148,7 +148,7 @@ class TestPublisherSubscriberWeakReferences(ObservableTestCase):
     
     def test_subscriber_cleanup_on_deletion(self):
         """Test that deleted subscribers are cleaned up"""
-        publisher = Publisher(logger=logger)
+        publisher = Publisher(0, preferred_publish_mode="sync")
         subscriber1 = MockSubscriber()
         subscriber2 = MockSubscriber()
         subscriber3 = MockSubscriber()
@@ -178,8 +178,8 @@ class TestPublisherSubscriberWeakReferences(ObservableTestCase):
     
     def test_publisher_cleanup_on_deletion(self):
         """Test that deleted publishers are cleaned up from subscribers"""
-        publisher1 = Publisher(logger=logger)
-        publisher2 = Publisher(logger=logger)
+        publisher1 = Publisher(0, preferred_publish_mode="sync")
+        publisher2 = Publisher(0, preferred_publish_mode="sync")
         subscriber = MockSubscriber()
         
         publisher1.add_subscriber(subscriber)
@@ -214,19 +214,19 @@ class TestPublisherSubscriberErrorHandling(ObservableTestCase):
     
     def test_subscriber_error_with_logger(self):
         """Test that subscriber errors are logged when logger is provided"""
-        publisher = Publisher(logger=logger)
+        publisher = Publisher(0, preferred_publish_mode="sync")
         subscriber = MockSubscriber()
         subscriber.should_raise = True
-        
+
         publisher.add_subscriber(subscriber)
-        
+
         # This should not raise - error should be logged
-        publisher.publish()
+        publisher.publish(raise_error_mode="warn")
         self.loop.run_until_complete(asyncio.sleep(0.01))
     
     def test_subscriber_error_without_logger(self):
         """Test that subscriber errors raise when no logger is provided"""
-        publisher = Publisher(preferred_publish_mode="async")  # No logger, async mode
+        publisher = Publisher(0, preferred_publish_mode="async")  # No logger, async mode
         subscriber = MockSubscriber()
         subscriber.should_raise = True
         
@@ -247,7 +247,7 @@ class TestPublisherSubscriberErrorHandling(ObservableTestCase):
     
     def test_one_subscriber_error_doesnt_affect_others(self):
         """Test that error in one subscriber doesn't prevent others from reacting"""
-        publisher = Publisher(logger=logger)
+        publisher = Publisher(0, preferred_publish_mode="sync")
         
         subscriber1 = MockSubscriber()
         subscriber1.should_raise = True
@@ -259,7 +259,7 @@ class TestPublisherSubscriberErrorHandling(ObservableTestCase):
         publisher.add_subscriber(subscriber2)
         publisher.add_subscriber(subscriber3)
         
-        publisher.publish()
+        publisher.publish(raise_error_mode="warn")
         self.loop.run_until_complete(asyncio.sleep(0.01))
         
         # subscriber2 and subscriber3 should still have reacted
@@ -283,7 +283,7 @@ class TestPublisherSubscriberCleanup(ObservableTestCase):
         import time
         
         # Use short cleanup interval for testing
-        publisher = Publisher(logger=logger, cleanup_interval=0.1)
+        publisher = Publisher(0, preferred_publish_mode="sync", cleanup_interval=0.1)
         
         subscriber1 = MockSubscriber()
         subscriber2 = MockSubscriber()
@@ -308,7 +308,7 @@ class TestPublisherSubscriberCleanup(ObservableTestCase):
     def test_size_based_cleanup(self):
         """Test cleanup triggers after size threshold"""
         # Use small max_subscribers for testing
-        publisher = Publisher(logger=logger, max_subscribers_before_cleanup=3)
+        publisher = Publisher(0, preferred_publish_mode="sync", max_subscribers_before_cleanup=3)
         
         sub1 = MockSubscriber()
         sub2 = MockSubscriber()
@@ -349,7 +349,7 @@ class TestPublisherSubscriberAsync(ObservableTestCase):
     
     def test_async_execution(self):
         """Test that reactions execute asynchronously"""
-        publisher = Publisher(preferred_publish_mode="async", logger=logger)
+        publisher = Publisher(0, preferred_publish_mode="async", logger=logger)
         
         # Create async-aware subscribers with delays
         class SlowSubscriber(Subscriber):
@@ -357,7 +357,7 @@ class TestPublisherSubscriberAsync(ObservableTestCase):
                 super().__init__()
                 self.reaction_count = 0
             
-            def _react_to_publication(self, publisher: Publisher, mode: Literal["async", "sync", "direct"]) -> None:
+            def _react_to_publication(self, publisher: Publisher[Any], mode: Literal["async", "sync", "direct"]) -> None:
                 # Simulate slow processing
                 import time
                 time.sleep(0.05)
@@ -368,7 +368,7 @@ class TestPublisherSubscriberAsync(ObservableTestCase):
                 super().__init__()
                 self.reaction_count = 0
             
-            def _react_to_publication(self, publisher: Publisher, mode: Literal["async", "sync", "direct"]) -> None:
+            def _react_to_publication(self, publisher: Publisher[Any], mode: Literal["async", "sync", "direct"]) -> None:
                 # Fast processing
                 self.reaction_count += 1
         
@@ -406,8 +406,8 @@ class TestBidirectionalReferences(ObservableTestCase):
     
     def test_subscriber_tracks_publishers(self):
         """Test that subscribers track their publishers"""
-        publisher1 = Publisher(logger=logger)
-        publisher2 = Publisher(logger=logger)
+        publisher1 = Publisher(0, preferred_publish_mode="sync")
+        publisher2 = Publisher(0, preferred_publish_mode="sync")
         subscriber = MockSubscriber()
         
         publisher1.add_subscriber(subscriber)
@@ -418,7 +418,7 @@ class TestBidirectionalReferences(ObservableTestCase):
     
     def test_remove_updates_both_sides(self):
         """Test that removing a subscriber updates both sides"""
-        publisher = Publisher(logger=logger)
+        publisher = Publisher(0, preferred_publish_mode="sync")
         subscriber = MockSubscriber()
         
         publisher.add_subscriber(subscriber)

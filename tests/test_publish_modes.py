@@ -7,12 +7,12 @@ This module tests the three different publication modes available in the Publish
 - direct: Synchronous, no asyncio, callbacks only
 """
 
-from typing import Literal
+from typing import Literal, Any
 from logging import basicConfig, getLogger, DEBUG
 
 import asyncio
 
-from nexpy import Publisher
+from nexpy.core.publisher_subscriber.value_publisher import ValuePublisher as Publisher
 from nexpy.core import Subscriber
 import pytest
 
@@ -29,7 +29,7 @@ class TestPublishModes:
     
     def test_direct_mode_with_sync_callback(self):
         """Test direct mode with synchronous callbacks."""
-        publisher = Publisher()
+        publisher = Publisher(0, "sync")
         results: list[str] = []
         
         def sync_callback():
@@ -45,7 +45,7 @@ class TestPublishModes:
     
     def test_direct_mode_with_multiple_callbacks(self):
         """Test direct mode with multiple synchronous callbacks."""
-        publisher = Publisher()
+        publisher = Publisher(0, "sync")
         results: list[int] = []
         
         def callback1():
@@ -69,7 +69,7 @@ class TestPublishModes:
     
     def test_direct_mode_skips_async_callbacks(self):
         """Test that direct mode skips async callbacks with error."""
-        publisher = Publisher(logger=self.logger)
+        publisher = Publisher(0, "sync", logger=self.logger)
         results: list[str] = []
         
         async def async_callback() -> None:
@@ -85,7 +85,7 @@ class TestPublishModes:
     
     def test_direct_mode_mixed_callbacks(self):
         """Test direct mode with mix of sync and async callbacks."""
-        publisher = Publisher(logger=self.logger)
+        publisher = Publisher(0, "sync", logger=self.logger)
         results: list[str] = []
         
         def sync_callback1():
@@ -111,11 +111,11 @@ class TestPublishModes:
     
     def test_direct_mode_with_sync_subscriber(self):
         """Test that direct mode works with synchronous subscribers."""
-        publisher = Publisher(logger=self.logger)
+        publisher = Publisher(0, "sync", logger=self.logger)
         results: list[str] = []
         
         class SyncSubscriber(Subscriber):
-            def _react_to_publication(self, publisher: Publisher, mode: Literal["async", "sync", "direct"]) -> None:
+            def _react_to_publication(self, publisher: Publisher[Any], mode: Literal["async", "sync", "direct"]) -> None:
                 # Synchronous method (not async)
                 results.append(f"subscriber_reacted_{mode}")
         
@@ -130,7 +130,7 @@ class TestPublishModes:
     
     def test_direct_mode_callback_error_handling(self):
         """Test error handling in direct mode callbacks."""
-        publisher = Publisher()
+        publisher = Publisher(0, "sync")
         results: list[str] = []
         
         def callback_that_fails():
@@ -149,7 +149,7 @@ class TestPublishModes:
     
     def test_direct_mode_callback_error_with_logger(self):
         """Test error handling with logger doesn't stop other callbacks."""
-        publisher = Publisher(logger=self.logger)
+        publisher = Publisher(0, "sync", logger=self.logger)
         results: list[str] = []
         
         def callback_that_fails():
@@ -170,7 +170,7 @@ class TestPublishModes:
     
     def test_sync_mode_with_sync_callback(self):
         """Test sync mode with synchronous callbacks."""
-        publisher = Publisher()
+        publisher = Publisher(0, "sync")
         results: list[str] = []
         
         def sync_callback() -> None:
@@ -186,7 +186,7 @@ class TestPublishModes:
     def test_async_mode_comparison(self):
         """Test that async mode returns before callback completes."""
         async def test():
-            publisher = Publisher()
+            publisher = Publisher(0, "sync")
             results: list[int | str] = []
             
             def callback() -> None:
@@ -212,7 +212,7 @@ class TestPublishModes:
         """Compare behavior of all three modes."""
         async def test():
             # Async mode
-            publisher_async = Publisher()
+            publisher_async = Publisher(0, "sync")
             results_async: list[int] = []
             
             def callback_async():
@@ -225,7 +225,7 @@ class TestPublishModes:
             assert len(results_async) == 1, "Async: eventually completes"
             
             # Sync mode
-            publisher_sync = Publisher()
+            publisher_sync = Publisher(0, "sync")
             results_sync: list[int] = []
             
             def callback_sync():
@@ -236,7 +236,7 @@ class TestPublishModes:
             assert len(results_sync) == 1, "Sync: waits for completion"
             
             # Direct mode
-            publisher_direct = Publisher()
+            publisher_direct = Publisher(0, "sync")
             results_direct: list[int] = []
             
             def callback_direct():
@@ -250,21 +250,21 @@ class TestPublishModes:
     
     def test_invalid_mode_raises_error(self):
         """Test that invalid mode raises ValueError."""
-        publisher = Publisher()
+        publisher = Publisher(0, "sync")
         
         with pytest.raises(ValueError):
             publisher.publish(mode="invalid")  # type: ignore
     
     def test_off_mode_disables_publishing(self):
         """Test that off mode disables all notifications."""
-        publisher = Publisher()
+        publisher = Publisher(0, "sync")
         results: list[str] = []
         
         def callback():
             results.append("executed")
         
         class TestSubscriber(Subscriber):
-            def _react_to_publication(self, publisher: Publisher, mode: Literal["async", "sync", "direct"]) -> None:
+            def _react_to_publication(self, publisher: Publisher[Any], mode: Literal["async", "sync", "direct"]) -> None:
                 results.append("subscriber")
         
         publisher.add_subscriber(callback)
@@ -278,15 +278,15 @@ class TestPublishModes:
     def test_none_mode_uses_preferred(self):
         """Test that None mode uses preferred_publish_mode."""
         # Test with async preferred
-        publisher_async = Publisher(preferred_publish_mode="async")
+        publisher_async = Publisher(0, "async")
         assert publisher_async.preferred_publish_mode == "async"
         
         # Test with sync preferred
-        publisher_sync = Publisher(preferred_publish_mode="sync")
+        publisher_sync = Publisher(0, "sync")
         assert publisher_sync.preferred_publish_mode == "sync"
         
         # Test with direct preferred
-        publisher_direct = Publisher(preferred_publish_mode="direct")
+        publisher_direct = Publisher(0, "direct")
         results: list[str] = []
         
         def callback():
@@ -304,7 +304,7 @@ class TestPublishModes:
     
     def test_preferred_mode_change_at_runtime(self):
         """Test changing preferred_publish_mode at runtime."""
-        publisher = Publisher(preferred_publish_mode="off")
+        publisher = Publisher(0, "off")
         results: list[str] = []
         
         def callback():
@@ -329,7 +329,7 @@ class TestPublishModes:
     def test_direct_mode_no_asyncio_needed(self):
         """Test that direct mode works without event loop."""
         # This test runs in regular unittest context (no event loop)
-        publisher = Publisher()
+        publisher = Publisher(0, "sync")
         results: list[str] = []
         
         def callback():
@@ -345,7 +345,7 @@ class TestPublishModes:
     
     def test_direct_mode_performance_no_overhead(self):
         """Test that direct mode has minimal overhead."""
-        publisher = Publisher()
+        publisher = Publisher(0, "sync")
         call_count: list[int] = [0]
         
         def fast_callback():
@@ -371,11 +371,11 @@ class TestPublishModesWithSubscribers:
     def test_async_mode_with_subscriber(self):
         """Test async mode properly handles subscribers."""
         async def test():
-            publisher = Publisher()
+            publisher = Publisher(0, "sync")
             reactions: list[str] = []
             
             class TestSubscriber(Subscriber):
-                def _react_to_publication(self, publisher: Publisher, mode: Literal["async", "sync", "direct"]) -> None:
+                def _react_to_publication(self, publisher: Publisher[Any], mode: Literal["async", "sync", "direct"]) -> None:
                     # In async mode, this gets wrapped in async
                     reactions.append(f"reacted_{mode}")
             
@@ -394,11 +394,11 @@ class TestPublishModesWithSubscribers:
     
     def test_sync_mode_with_subscriber(self):
         """Test sync mode waits for subscriber reactions."""
-        publisher = Publisher()
+        publisher = Publisher(0, "sync")
         reactions: list[str] = []
         
         class TestSubscriber(Subscriber):
-            def _react_to_publication(self, publisher: Publisher, mode: Literal["async", "sync", "direct"]) -> None:
+            def _react_to_publication(self, publisher: Publisher[Any], mode: Literal["async", "sync", "direct"]) -> None:
                 reactions.append(f"reacted_{mode}")
         
         subscriber = TestSubscriber()
@@ -411,11 +411,11 @@ class TestPublishModesWithSubscribers:
     
     def test_direct_mode_with_subscriber(self):
         """Test that direct mode notifies subscribers synchronously."""
-        publisher = Publisher()
+        publisher = Publisher(0, "sync")
         reactions: list[str] = []
         
         class TestSubscriber(Subscriber):
-            def _react_to_publication(self, publisher: Publisher, mode: Literal["async", "sync", "direct"]) -> None:
+            def _react_to_publication(self, publisher: Publisher[Any], mode: Literal["async", "sync", "direct"]) -> None:
                 reactions.append(f"reacted_{mode}")
         
         subscriber = TestSubscriber()

@@ -1,26 +1,30 @@
-from typing import Any, Optional
+from typing import Any, Optional, Self, Mapping
 from logging import basicConfig, getLogger, DEBUG
 
 import pytest
 
 from nexpy import XFunction, XValue, FunctionValues
 from nexpy import XBase
-from nexpy.core.hooks.owned_hook import OwnedHook
+from nexpy.core.hooks.implementations.owned_read_only_hook import OwnedReadOnlyHook as OwnedHook
 
 basicConfig(level=DEBUG)
 logger = getLogger(__name__)
 
-class MockObservable(XBase[str, int, "MockObservable"]):
+class MockObservable(XBase[str, int]):
     """Mock observable that implements the required interface."""
     
     def __init__(self, name: str):
         self.name = name
-        self._hooks: dict[str, OwnedHook[int]] = {}
+        self._hooks: dict[str, OwnedHook[int, Self]] = {}
         
         # Initialize BaseCarriesHooks
         super().__init__()
+        
+        # Attach hooks to the mock observable
+        for key, hook in self._hooks.items():
+            hook._owner = self  # type: ignore
     
-    def _get_hook_by_key(self, key: str) -> OwnedHook[int]:
+    def _get_hook_by_key(self, key: str) -> OwnedHook[int, Self]:
         return self._hooks[key]
     
     def _get_value_by_key(self, key: str) -> int:
@@ -35,9 +39,18 @@ class MockObservable(XBase[str, int, "MockObservable"]):
                 return key
         raise ValueError(f"Hook {hook_or_nexus} not found")
     
-    def add_hook(self, key: str, hook: OwnedHook[int]) -> None:
+    def add_hook(self, key: str, hook: OwnedHook[int, Self]) -> None:
         """Add a hook to the mock observable."""
         self._hooks[key] = hook
+
+    def get_values_for_serialization(self) -> Mapping[str, int]:
+        return {key: hook._get_value() for key, hook in self._hooks.items()} # type: ignore
+    
+    def set_values_from_serialization(self, values: Mapping[str, int]) -> None:
+        values_to_submit: dict[str, int] = {}
+        for key, value in values.items():
+            values_to_submit[key] = value
+        self._submit_values(values_to_submit)
 
 
 class TestXFunction:

@@ -41,7 +41,8 @@ Example:
         # observable automatically receives the new value
 """
 
-from typing import Generic, Literal, TypeVar
+from typing import Generic, Literal, TypeVar, Optional
+from logging import Logger
 
 from ..auxiliary.listening_mixin import ListeningMixin
 from ..auxiliary.listening_protocol import ListeningProtocol
@@ -147,7 +148,14 @@ class ValuePublisher(PublisherMixin, PublisherProtocol, ListeningMixin, Listenin
         - This is unidirectional: changes to subscribers don't affect the source
     """
 
-    def __init__(self, value: T, mode: Literal["async", "sync", "direct", "off"] = "sync"):
+    def __init__(
+        self,
+        value: T,
+        preferred_publish_mode: Literal["async", "sync", "direct", "off"],
+        logger: Optional[Logger] = None,
+        cleanup_interval: float = 60.0,
+        max_subscribers_before_cleanup: int = 100
+    ):
         """
         Initialize a new ValuePublisher with an initial value.
         
@@ -171,11 +179,16 @@ class ValuePublisher(PublisherMixin, PublisherProtocol, ListeningMixin, Listenin
                 # Custom objects
                 user = ValuePublisher(User(name="Alice"))
         """
-        self._mode: Literal["async", "sync", "direct", "off"] = mode
         ListeningMixin.__init__(self)
-        PublisherMixin.__init__(self)
+        PublisherMixin.__init__(
+            self,
+            preferred_publish_mode=preferred_publish_mode,
+            logger=logger,
+            cleanup_interval=cleanup_interval,
+            max_subscribers_before_cleanup=max_subscribers_before_cleanup
+        )
         self._value = value
-        self.publish(mode)
+        self.publish()
 
     @property
     def value(self) -> T:
@@ -254,7 +267,7 @@ class ValuePublisher(PublisherMixin, PublisherProtocol, ListeningMixin, Listenin
                 source.value = {"counter": 1}
         """
         self._value = value
-        self.publish(mode=self._mode)
+        self.publish()
 
     def change_value(self, value: T) -> None:
         """
@@ -313,4 +326,4 @@ class ValuePublisher(PublisherMixin, PublisherProtocol, ListeningMixin, Listenin
             - Use whichever style (property or method) fits your code better
         """
         self.value = value
-        self.publish(mode=self._mode)
+        self.publish()
