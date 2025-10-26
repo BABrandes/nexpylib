@@ -198,15 +198,6 @@ class XRootedPaths(XBase[str, str|Path|None], Generic[EK]):
             compute_missing_values_callback=add_values_to_be_updated_callback, # type: ignore
             logger=logger)
 
-        #########################################################
-        # Establish joining
-        #########################################################
-
-        self._join("root_path", self._root_path_hook, "use_target_value") # type: ignore
-        for key in self._rooted_element_keys:
-            self._join(self.element_key_to_relative_path_key(key), self._rooted_element_path_hooks[self.element_key_to_relative_path_key(key)], "use_target_value")
-            self._join(self.element_key_to_absolute_path_key(key), self._rooted_element_path_hooks[self.element_key_to_absolute_path_key(key)], "use_target_value")
-
     ##########################################
     # Conversion methods
     ##########################################

@@ -1,4 +1,4 @@
-from typing import Any, Callable, Generic, Optional, TypeVar, Self
+from typing import Any, Generic, Optional, TypeVar, Self, Callable
 from logging import Logger
 
 from nexpy.core.hooks.protocols.hook_protocol import HookProtocol
@@ -140,6 +140,8 @@ class XSingleValue(XSingletonBase[T], XSingleValueProtocol[T], CarriesSingleHook
         self,
         value: T | HookProtocol[T] | XSingleValueProtocol[T],
         *,
+        validate_value_callback: Optional[Callable[[T], tuple[bool, str]]] = None,
+        invalidate_after_update_callback: Optional[Callable[[], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
 
@@ -163,16 +165,12 @@ class XSingleValue(XSingletonBase[T], XSingleValueProtocol[T], CarriesSingleHook
         # Prepare and initialize base class
         #########################################################
 
-        #-------------------------------- Validation function --------------------------------
-
-        def is_valid_value(x: T) -> tuple[bool, str]:
-            return True, "Verification method passed"
-
         #-------------------------------- Initialize base class --------------------------------
 
         super().__init__(
             value_or_hook=initial_value, # type: ignore
-            validate_value_callback=is_valid_value,
+            validate_value_callback=validate_value_callback,
+            invalidate_after_update_callback=invalidate_after_update_callback, # type: ignore
             logger=logger,
             nexus_manager=nexus_manager
         )
@@ -181,7 +179,7 @@ class XSingleValue(XSingletonBase[T], XSingleValueProtocol[T], CarriesSingleHook
         # Establish joining
         #########################################################
 
-        self._join("value", value_hook, "use_target_value") if value_hook is not None else None # type: ignore
+        self._join("value", value_hook, "use_target_value") if value_hook is not None else None
     #########################################################
     # Access
     #########################################################
@@ -249,8 +247,12 @@ class XSingleValue(XSingletonBase[T], XSingleValueProtocol[T], CarriesSingleHook
         return f"XAnyValue({self.value!r})"
     
     def __hash__(self) -> int:
-        """Make the X object hashable for use in sets and as dictionary keys."""
-        return hash(id(self))
+        """Make XSingleValue hashable using UUID from XSingletonBase."""
+        if hasattr(self, '_uuid'):
+            return hash(self._uuid)
+        else:
+            # Fall back to id during initialization
+            return hash(id(self))
     
     def __eq__(self, other: object) -> bool:
         """Check if this X object equals another object."""

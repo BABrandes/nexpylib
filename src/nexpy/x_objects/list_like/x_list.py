@@ -496,10 +496,9 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         return other * self._primary_hooks["value"].value # type: ignore
     
     def __hash__(self) -> int:
-        """
-        Get the hash value based on the current list contents.
-        
-        Returns:
-            Hash value of the tuple
-        """
-        return hash(self._primary_hooks["value"].value)
+        """Make XList hashable using UUID from XBase."""
+        if hasattr(self, '_uuid'):
+            return hash(self._uuid)
+        else:
+            # Fall back to id during initialization
+            return hash(id(self))

@@ -295,6 +295,9 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
         Returns:
             True if the hook is joined to the other hook or CarriesSingleHookProtocol, False otherwise
         """
+        # Import at runtime to avoid circular imports
+        from nexpy.foundations.carries_single_hook_protocol import CarriesSingleHookProtocol
+        from nexpy.core.nexus_system.nexus import Nexus
 
         if isinstance(target_hook_or_nexus, CarriesSingleHookProtocol):
             target_nexus = target_hook_or_nexus._get_nexus() # type: ignore

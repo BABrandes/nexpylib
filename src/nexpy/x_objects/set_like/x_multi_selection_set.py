@@ -34,23 +34,31 @@ class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_o
 
         if isinstance(selected_options, XSetProtocol):
             initial_selected_options = set[T](selected_options.set)
-            selected_options_hook = selected_options.set_hook
+            selected_options_hook: Optional[HookProtocol[AbstractSet[T]]] = selected_options.set_hook
         elif isinstance(selected_options, HookProtocol):
             initial_selected_options = set[T](selected_options.value)
             selected_options_hook = selected_options
+        elif isinstance(selected_options, AbstractSet):
+            # Plain set provided
+            initial_selected_options = selected_options
+            selected_options_hook = None
         else:
-            raise ValueError("selected_options must be a XSetProtocol or HookProtocol")
+            raise ValueError("selected_options must be a XSetProtocol, HookProtocol, or AbstractSet")
 
         #-------------------------------- available options --------------------------------
 
         if isinstance(available_options, XSetProtocol):
             initial_available_options = set[T](available_options.set)
-            available_options_hook = available_options.set_hook
+            available_options_hook: Optional[HookProtocol[AbstractSet[T]]] = available_options.set_hook
         elif isinstance(available_options, HookProtocol):
             initial_available_options = set[T](available_options.value)
             available_options_hook = available_options
+        elif isinstance(available_options, AbstractSet):
+            # Plain set provided
+            initial_available_options = available_options
+            available_options_hook = None
         else:
-            raise ValueError("available_options must be a XSetProtocol or HookProtocol")
+            raise ValueError("available_options must be a XSetProtocol, HookProtocol, or AbstractSet")
 
         #########################################################
         # Prepare and initialize base class
@@ -89,8 +97,8 @@ class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_o
         # Establish linking
         #########################################################
 
-        self._join("selected_options", selected_options_hook, "use_target_value") # type: ignore
-        self._join("available_options", available_options_hook, "use_target_value") # type: ignore
+        self._join("selected_options", selected_options_hook, "use_target_value") if selected_options_hook is not None else None # type: ignore
+        self._join("available_options", available_options_hook, "use_target_value") if available_options_hook is not None else None # type: ignore
 
     #############################################################
     # XMultiSelectionOptionsProtocol implementation

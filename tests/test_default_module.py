@@ -156,7 +156,7 @@ class TestDefaultModule(ObservableTestCase):
         v2 = nx.FloatingHook(Vector(1.0 + 1e-10, 2.0 + 1e-10))
         
         # Join them - should recognize vectors as equal
-        v1.join(v2)
+        v1.join(v2, "use_caller_value")
         
         # Both should now share the same value
         assert v1.value.x == v2.value.x

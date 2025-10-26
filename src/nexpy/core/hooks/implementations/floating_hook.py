@@ -138,5 +138,8 @@ class FloatingHook(
     def _validate_value_in_isolation(self, value: T) -> tuple[bool, str]:
         """
         Validate the value in isolation.
+
+        ** This method is not thread-safe and should only be called by the _validate_value_in_isolation method.
         """
-        return True, "Value is valid"
+        # Delegate to the mixin's implementation
+        return HookWithIsolatedValidationMixin._validate_value_in_isolation(self, value) # type: ignore
