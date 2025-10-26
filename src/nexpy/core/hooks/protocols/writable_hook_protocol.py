@@ -9,18 +9,12 @@ T = TypeVar("T")
 class WritableHookProtocol(HookProtocol[T], Protocol[T]):
     """
     Protocol for writable hook objects.
+    
+    This protocol extends HookProtocol to add write capability via change_value().
+    Note: The value property setter is not defined here as protocols cannot properly
+    express property setters. Implementations should provide both getter (from HookProtocol)
+    and setter for the value property.
     """
-
-    #-------------------------------- value --------------------------------
-
-    @value.setter # type: ignore
-    def value(self, value: T) -> None: # type: ignore
-        """
-        Set the value behind this hook.
-
-        ** Thread-safe **
-        """
-        ...
 
     def change_value(self, value: T, *, logger: Optional[Logger] = None, raise_submission_error_flag: bool = True) -> tuple[bool, str]:
         """

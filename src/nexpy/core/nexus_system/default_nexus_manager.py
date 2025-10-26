@@ -24,8 +24,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .nexus_manager import NexusManager
-else:
-    from .nexus_manager import NexusManager
 
 FLOAT_ACCURACY: float = 1e-9
 """Tolerance for floating-point equality comparisons (configurable).
@@ -139,6 +137,9 @@ def _value_equality_callback_int_float(value1: int, value2: float, float_accurac
 # =============================================================================
 # Default nexus manager instance (private - access via nexpy.default module)
 # =============================================================================
+
+# Import at runtime here to avoid circular import issues
+from .nexus_manager import NexusManager
 
 _DEFAULT_NEXUS_MANAGER: "NexusManager" = NexusManager(
     value_equality_callbacks= {

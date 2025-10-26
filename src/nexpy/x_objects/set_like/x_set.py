@@ -1,9 +1,10 @@
-from typing import Any, Generic, Optional, TypeVar, Literal, Iterator, Set, Callable, Mapping, Iterable
+from typing import Any, Generic, Optional, TypeVar, Literal, Iterator, Set, Callable, Mapping, Iterable, Self
 from collections.abc import Set as AbstractSet
 from logging import Logger
 
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
+from ...core.hooks.protocols.hook_protocol import HookProtocol
+from ...core.hooks.implementations.owned_read_only_hook import OwnedReadOnlyHook
+from ...core.hooks.implementations.owned_writable_hook import OwnedWritableHook
 from ...foundations.x_composite_base import XCompositeBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
@@ -13,7 +14,7 @@ from .protocols import XSetProtocol
 
 T = TypeVar("T")
    
-class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], int, "XSet"], XSetProtocol[T], Set[T], Generic[T]):
+class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], int], XSetProtocol[T], Set[T], Generic[T]):
     """
     Acting like a set.
 
@@ -22,7 +23,7 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], i
 
     def __init__(
         self,
-        value: AbstractSet[T] | Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]] | XSetProtocol[T] | None = None,
+        value: AbstractSet[T] | HookProtocol[AbstractSet[T]] | XSetProtocol[T] | None = None,
         *,
         custom_validator: Optional[Callable[[Mapping[Literal["value", "length"], AbstractSet[T] | int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
@@ -30,11 +31,11 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], i
 
         if value is None:
             initial_value: AbstractSet[T] = set()
-            hook: Optional[Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]]] = None 
+            hook: Optional[HookProtocol[AbstractSet[T]]] = None 
         elif isinstance(value, XSetProtocol):
             initial_value = value.set
             hook = value.set_hook
-        elif isinstance(value, ManagedHookProtocol):
+        elif isinstance(value, HookProtocol):
             initial_value = value.value
             hook = value
         else:
@@ -45,7 +46,7 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], i
         super().__init__(
             initial_hook_values={"value": initial_value},
             compute_missing_primary_values_callback=None,
-            compute_secondary_values_callback={"length": lambda x: len(x["value"])}, # type: ignore
+            compute_secondary_values_callback={"length": lambda x: len(x["value"])},
             validate_complete_primary_values_callback=lambda x: (True, "Verification method passed") if isinstance(x["value"], AbstractSet) else (False, "Value cannot be used as a set!"),
             output_value_wrapper={"value": lambda x: set(x)}, # type: ignore
             custom_validator=custom_validator,
@@ -63,7 +64,7 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], i
     #-------------------------------- set value --------------------------------
 
     @property
-    def set_hook(self) -> Hook[AbstractSet[T]]:
+    def set_hook(self) -> OwnedWritableHook[AbstractSet[T], Self]:
         """
         Get the hook for the set.
 
@@ -107,16 +108,16 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], i
         """
         Get the current length of the set.
         """
-        return len(self._primary_hooks["value"].value) # type: ignore
+        return len(self._primary_hooks["value"].value)
     
     @property
-    def length_hook(self) -> ReadOnlyHook[int]:
+    def length_hook(self) -> OwnedReadOnlyHook[int, Self]:
         """
         Get the hook for the set length.
         
         This hook can be used for linking operations that react to length changes.
         """
-        return self._secondary_hooks["length"] # type: ignore
+        return self._secondary_hooks["length"]
     
     #########################################################
     # Standard set methods
@@ -290,7 +291,7 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], i
         Returns:
             The number of elements in the set
         """
-        return len(self._primary_hooks["value"].value) # type: ignore
+        return len(self._primary_hooks["value"].value)
     
     def __contains__(self, item: object) -> bool:
         """
@@ -302,7 +303,7 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], i
         Returns:
             True if the element is in the set, False otherwise
         """
-        return item in self._primary_hooks["value"].value # type: ignore
+        return item in self._primary_hooks["value"].value
     
     def __iter__(self) -> Iterator[T]:
         """

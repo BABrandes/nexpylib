@@ -35,8 +35,6 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
 
         #-------------------------------- Initialization start --------------------------------
 
-        ListeningMixin.__init__(self)
-
         #-------------------------------- Initalize nexus --------------------------------
 
         if isinstance(value_or_nexus, "Nexus"):
@@ -55,6 +53,8 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
 
         self._logger = logger
         self._lock = RLock()
+
+        ListeningMixin.__init__(self)
 
         #-------------------------------- Initialization complete --------------------------------
 
@@ -320,7 +320,7 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
         return self._get_nexus_manager().submit_values({self._get_nexus(): value}, mode="Check values", logger=logger)
 
     @staticmethod
-    def _validate_values(values: Mapping["HookProtocol[T]"|CarriesSingleHookProtocol[T], T], *, logger: Optional[Logger] = None) -> tuple[bool, str]:
+    def _validate_values(values: Mapping["HookProtocol[T]|CarriesSingleHookProtocol[T]", T], *, logger: Optional[Logger] = None) -> tuple[bool, str]:
         """
         Check if the values are valid for submission.
 

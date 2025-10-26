@@ -249,7 +249,6 @@ from nexpy.core.hooks.implementations.floating_hook import FloatingHook
 
 from .core.publisher_subscriber.publisher_protocol import PublisherProtocol
 from .core.publisher_subscriber.value_publisher import ValuePublisher
-from .core.publisher_subscriber.publisher import Publisher
 
 from .core.nexus_system.update_function_values import UpdateFunctionValues
 from .core.nexus_system.system_analysis import write_report
@@ -311,7 +310,6 @@ __all__ = [
     # Publisher/Subscriber
     'PublisherProtocol',
     'ValuePublisher',
-    'Publisher',
 
     # Utilities
     'write_report',

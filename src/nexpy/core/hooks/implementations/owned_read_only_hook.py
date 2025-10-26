@@ -1,4 +1,4 @@
-from typing import TypeVar, Any, Optional, Callable
+from typing import TypeVar, Any, Optional, Callable, Literal
 from logging import Logger
 import warnings
 
@@ -71,17 +71,6 @@ class OwnedReadOnlyHook(HookBase[T], OwnedHookProtocol[T, O], ReactiveHookProtoc
     #########################################################
     # ReactiveHookProtocol methods
     #########################################################
-
-    def _react_to_value_change(self) -> None:
-        """
-        React to the value change.
-
-        ** This method is not thread-safe and should only be called by the _react_to_value_change method.
-        """
-        try:
-            self._react_to_value_change()
-        except Exception as e:
-            warnings.warn(f"Error in '_react_to_value_change' of owned read only hook '{self}': {e}", stacklevel=2)
 
     def set_reaction_callback(self, reaction_callback: Callable[[], tuple[bool, str]]) -> None:
         """

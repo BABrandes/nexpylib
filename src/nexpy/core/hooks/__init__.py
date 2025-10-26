@@ -37,7 +37,7 @@ from .implementations.owned_writable_hook import OwnedWritableHook
 from .foundation.hook_base import HookBase
 
 # Mixins (typically internal use, but exposed for extending the system)
-from .mixins.hook_with_isolated_validation_protocol import HookWithIsolatedValidationProtocol
+from .protocols.isolated_validatable_hook_protocol import IsolatedValidatableHookProtocol
 from .mixins.hook_with_owner_mixin import HookWithOwnerMixin
 from .mixins.hook_with_reaction_mixin import HookWithReactionMixin
 from .mixins.hook_with_setter_mixin import HookWithSetterMixin
@@ -58,7 +58,7 @@ __all__ = [
     'HookBase',
     
     # Mixins (Advanced API for extending)
-    'HookWithIsolatedValidationProtocol',
+    'IsolatedValidatableHookProtocol',
     'HookWithOwnerMixin',
     'HookWithReactionMixin',
     'HookWithSetterMixin',

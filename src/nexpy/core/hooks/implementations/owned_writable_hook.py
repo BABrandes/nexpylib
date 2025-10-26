@@ -79,8 +79,13 @@ class OwnedWritableHook(HookBase[T], OwnedHookProtocol[T, O], WritableHookProtoc
     # WritableHookProtocol methods
     #########################################################
 
-    @value.setter # type: ignore
-    def value(self, value: T) -> None: # type: ignore
+    @property
+    def value(self) -> T:
+        """Get the value (inherited from HookBase but redeclared for setter)."""
+        return super().value
+    
+    @value.setter
+    def value(self, value: T) -> None:
         """
         Set the value behind this hook.
 
@@ -107,18 +112,7 @@ class OwnedWritableHook(HookBase[T], OwnedHookProtocol[T, O], WritableHookProtoc
     #########################################################
     # ReactiveHookProtocol methods
     #########################################################
-
-    def _react_to_value_change(self) -> None:
-        """
-        React to the value change.
-
-        ** This method is not thread-safe and should only be called by the _react_to_value_change method.
-        """
-        try:
-            self._react_to_value_change()
-        except Exception as e:
-            warnings.warn(f"Error in '_react_to_value_change' of owned writable hook '{self}': {e}", stacklevel=2)
-
+    
     def set_reaction_callback(self, reaction_callback: Callable[[], tuple[bool, str]]) -> None:
         """
         Set the reaction callback.
