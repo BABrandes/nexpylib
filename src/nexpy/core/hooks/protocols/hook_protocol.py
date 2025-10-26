@@ -1,4 +1,3 @@
-from asyncio import proactor_events
 from typing import Protocol, TypeVar, runtime_checkable, TYPE_CHECKING, Literal, Mapping
 
 if TYPE_CHECKING:

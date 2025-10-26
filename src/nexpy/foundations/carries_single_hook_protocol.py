@@ -1,8 +1,7 @@
 from typing import Optional, Protocol, TypeVar, runtime_checkable, Any, Literal, Self
 from logging import Logger
 
-from ..core.hooks.protocols.hook_protocol import HookProtocol
-from ..core.hooks.protocols.owned_hook_protocol import OwnedHookProtocol
+from ..core.hooks import HookProtocol, OwnedHookProtocol
 from .carries_some_hooks_protocol import CarriesSomeHooksProtocol
 from ..core.nexus_system.nexus import Nexus
 

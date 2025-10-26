@@ -2,11 +2,7 @@ from typing import Callable, Generic, Literal, Mapping, Optional, TypeVar, Self,
 from logging import Logger
 from threading import RLock
 
-from nexpy.core.hooks.foundation.hook_base import HookBase
-from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
-
-from ..core.hooks.protocols.hook_protocol import HookProtocol
-from ..core.hooks.protocols.owned_hook_protocol import OwnedHookProtocol
+from ..core.hooks import HookBase, OwnedWritableHook, HookProtocol, OwnedHookProtocol
 from ..core.nexus_system.nexus import Nexus
 from ..core.nexus_system.nexus_manager import NexusManager
 from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore

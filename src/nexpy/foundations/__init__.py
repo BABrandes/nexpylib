@@ -21,7 +21,7 @@ from .x_composite_base import XCompositeBase
 from .x_adapter_base import XAdapterBase
 from .carries_some_hooks_protocol import CarriesSomeHooksProtocol
 from .carries_single_hook_protocol import CarriesSingleHookProtocol
-from .x_object_serializable_mixin import XObjectSerializableMixin
+from .serializable_protocol import SerializableProtocol
 
 __all__ = [
     'XBase',
@@ -30,5 +30,5 @@ __all__ = [
     'XAdapterBase',
     'CarriesSomeHooksProtocol',
     'CarriesSingleHookProtocol',
-    'XObjectSerializableMixin',
+    'SerializableProtocol',
 ]

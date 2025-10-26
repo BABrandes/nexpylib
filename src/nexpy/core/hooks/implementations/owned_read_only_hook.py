@@ -28,9 +28,6 @@ class OwnedReadOnlyHook(HookBase[T], OwnedHookProtocol[T, O], ReactiveHookProtoc
 
         #-------------------------------- Initialization start --------------------------------
 
-        self._owner = owner
-        self._lock = RLock()
-
         #-------------------------------- Initialize base class --------------------------------
 
         HookBase.__init__( # type: ignore

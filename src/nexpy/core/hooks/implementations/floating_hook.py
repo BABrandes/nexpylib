@@ -28,8 +28,6 @@ class FloatingHook(HookBase[T], WritableHookProtocol[T], ReactiveHookProtocol[T]
 
         #-------------------------------- Initialization start --------------------------------
 
-        self._lock = RLock()
-
         #-------------------------------- Initialize base class --------------------------------
 
         HookBase.__init__( # type: ignore

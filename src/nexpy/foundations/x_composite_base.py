@@ -1,10 +1,7 @@
 from typing import Callable, Generic, Mapping, Optional, TypeVar, Literal, Self, Any
 from logging import Logger
 
-from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
-from nexpy.core.hooks.implementations.owned_read_only_hook import OwnedReadOnlyHook
-from nexpy.core.hooks.protocols.owned_hook_protocol import OwnedHookProtocol
-
+from ..core.hooks import OwnedWritableHook, OwnedReadOnlyHook, OwnedHookProtocol, HookProtocol
 from ..core.nexus_system.nexus import Nexus
 from ..core.nexus_system.nexus_manager import NexusManager
 from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
@@ -12,7 +9,6 @@ from ..core.nexus_system.submission_error import SubmissionError
 
 from .x_base import XBase
 from ..core.nexus_system.update_function_values import UpdateFunctionValues
-from ..core.hooks.protocols.hook_protocol import HookProtocol
 
 PHK = TypeVar("PHK")
 SHK = TypeVar("SHK")
@@ -514,7 +510,7 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
             hook = OwnedWritableHook[PHV, Self](self, initial_value, logger, nexus_manager) # type: ignore
             self._primary_hooks[key] = hook
             
-            if isinstance(value, OwnedHookProtocol): # type: ignore
+            if isinstance(value, OwnedHookProtocol):
                 value._join(hook, "use_target_value") # type: ignore
 
         self._secondary_hook_callbacks: dict[SHK, Callable[[Mapping[PHK, PHV]], SHV]] = {}

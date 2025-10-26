@@ -9,9 +9,8 @@ from .serializable_protocol import SerializableProtocol
 from ..core.nexus_system.nexus_manager import NexusManager
 from ..core.nexus_system.nexus import Nexus
 from ..core.nexus_system.update_function_values import UpdateFunctionValues
-from ..core.hooks.protocols.owned_hook_protocol import OwnedHookProtocol
+from ..core.hooks import OwnedHookProtocol, HookProtocol
 from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
-from ..core.hooks.protocols.hook_protocol import HookProtocol
 from ..core.auxiliary.utils import make_weak_callback
 
 from .carries_some_hooks_protocol import CarriesSomeHooksProtocol

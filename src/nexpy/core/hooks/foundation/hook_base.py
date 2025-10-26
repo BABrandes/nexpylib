@@ -225,13 +225,13 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
         
         # Deadlock prevention: Check if hooks are already joined
         # If they share the same nexus, joining again is a no-op (but not an error)
-        if self._nexus is target_hook._get_nexus(): # type: ignore
+        if self._nexus is target_hook._get_nexus():
             return True, "Hooks already joined"
         
         if initial_sync_mode == "use_caller_value":
-            success, msg = Nexus[T].join_hook_pairs((self, target_hook)) # type: ignore
+            success, msg = Nexus[T].join_hook_pairs((self, target_hook))
         elif initial_sync_mode == "use_target_value":                
-            success, msg = Nexus[T].join_hook_pairs((target_hook, self)) # type: ignore
+            success, msg = Nexus[T].join_hook_pairs((target_hook, self))
         else:
             raise ValueError(f"Invalid sync mode: {initial_sync_mode}")
 
@@ -254,13 +254,13 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
         # If we're being garbage collected and not in the nexus anymore,
         # it means other hooks were already garbage collected and their weak
         # references were cleaned up. This is fine - just skip the disconnect.
-        if is_being_garbage_collected and self not in self._nexus.hooks: # type: ignore
+        if is_being_garbage_collected and self not in self._nexus.hooks:
             return
         
-        if self not in self._nexus.hooks: # type: ignore
+        if self not in self._nexus.hooks:
             raise ValueError("Hook was not found in its own hook nexus!")
         
-        if len(self._nexus.hooks) <= 1: # type: ignore
+        if len(self._nexus.hooks) <= 1:
             # If we're the last hook, we're already effectively disconnected
             return
         
@@ -268,10 +268,10 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
         new_hook_nexus = Nexus(self._get_value(), hooks={self}, nexus_manager=self._get_nexus_manager(), logger=self._logger)
         
         # Remove this hook from the current nexus
-        self._nexus.remove_hook(self) # type: ignore
+        self._nexus.remove_hook(self)
         
         # Update this hook's nexus reference
-        self._hook_nexus = new_hook_nexus
+        self._nexus = new_hook_nexus
 
         # The remaining hooks in the old nexus will continue to be bound together
         # This effectively breaks the connection between this hook and all others
@@ -307,7 +307,7 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
         ** This method is not thread-safe and should only be called by the is_joined method.
         """
 
-        return len(self._nexus.hooks) > 1 # type: ignore
+        return len(self._nexus.hooks) > 1
 
     def _validate_value(self, value: T, *, logger: Optional[Logger] = None) -> tuple[bool, str]:
         """

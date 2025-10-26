@@ -3,8 +3,7 @@ from logging import Logger
 
 from ..core.auxiliary.listening_protocol import ListeningProtocol
 from ..core.nexus_system.update_function_values import UpdateFunctionValues
-from ..core.hooks.protocols.owned_hook_protocol import OwnedHookProtocol
-from ..core.hooks.protocols.hook_protocol import HookProtocol
+from ..core.hooks import OwnedHookProtocol, HookProtocol
 from ..core.nexus_system.nexus import Nexus
 
 if TYPE_CHECKING:
