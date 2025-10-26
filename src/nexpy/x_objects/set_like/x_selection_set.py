@@ -47,14 +47,20 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
 
         #-------------------------------- available options --------------------------------
 
-        if isinstance(available_options, XSetProtocol):
+        if available_options is None:
+            raise ValueError("available_options is required")
+        elif isinstance(available_options, XSetProtocol):
             initial_available_options: AbstractSet[T] = available_options.set # type: ignore
             available_options_hook: Optional[HookProtocol[AbstractSet[T]]] = available_options.set_hook
         elif isinstance(available_options, HookProtocol):
             initial_available_options: AbstractSet[T] = available_options.value
             available_options_hook = available_options
+        elif isinstance(available_options, AbstractSet):
+            # Plain set provided
+            initial_available_options = available_options
+            available_options_hook = None
         else:
-            raise ValueError("available_options must be a XSetProtocol or HookProtocol")
+            raise ValueError("available_options must be a XSetProtocol, HookProtocol, or AbstractSet")
 
         #########################################################
         # Prepare and initialize base class

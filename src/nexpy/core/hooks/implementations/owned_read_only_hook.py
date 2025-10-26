@@ -30,6 +30,7 @@ class OwnedReadOnlyHook(HookBase[T], OwnedHookProtocol[T, O], ReactiveHookProtoc
         #-------------------------------- Initialize base class --------------------------------
 
         HookBase.__init__( # type: ignore
+            self=self,
             value_or_nexus=value,
             logger=logger,
             nexus_manager=nexus_manager)

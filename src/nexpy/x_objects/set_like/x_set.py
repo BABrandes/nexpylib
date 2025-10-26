@@ -451,3 +451,8 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], i
         if isinstance(other, XSet):
             return self._primary_hooks["value"].value ^ other._primary_hooks["value"].value # type: ignore
         return self._primary_hooks["value"].value ^ set(other) # type: ignore
+    
+    # Override __hash__ to use UUID instead of Set's __hash__ = None
+    def __hash__(self) -> int:
+        """Make XSet hashable using UUID from XBase."""
+        return super().__hash__()

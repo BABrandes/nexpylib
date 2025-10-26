@@ -1,5 +1,6 @@
 from typing import Any, TypeVar, Optional, final, Mapping, Generic, Callable, Literal, Self
 import warnings
+import uuid
 from logging import Logger
 from abc import abstractmethod
 from threading import RLock
@@ -119,6 +120,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, SerializableProtoc
         self._compute_missing_values_callback = make_weak_callback(compute_missing_values_callback)
         self._logger: Optional[Logger] = logger
         self._nexus_manager: NexusManager = nexus_manager
+        self._uuid: uuid.UUID = uuid.uuid4()
 
         self._lock = RLock()
 
@@ -525,3 +527,29 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, SerializableProtoc
             The key for the hook or nexus
         """
         ...
+
+    #########################################################
+    # Hash and equality support (using UUID)
+    #########################################################
+
+    def __hash__(self) -> int:
+        """
+        Make XBase hashable using UUID.
+        
+        This allows XObjects to be used in sets and as dictionary keys.
+        """
+        return hash(self._uuid)
+    
+    def __eq__(self, other: Any) -> bool:
+        """
+        Compare XBase instances by UUID.
+        
+        Args:
+            other: Another object to compare with
+            
+        Returns:
+            True if both objects are XBase instances with the same UUID, False otherwise
+        """
+        if not isinstance(other, XBase):
+            return False
+        return self._uuid == other._uuid
