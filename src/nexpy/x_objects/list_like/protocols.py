@@ -1,6 +1,6 @@
 from typing import TypeVar, Protocol, runtime_checkable, Sequence
 
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
+from nexpy.core.hooks.protocols.hook_protocol import HookProtocol
 
 
 T = TypeVar("T")
@@ -11,7 +11,7 @@ class XListProtocol(Protocol[T]):
     #-------------------------------- list value --------------------------------
 
     @property
-    def list_hook(self) -> Hook[Sequence[T]]:
+    def list_hook(self) -> HookProtocol[Sequence[T]]:
         """
         Get the hook for the list - it can contain any iterable as long as it can be converted to a list.
         """
@@ -47,7 +47,7 @@ class XListProtocol(Protocol[T]):
         ...
 
     @property
-    def length_hook(self) -> ReadOnlyHook[int]:
+    def length_hook(self) -> HookProtocol[int]:
         """
         Get the hook for the list length.
         """

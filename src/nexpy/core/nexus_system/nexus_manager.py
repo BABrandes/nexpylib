@@ -4,7 +4,7 @@ import weakref
 from threading import RLock, local
 from logging import Logger
 
-from ..hooks.hook_aliases import Hook
+from ..hooks.protocols.hook_protocol import HookProtocol
 from .nexus import Nexus
 
 class NexusManager:
@@ -608,7 +608,7 @@ class NexusManager:
     ########################################################################################################################
 
     @staticmethod
-    def get_nexus_and_values(hooks: set["Hook[Any]"]) -> dict[Nexus[Any], Any]:
+    def get_nexus_and_values(hooks: set["HookProtocol[Any]"]) -> dict[Nexus[Any], Any]:
         """
         Get the nexus and values dictionary for a set of hooks.
         """

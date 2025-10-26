@@ -2,7 +2,7 @@ from typing import TypeVar, Optional, Protocol, Mapping, Sequence, runtime_check
 from collections.abc import Set as AbstractSet
 from logging import Logger
 
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
+from ...core.hooks.protocols.hook_protocol import HookProtocol
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -14,7 +14,7 @@ class XDictProtocol(Protocol[K, V]):
     #-------------------------------- Dict --------------------------------
     
     @property
-    def dict_hook(self) -> Hook[Mapping[K, V]]:
+    def dict_hook(self) -> HookProtocol[Mapping[K, V]]:
         """
         Get the hook for the dictionary.
         """
@@ -48,7 +48,7 @@ class XDictProtocol(Protocol[K, V]):
         ...
     
     @property
-    def length_hook(self) -> ReadOnlyHook[int]:
+    def length_hook(self) -> HookProtocol[int]:
         """
         Get the hook for the dictionary length.
         """
@@ -64,7 +64,7 @@ class XDictProtocol(Protocol[K, V]):
         ...
     
     @property
-    def keys_hook(self) -> ReadOnlyHook[AbstractSet[K]]:
+    def keys_hook(self) -> HookProtocol[AbstractSet[K]]:
         """
         Get the hook for the dictionary keys.
         """
@@ -80,7 +80,7 @@ class XDictProtocol(Protocol[K, V]):
         ...
     
     @property
-    def values_hook(self) -> ReadOnlyHook[Sequence[V]]:
+    def values_hook(self) -> HookProtocol[Sequence[V]]:
         """
         Get the hook for the dictionary values.
         """
@@ -95,7 +95,7 @@ class XSelectionDictProtocol(XDictProtocol[K, V], Protocol[K, V]):
     #-------------------------------- Key --------------------------------
 
     @property
-    def key_hook(self) -> "Hook[K]":
+    def key_hook(self) -> HookProtocol[K]:
         """Get the key hook."""
         ...
 
@@ -116,7 +116,7 @@ class XSelectionDictProtocol(XDictProtocol[K, V], Protocol[K, V]):
     #-------------------------------- Value --------------------------------
 
     @property
-    def value_hook(self) -> "Hook[V]":
+    def value_hook(self) -> HookProtocol[V]:
         """Get the value hook."""
         ...
     
@@ -149,7 +149,7 @@ class XOptionalSelectionDictProtocol(XDictProtocol[K, V], Protocol[K, V]):
     #-------------------------------- Key --------------------------------
 
     @property
-    def key_hook(self) -> "Hook[Optional[K]]":
+    def key_hook(self) -> HookProtocol[Optional[K]]:
         """Get the key hook."""
         ...
     
@@ -171,7 +171,7 @@ class XOptionalSelectionDictProtocol(XDictProtocol[K, V], Protocol[K, V]):
     #-------------------------------- Value --------------------------------
 
     @property
-    def value_hook(self) -> "Hook[Optional[V]]":
+    def value_hook(self) -> HookProtocol[Optional[V]]:
         """Get the value hook."""
         ...
     
@@ -204,7 +204,7 @@ class XSelectionDictWithDefaultProtocol(XDictProtocol[K, V], Protocol[K, V]):
     #-------------------------------- Key --------------------------------
 
     @property
-    def key_hook(self) -> "Hook[K]":
+    def key_hook(self) -> HookProtocol[K]:
         """Get the key hook."""
         ...
     
@@ -225,7 +225,7 @@ class XSelectionDictWithDefaultProtocol(XDictProtocol[K, V], Protocol[K, V]):
     #-------------------------------- Value --------------------------------
 
     @property
-    def value_hook(self) -> "Hook[V]":
+    def value_hook(self) -> HookProtocol[V]:
         """Get the value hook."""
         ...
     
@@ -258,7 +258,7 @@ class XOptionalSelectionDictWithDefaultProtocol(XDictProtocol[K, V], Protocol[K,
     #-------------------------------- Key --------------------------------
 
     @property
-    def key_hook(self) -> "Hook[Optional[K]]":
+    def key_hook(self) -> HookProtocol[Optional[K]]:
         """Get the key hook."""
         ...
     
@@ -279,7 +279,7 @@ class XOptionalSelectionDictWithDefaultProtocol(XDictProtocol[K, V], Protocol[K,
     #-------------------------------- Value --------------------------------
     
     @property
-    def value_hook(self) -> "Hook[Optional[V]]":
+    def value_hook(self) -> HookProtocol[Optional[V]]:
         """Get the value hook."""
         ...
     

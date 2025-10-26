@@ -1,13 +1,11 @@
-from typing import Optional
+from typing import Optional, Self
 from logging import Logger
 
 from ...foundations.x_adapter_base import XAdapterBase
-from ...core.hooks.hook_protocols.owned_full_hook_protocol import OwnedFullHookProtocol
-from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
-
+from ...core.hooks.protocols.hook_protocol import HookProtocol
+from ...core.hooks.implementations.owned_writable_hook import OwnedWritableHook
 
 class XIntFloatAdapter(XAdapterBase[int, float]):
     """
@@ -112,19 +110,19 @@ class XIntFloatAdapter(XAdapterBase[int, float]):
     
     def __init__(
         self,
-        hook_int_or_value: Hook[int] | ReadOnlyHook[int] | int | None,
-        hook_float: Hook[float] | ReadOnlyHook[float] | float | None = None,
+        hook_int_or_value: HookProtocol[int] | int | None,
+        hook_float: HookProtocol[float] | float | None = None,
         *,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ):
         # Collect the external hooks
-        external_hook_int: Optional[ManagedHookProtocol[int]] = None
-        external_hook_float: Optional[ManagedHookProtocol[float]] = None
+        external_hook_int: Optional[HookProtocol[int]] = None
+        external_hook_float: Optional[HookProtocol[float]] = None
         
-        if isinstance(hook_int_or_value, ManagedHookProtocol):
+        if isinstance(hook_int_or_value, HookProtocol):
             external_hook_int = hook_int_or_value
-        if isinstance(hook_float, ManagedHookProtocol):
+        if isinstance(hook_float, HookProtocol):
             external_hook_float = hook_float
         
         # Determine initial value
@@ -132,7 +130,7 @@ class XIntFloatAdapter(XAdapterBase[int, float]):
         initial_float: float
         
         if hook_float is not None and hook_int_or_value is None:
-            if isinstance(hook_float, ManagedHookProtocol):
+            if isinstance(hook_float, HookProtocol):
                 initial_float = hook_float.value
             else:
                 initial_float = hook_float
@@ -142,19 +140,19 @@ class XIntFloatAdapter(XAdapterBase[int, float]):
             initial_int = int(initial_float)
         
         elif hook_float is None and hook_int_or_value is not None:
-            if isinstance(hook_int_or_value, ManagedHookProtocol):
+            if isinstance(hook_int_or_value, HookProtocol):
                 initial_int = hook_int_or_value.value
             else:
                 initial_int = hook_int_or_value
             initial_float = float(initial_int)
         
         elif hook_float is not None and hook_int_or_value is not None:
-            if isinstance(hook_int_or_value, ManagedHookProtocol):
+            if isinstance(hook_int_or_value, HookProtocol):
                 initial_int = hook_int_or_value.value
             else:
                 initial_int = hook_int_or_value
             
-            if isinstance(hook_float, ManagedHookProtocol):
+            if isinstance(hook_float, HookProtocol):
                 initial_float = hook_float.value
             else:
                 initial_float = hook_float
@@ -214,12 +212,12 @@ class XIntFloatAdapter(XAdapterBase[int, float]):
     #########################################################################
     
     @property
-    def hook_int(self) -> OwnedFullHookProtocol[int]:
+    def hook_int(self) -> OwnedWritableHook[int, Self]:
         """Get the int hook (left side)."""
         return self._primary_hooks["left"]  # type: ignore
     
     @property
-    def hook_float(self) -> OwnedFullHookProtocol[float]:
+    def hook_float(self) -> OwnedWritableHook[float, Self]:
         """Get the float hook (right side)."""
         return self._primary_hooks["right"]
 

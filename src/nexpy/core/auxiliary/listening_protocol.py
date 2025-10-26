@@ -1,5 +1,4 @@
 from typing import Callable, Protocol, runtime_checkable
-from typing_extensions import deprecated
 
 @runtime_checkable
 class ListeningProtocol(Protocol):
@@ -15,13 +14,6 @@ class ListeningProtocol(Protocol):
         """
         ...
 
-    @deprecated("Will be removed in the future. Use add_listener instead.")
-    def add_listeners(self, *callbacks: Callable[[], None]) -> None:
-        """
-        Add one or more listeners to the observable.
-        """
-        ...
-
     def add_listener(self, *callbacks: Callable[[], None]) -> None:
         """
         Add one or more listeners to the observable.
@@ -34,7 +26,7 @@ class ListeningProtocol(Protocol):
         """
         ...
 
-    def remove_listeners(self, *callbacks: Callable[[], None]) -> None:
+    def remove_listener(self, *callbacks: Callable[[], None]) -> None:
         """
         Remove one or more listeners from the observable.
         """

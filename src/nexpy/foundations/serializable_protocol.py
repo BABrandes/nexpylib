@@ -1,14 +1,15 @@
-from typing import Mapping, Generic, TypeVar
+from typing import Mapping, TypeVar, Protocol, runtime_checkable
 
 HK = TypeVar("HK")
-HV = TypeVar("HV", covariant=True)
+HV = TypeVar("HV")
 
-class XObjectSerializableMixin(Generic[HK, HV]):
+@runtime_checkable
+class SerializableProtocol(Protocol[HK, HV]):
     """
-    Protocol for observables that support serialization and deserialization.
+    Protocol for object state that support serialization and deserialization.
     
-    This class provides a standardized interface for saving and restoring observable
-    states. It enables observables to be persisted to storage (files, databases, etc.)
+    This protocol provides a standardized interface for saving and restoring object
+    state. It enables object state to be persisted to storage (files, databases, etc.)
     and reconstructed later with the same values.
     
     The serialization system is designed to be:

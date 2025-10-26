@@ -1,20 +1,30 @@
-from typing import Optional, Protocol, TypeVar, runtime_checkable, Any, Literal
+from typing import Optional, Protocol, TypeVar, runtime_checkable, Any, Literal, Self
 from logging import Logger
 
-from ..core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ..core.hooks.hook_protocols.owned_hook_protocol import OwnedHookProtocol
-from ..core.nexus_system.has_nexus_protocol import HasNexusProtocol
+from ..core.hooks.protocols.hook_protocol import HookProtocol
+from ..core.hooks.protocols.owned_hook_protocol import OwnedHookProtocol
 from .carries_some_hooks_protocol import CarriesSomeHooksProtocol
+from ..core.nexus_system.nexus import Nexus
 
 T = TypeVar("T")
 
 @runtime_checkable
-class CarriesSingleHookProtocol(CarriesSomeHooksProtocol[Any, T], HasNexusProtocol[T], Protocol[T]):
+class CarriesSingleHookProtocol(CarriesSomeHooksProtocol[Any, T], Protocol[T]):
     """
     Protocol for objects that carry a single hook.
+    
+    
+    Generic type parameters:
+        T: The type of the value
     """
 
-    def _get_single_hook(self) -> OwnedHookProtocol[T]:
+    def _get_nexus(self) -> Nexus[T]:
+        """
+        Get the nexus that this single value hook belongs to.
+        """
+        ...
+
+    def _get_single_hook(self) -> OwnedHookProtocol[T, Self]:
         """
         Get the hook for the single value.
 
@@ -36,7 +46,7 @@ class CarriesSingleHookProtocol(CarriesSomeHooksProtocol[Any, T], HasNexusProtoc
         """
         ...
 
-    def join(self, target_hook: "Hook[T] | ReadOnlyHook[T] | CarriesSingleHookProtocol[T]", sync_mode: Literal["use_caller_value", "use_target_value"] = "use_caller_value") -> None:
+    def join(self, target_hook: "HookProtocol[T] | CarriesSingleHookProtocol[T]", sync_mode: Literal["use_caller_value", "use_target_value"] = "use_caller_value") -> None:
         """
         Join the single hook to the target hook.
 
@@ -54,7 +64,7 @@ class CarriesSingleHookProtocol(CarriesSomeHooksProtocol[Any, T], HasNexusProtoc
         """
         ...
 
-    def is_joined_with(self, hook: "Hook[T] | ReadOnlyHook[T] | CarriesSingleHookProtocol[T]") -> bool:
+    def is_joined_with(self, hook: "HookProtocol[T] | CarriesSingleHookProtocol[T]") -> bool:
         """
         Check if the single hook is joined with the target hook.
 

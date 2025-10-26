@@ -1,12 +1,11 @@
-from typing import Protocol, TypeVar, Any, Optional, runtime_checkable
+from typing import Protocol, TypeVar, Optional, runtime_checkable
 from logging import Logger
-from ...core.hooks.hook_aliases import ReadOnlyHook, Hook
+from nexpy.core.hooks.protocols.hook_protocol import HookProtocol
 
 T = TypeVar("T")
-HT = TypeVar("HT", bound=Hook[Any]|ReadOnlyHook[Any], covariant=True)
 
 @runtime_checkable
-class XSingleValueProtocol(Protocol[T, HT]):
+class XSingleValueProtocol(Protocol[T]):
     """
     Protocol for single-value objects.
     """
@@ -14,7 +13,7 @@ class XSingleValueProtocol(Protocol[T, HT]):
     #-------------------------------- value --------------------------------
 
     @property
-    def value_hook(self) -> HT:
+    def value_hook(self) -> HookProtocol[T]:
         """
         Get the hook for the single-value object.
         """

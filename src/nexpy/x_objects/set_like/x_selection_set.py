@@ -1,63 +1,67 @@
 
 
-from typing import Generic, Optional, TypeVar, Any, Literal, Mapping, Callable
+from typing import Generic, Optional, TypeVar, Any, Literal, Mapping, Callable, Self
 from collections.abc import Set as AbstractSet
 from logging import Logger
 
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
+from nexpy.core.hooks.protocols.hook_protocol import HookProtocol
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
+from nexpy.core.hooks.implementations.owned_read_only_hook import OwnedReadOnlyHook
 from ...foundations.x_composite_base import XCompositeBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from .protocols import XSelectionOptionsProtocol
+from ..set_like.protocols import XSetProtocol
+from ..single_value_like.protocols import XSingleValueProtocol
 
 T = TypeVar("T")
 
-class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options"], Literal["number_of_available_options"], T | AbstractSet[T], int, "XSelectionSet[T]"], XSelectionOptionsProtocol[T], Generic[T]):
+class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options"], Literal["number_of_available_options"], T | AbstractSet[T], int], XSelectionOptionsProtocol[T], Generic[T]):
 
     def __init__(
         self,
-        selected_option: T | Hook[T] | ReadOnlyHook[T] | XSelectionOptionsProtocol[T],
-        available_options: AbstractSet[T] | Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]] | None = None,
+        selected_option: T | HookProtocol[T] | XSingleValueProtocol[T],
+        available_options: AbstractSet[T] | HookProtocol[AbstractSet[T]] | XSetProtocol[T] | None = None,
         *,
         custom_validator: Optional[Callable[[Mapping[Literal["selected_option", "available_options", "number_of_available_options"], T | AbstractSet[T] | int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
 
-        
-        if isinstance(selected_option, XSelectionOptionsProtocol):
-            initial_selected_option: T = selected_option.selected_option # type: ignore
-            initial_available_options: AbstractSet[T] = selected_option.available_options # type: ignore
-            hook_selected_option: Optional[Hook[T]] = selected_option.selected_option_hook # type: ignore
-            hook_available_options: Optional[Hook[AbstractSet[T]]] = selected_option.available_options_hook # type: ignore
+        #########################################################
+        # Get initial values and hooks
+        #########################################################
 
+        #-------------------------------- selected option --------------------------------
+
+        if isinstance(selected_option, XSingleValueProtocol):
+            initial_selected_option: T = selected_option.value # type: ignore
+            selected_option_hook: Optional[HookProtocol[T]] = selected_option.value_hook # type: ignore
+
+        elif isinstance(selected_option, HookProtocol):
+            initial_selected_option = selected_option.value # type: ignore
+            selected_option_hook = selected_option # type: ignore
         else:
-            if selected_option is None:
-                raise ValueError("selected_option parameter is required when selected_option is not an XSelectionOptionsProtocol")
-            
-            elif isinstance(selected_option, ManagedHookProtocol):
-                initial_selected_option: T = selected_option.value # type: ignore
-                hook_selected_option = selected_option # type: ignore
+            initial_selected_option = selected_option
+            selected_option_hook = None
 
-            else:
-                # selected_option is a T
-                initial_selected_option = selected_option
-                hook_selected_option = None
+        #-------------------------------- available options --------------------------------
 
-            if available_options is None:
-                initial_available_options = set()
-                hook_available_options = None
+        if isinstance(available_options, XSetProtocol):
+            initial_available_options: AbstractSet[T] = available_options.set # type: ignore
+            available_options_hook: Optional[HookProtocol[AbstractSet[T]]] = available_options.set_hook
+        elif isinstance(available_options, HookProtocol):
+            initial_available_options: AbstractSet[T] = available_options.value
+            available_options_hook = available_options
+        else:
+            raise ValueError("available_options must be a XSetProtocol or HookProtocol")
 
-            elif isinstance(available_options, ManagedHookProtocol):
-                initial_available_options = available_options.value
-                hook_available_options = available_options # type: ignore
+        #########################################################
+        # Prepare and initialize base class
+        #########################################################
 
-            else:
-                # available_options is an AbstractSet[T]
-                initial_available_options: AbstractSet[T] = set(available_options)
-                hook_available_options = None
-                
+        #-------------------------------- Validation function --------------------------------
+
         def is_valid_value(x: Mapping[Literal["selected_option", "available_options"], Any]) -> tuple[bool, str]:
             selected_option = x["selected_option"]
             available_options = x["available_options"]
@@ -69,6 +73,8 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
                 return False, f"Selected option '{selected_option}' not in available options '{available_options}'!"
 
             return True, "Verification method passed"
+
+        #-------------------------------- Initialize base class --------------------------------
 
         super().__init__(
             initial_hook_values={"selected_option": initial_selected_option, "available_options": initial_available_options}, # type: ignore
@@ -83,10 +89,12 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
             nexus_manager=nexus_manager
         )
 
-        if hook_selected_option is not None:
-            self._join("selected_option", hook_selected_option, "use_target_value") # type: ignore
-        if hook_available_options is not None:
-            self._join("available_options", hook_available_options, "use_target_value") # type: ignore
+        #########################################################
+        # Establish joining
+        #########################################################
+
+        self._join("selected_option", selected_option_hook, "use_target_value") if selected_option_hook is not None else None # type: ignore
+        self._join("available_options", available_options_hook, "use_target_value") if available_options_hook is not None else None # type: ignore
 
     #########################################################
     # XSelectionOptionsProtocol implementation
@@ -95,7 +103,7 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
     #-------------------------------- available options --------------------------------
     
     @property
-    def available_options_hook(self) -> Hook[AbstractSet[T]]:
+    def available_options_hook(self) -> OwnedWritableHook[AbstractSet[T], Self]:
         return self._primary_hooks["available_options"] # type: ignore
 
     @property
@@ -114,7 +122,7 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
     #-------------------------------- selected option --------------------------------
 
     @property
-    def selected_option_hook(self) -> Hook[T]:
+    def selected_option_hook(self) -> OwnedWritableHook[T, Self]:
         return self._primary_hooks["selected_option"] # type: ignore
 
     @property
@@ -144,8 +152,8 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
     #-------------------------------- number of available options --------------------------------
 
     @property
-    def number_of_available_options_hook(self) -> ReadOnlyHook[int]:
-        return self._secondary_hooks["number_of_available_options"] # type: ignore
+    def number_of_available_options_hook(self) -> OwnedReadOnlyHook[int, Self]:
+        return self._secondary_hooks["number_of_available_options"]
 
     @property
     def number_of_available_options(self) -> int:

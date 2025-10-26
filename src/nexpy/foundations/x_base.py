@@ -1,34 +1,37 @@
-from typing import Any, TypeVar, Optional, final, Mapping, Generic, Callable, Literal
+from typing import Any, TypeVar, Optional, final, Mapping, Generic, Callable, Literal, Self
 from logging import Logger
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from threading import RLock
 
+from nexpy.core.auxiliary.listening_mixin import ListeningMixin
+from .serializable_protocol import SerializableProtocol
 
-from ..core.auxiliary.listening_protocol import ListeningProtocol
 from ..core.nexus_system.nexus_manager import NexusManager
 from ..core.nexus_system.nexus import Nexus
 from ..core.nexus_system.update_function_values import UpdateFunctionValues
-from ..core.hooks.hook_protocols.owned_hook_protocol import OwnedHookProtocol
+from ..core.hooks.protocols.owned_hook_protocol import OwnedHookProtocol
 from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
-from ..core.nexus_system.has_nexus_manager_protocol import HasNexusManagerProtocol
-from ..core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ..core.utils import make_weak_callback
+from ..core.hooks.protocols.hook_protocol import HookProtocol
+from ..core.auxiliary.utils import make_weak_callback
 
 from .carries_some_hooks_protocol import CarriesSomeHooksProtocol
 from .carries_single_hook_protocol import CarriesSingleHookProtocol
-from ..core.hooks.mixin_protocols.hook_with_connection_protocol import HookWithConnectionProtocol
 
 import weakref
 
 HK = TypeVar("HK")
 HV = TypeVar("HV")
-O = TypeVar("O", bound="XBase[Any, Any, Any]")
 
 
-class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[HK, HV, O], ABC):
+class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, SerializableProtocol[HK, HV], Generic[HK, HV]):
     """
     Base class for observables in the new hook-based architecture.
-    
+
+
+    Generic type parameters:
+        HK: The type of the hook keys
+        HV: The type of the hook values
+
     This class provides the core functionality for observables that manage multiple
     hooks and participate in the sync system. It replaces the old binding system
     with a more flexible approach where observables define their own logic for:
@@ -98,15 +101,16 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
 
     def __init__(
         self,
-        invalidate_after_update_callback: Optional[Callable[[O], tuple[bool, str]]] = None,
-        validate_complete_values_callback: Optional[Callable[[O, Mapping[HK, HV]], tuple[bool, str]]] = None,
-        compute_missing_values_callback: Optional[Callable[[O, UpdateFunctionValues[HK, HV]], Mapping[HK, HV]]] = None,
+        invalidate_after_update_callback: Optional[Callable[[], tuple[bool, str]]] = None,
+        validate_complete_values_callback: Optional[Callable[[Self, Mapping[HK, HV]], tuple[bool, str]]] = None,
+        compute_missing_values_callback: Optional[Callable[[Self, UpdateFunctionValues[HK, HV]], Mapping[HK, HV]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER, 
         ) -> None:
         """
         Initialize the XBase.
         """
+        ListeningMixin.__init__(self)
 
         # Store weak references to callbacks to avoid circular references
         self._self_ref = weakref.ref(self)
@@ -138,10 +142,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
         """
 
         if self._invalidate_after_update_callback is not None:
-            if self._self_ref() is None:
-                raise ValueError("Owner has been garbage collected")
-            self_ref: O = self._self_ref() # type: ignore
-            success, msg = self._invalidate_after_update_callback(self_ref)
+            success, msg = self._invalidate_after_update_callback()
             if success == False:
                 return False, msg
             else:
@@ -150,7 +151,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
             return True, "No invalidate callback provided"
 
     @final
-    def _validate_complete_values_in_isolation(self, values: dict[HK, HV]) -> tuple[bool, str]:
+    def _validate_complete_values_in_isolation(self, values: Mapping[HK, HV]) -> tuple[bool, str]:
         """
         Check if the values are valid as part of the owner.
         
@@ -168,9 +169,9 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
 
 
         if self._validate_complete_values_callback is not None:
-            if self._self_ref() is None:
+            self_ref: Optional[Self] = self._self_ref() 
+            if self_ref is None:
                 raise ValueError("Owner has been garbage collected")
-            self_ref: O = self._self_ref() # type: ignore
             return self._validate_complete_values_callback(self_ref, values)
         else:
             return True, "No validation in isolation callback provided"
@@ -193,7 +194,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
         return value
 
     @final
-    def _get_dict_of_hooks(self) ->  dict[HK, OwnedHookProtocol[HV]]:
+    def _get_dict_of_hooks(self) ->  Mapping[HK, OwnedHookProtocol[HV, Self]]:
         """
         Get a dictionary of hooks.
 
@@ -202,13 +203,13 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
         Returns:
             A dictionary of keys to hooks
         """
-        hook_dict: dict[HK, OwnedHookProtocol[HV]] = {}
+        hook_dict: dict[HK, OwnedHookProtocol[HV, Self]] = {}
         for key in self._get_hook_keys():
             hook_dict[key] = self._get_hook_by_key(key)
         return hook_dict
 
     @final
-    def _get_dict_of_values(self) -> dict[HK, HV]:
+    def _get_dict_of_values(self) -> Mapping[HK, HV]:
         """
         Get a dictionary of values.
 
@@ -218,7 +219,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
             A dictionary of keys to values
         """
 
-        hook_value_dict: dict[HK, Any] = {}
+        hook_value_dict: Mapping[HK, HV] = {}
         for key in self._get_hook_keys():
             hook_value_dict[key] = self._get_value_of_hook(key)
         return hook_value_dict
@@ -238,14 +239,14 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
         """
         with self._lock:
             if self._compute_missing_values_callback is not None:
-                if self._self_ref() is None:
+                self_ref: Optional[Self] = self._self_ref()
+                if self_ref is None:
                     raise ValueError("Owner has been garbage collected")
-                self_ref: O = self._self_ref() # type: ignore
                 return self._compute_missing_values_callback(self_ref, values)
             else:
                 return {}
 
-    def _join(self, source_hook_key: HK, target_hook: Hook[HV]|ReadOnlyHook[HV]|CarriesSingleHookProtocol[HV], initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> None:
+    def _join(self, source_hook_key: HK, target_hook: HookProtocol[HV]|CarriesSingleHookProtocol[HV], initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> None:
         """
         Connect a hook to the observable.
 
@@ -263,7 +264,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
         """
 
         if source_hook_key in self._get_hook_keys():
-            source_hook: OwnedHookProtocol[HV] = self._get_hook_by_key(source_hook_key)
+            source_hook: OwnedHookProtocol[HV, Self] = self._get_hook_by_key(source_hook_key)
             if isinstance(target_hook, CarriesSingleHookProtocol):
                 target_hook = target_hook._get_hook_by_key(source_hook_key)
             success, msg = source_hook._join(target_hook, initial_sync_mode) # type: ignore
@@ -272,7 +273,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
         else:
             raise ValueError(f"Key {source_hook_key} not found in component_hooks or secondary_hooks")
 
-    def _join_many(self, hooks: Mapping[HK, Hook[HV]|ReadOnlyHook[HV]], initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> None:
+    def _join_many(self, hooks: Mapping[HK, HookProtocol[HV]], initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> None:
         """
         Connect multiple hooks to the observable simultaneously.
 
@@ -288,7 +289,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
             ValueError: If any key is not found in component_hooks or secondary_hooks
         """
 
-        hook_pairs: list[tuple[HookWithConnectionProtocol[HV], HookWithConnectionProtocol[HV]]] = []
+        hook_pairs: list[tuple[HookProtocol[HV], HookProtocol[HV]]] = []
         for key, hook in hooks.items():
             hook_of_observable = self._get_hook_by_key(key)
             match initial_sync_mode:
@@ -336,8 +337,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
         self._isolate(None)
 
         # Remove all listeners
-        if isinstance(self, ListeningProtocol):
-            self.remove_all_listeners()
+        self._listeners.clear()
 
     def _validate_value(self, key: HK, value: HV, *, logger: Optional[Logger] = None) -> tuple[bool, str]:
         """
@@ -353,7 +353,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
             A tuple of (success: bool, message: str)
         """
 
-        hook: OwnedHookProtocol[HV] = self._get_hook_by_key(key)
+        hook: OwnedHookProtocol[HV, Self] = self._get_hook_by_key(key)
 
         success, msg = self._nexus_manager.submit_values({hook._get_nexus(): value}, mode="Check values", logger=logger) # type: ignore
         if success == False:
@@ -452,7 +452,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
     # ------------------ To be implemented by subclasses ------------------
 
     @abstractmethod
-    def _get_hook_by_key(self, key: HK) -> OwnedHookProtocol[HV]:
+    def _get_hook_by_key(self, key: HK) -> OwnedHookProtocol[HV, Self]:
         """
         Get a hook by its key.
 
@@ -497,7 +497,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], HasNexusManagerProtocol, Generic[H
         ...
 
     @abstractmethod
-    def _get_key_by_hook_or_nexus(self, hook_or_nexus: OwnedHookProtocol[HV]|Nexus[HV]) -> HK:
+    def _get_key_by_hook_or_nexus(self, hook_or_nexus: OwnedHookProtocol[HV, Any]|Nexus[HV]) -> HK:
         """
         Get the key for a hook or nexus.
 

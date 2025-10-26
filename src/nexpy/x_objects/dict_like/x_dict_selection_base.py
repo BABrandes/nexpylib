@@ -1,16 +1,16 @@
-from typing import Literal, TypeVar, Generic, Optional, Mapping, Any, Callable, Sequence
+from typing import Literal, TypeVar, Generic, Optional, Mapping, Any, Callable, Sequence, Self
 from collections.abc import Set as AbstractSet
 from logging import Logger
 from abc import ABC, abstractmethod
 
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
+from nexpy.core.hooks.protocols.hook_protocol import HookProtocol
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
+from nexpy.core.hooks.implementations.owned_read_only_hook import OwnedReadOnlyHook
 from ...foundations.x_composite_base import XCompositeBase
 from .protocols import XDictProtocol
-from ...core.auxiliary.listening_base import ListeningBase
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ...core.nexus_system.submission_error import SubmissionError
 
 K = TypeVar("K")
@@ -23,11 +23,9 @@ class XDictSelectionBase(
         Literal["dict", "key", "value"], 
         Literal["keys", "values", "length"], 
         Any, 
-        set[K]|list[V]|int, 
-        "XDictSelectionBase[K, V, KT, VT]"
+        set[K]|list[V]|int
     ], 
     XDictProtocol[K, V],
-    ListeningBase, 
     Generic[K, V, KT, VT], 
     ABC
 ):
@@ -56,9 +54,9 @@ class XDictSelectionBase(
 
     def __init__(
         self,
-        dict_hook: Mapping[K, V] | Hook[Mapping[K, V]] | ReadOnlyHook[Mapping[K, V]] | XDictProtocol[K, V],
-        key_hook: KT | Hook[KT] | ReadOnlyHook[KT],
-        value_hook: Optional[Hook[VT]] | ReadOnlyHook[VT] = None,
+        dict_hook: Mapping[K, V] | HookProtocol[Mapping[K, V]] | XDictProtocol[K, V],
+        key_hook: KT | HookProtocol[KT],
+        value_hook: Optional[HookProtocol[VT]] = None,
         *,
         custom_validator: Optional[Callable[[Mapping[Literal["dict", "key", "value"], Any]], tuple[bool, str]]] = None,
         invalidate_callback: Optional[Callable[[], None]] = None,
@@ -76,15 +74,15 @@ class XDictSelectionBase(
             invalidate_callback: Optional callback called after value changes
         """
         
-        if isinstance(dict_hook, (Hook, ReadOnlyHook)):
-            _initial_dict_value: Mapping[K, V] = dict_hook.value
+        if isinstance(dict_hook, HookProtocol):
+            _initial_dict_value: Mapping[K, V] = dict_hook._get_value() # type: ignore
         elif isinstance(dict_hook, Mapping):
             _initial_dict_value = dict_hook
         else:
-            raise ValueError("dict_hook must be a Hook, ReadOnlyHook, or Mapping")
+            raise ValueError("dict_hook must be a HookProtocol, or Mapping")
 
-        if isinstance(key_hook, ManagedHookProtocol):
-            _initial_key_value: KT = key_hook.value  # type: ignore
+        if isinstance(key_hook, HookProtocol):
+            _initial_key_value: KT = key_hook._get_value() # type: ignore
         else:
             _initial_key_value = key_hook
 
@@ -95,18 +93,15 @@ class XDictSelectionBase(
                 _initial_key_value  # type: ignore
             )
         else:
-            if not isinstance(value_hook, ManagedHookProtocol):  # type: ignore
-                raise ValueError("value_hook must be a Hook or ReadOnlyHook or None")
-            _initial_value_value = value_hook.value
+            if not isinstance(value_hook, HookProtocol):  # type: ignore
+                raise ValueError("value_hook must be a HookProtocol or None")
+            _initial_value_value = value_hook._get_value() # type: ignore
 
         # Initialize ListeningBase
-        ListeningBase.__init__(self, logger)
-        
-        # Initialize XCompositeBase
-        XCompositeBase.__init__(  # type: ignore
+        XCompositeBase.__init__( # type: ignore
             self,
             initial_hook_values={
-                "dict": dict_hook if isinstance(dict_hook, ManagedHookProtocol) else _initial_dict_value,
+                "dict": dict_hook if isinstance(dict_hook, HookProtocol) else _initial_dict_value,
                 "key": key_hook if not (key_hook is None or (isinstance(key_hook, type(None)))) else _initial_key_value,
                 "value": value_hook if value_hook is not None else _initial_value_value
             },
@@ -179,7 +174,7 @@ class XDictSelectionBase(
     ########################################################
 
     @property
-    def dict_hook(self) -> Hook[Mapping[K, V]]:
+    def dict_hook(self) -> OwnedWritableHook[Mapping[K, V], Self]:
         """
         Get the dictionary hook.
         
@@ -219,7 +214,7 @@ class XDictSelectionBase(
             raise SubmissionError(msg, value, "dict")
 
     @property
-    def key_hook(self) -> Hook[KT]:
+    def key_hook(self) -> OwnedWritableHook[KT, Self]:
         """
         Get the key hook.
         
@@ -251,7 +246,7 @@ class XDictSelectionBase(
             raise SubmissionError(msg, value, "key")
 
     @property
-    def value_hook(self) -> Hook[VT]:
+    def value_hook(self) -> OwnedWritableHook[VT, Self]:
         """
         Get the value hook.
         
@@ -285,7 +280,7 @@ class XDictSelectionBase(
     # ------------------------- length -------------------------
 
     @property
-    def length_hook(self) -> ReadOnlyHook[int]:
+    def length_hook(self) -> OwnedReadOnlyHook[int, Self]:
         """
         Get the length hook (read-only).
         """
@@ -301,7 +296,7 @@ class XDictSelectionBase(
     # ------------------------- keys -------------------------
 
     @property
-    def keys_hook(self) -> ReadOnlyHook[AbstractSet[K]]:
+    def keys_hook(self) -> OwnedReadOnlyHook[AbstractSet[K], Self]:
         """
         Get the keys hook (read-only).
         
@@ -323,7 +318,7 @@ class XDictSelectionBase(
     # ------------------------- values -------------------------
 
     @property
-    def values_hook(self) -> ReadOnlyHook[Sequence[V]]:
+    def values_hook(self) -> OwnedReadOnlyHook[Sequence[V], Self]:
         """
         Get the values hook (read-only).
         """

@@ -1,26 +1,29 @@
-from typing import Callable, Generic, Literal, Mapping, Optional, TypeVar
+from typing import Callable, Generic, Literal, Mapping, Optional, TypeVar, Self, Any
 from logging import Logger
 from threading import RLock
 
-from ..core.auxiliary.listening_base import ListeningBase
-from ..core.hooks.hook_protocols.owned_hook_protocol import OwnedHookProtocol
-from ..core.hooks.owned_hook import OwnedHook
-from ..core.hooks.hook_aliases import Hook, ReadOnlyHook
+from nexpy.core.hooks.foundation.hook_base import HookBase
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
+
+from ..core.hooks.protocols.hook_protocol import HookProtocol
+from ..core.hooks.protocols.owned_hook_protocol import OwnedHookProtocol
 from ..core.nexus_system.nexus import Nexus
 from ..core.nexus_system.nexus_manager import NexusManager
 from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ..core.nexus_system.submission_error import SubmissionError
 
 from .carries_single_hook_protocol import CarriesSingleHookProtocol
-from .x_object_serializable_mixin import XObjectSerializableMixin
 from .x_base import XBase
 
 T = TypeVar("T")
 
-class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T]"], CarriesSingleHookProtocol[T], XObjectSerializableMixin[Literal["value"], T], Generic[T]):
+class XSingletonBase(XBase[Literal["value"], T], CarriesSingleHookProtocol[T], Generic[T]):
     """
     Base class for singleton X objects (single value) with transitive synchronization via Nexus fusion.
-    
+
+    Generic type parameters:
+        T: The type of the value
+
     This class provides the core implementation for X objects that wrap a single value,
     including hook management, validation, and synchronization. It serves as the foundation
     for XValue and similar single-value X object types.
@@ -39,7 +42,7 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
     def __init__(
             self,
             *,
-            value_or_hook: T|Hook[T]|ReadOnlyHook[T]|CarriesSingleHookProtocol[T],
+            value_or_hook: T|HookProtocol[T]|CarriesSingleHookProtocol[T],
             validate_value_callback: Optional[Callable[[T], tuple[bool, str]]] = None,
             invalidate_after_update_callback: Optional[Callable[[], None]] = None,
             logger: Optional[Logger] = None,
@@ -64,19 +67,23 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
         if isinstance(value_or_hook, CarriesSingleHookProtocol):
             value: T = value_or_hook._get_single_value() # type: ignore
             hook: Optional[OwnedHookProtocol[T]] = value_or_hook._get_single_hook() # type: ignore    
-        elif isinstance(value_or_hook, Hook):
+        elif isinstance(value_or_hook, HookProtocol):
             value: T = value_or_hook.value # type: ignore
             hook = value_or_hook # type: ignore
         else:
             # Is T
-            value = value_or_hook # type: ignore
+            value = value_or_hook
             hook = None
 
-        # Initialize the BaseListening
-        ListeningBase.__init__(self, logger)
+        HookBase.__init__( # type: ignore
+            self=self, # type: ignore
+            value_or_nexus=value,
+            logger=logger,
+            nexus_manager=nexus_manager
+            )
 
         # Create the value hook
-        self._value_hook = OwnedHook[T](
+        self._value_hook = OwnedWritableHook[T, Self](
             self,
             value, # type: ignore
             logger,
@@ -85,10 +92,7 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
 
         # Create validation callback wrapper for XBase
         # This captures the user's validation callback directly (no need to store it separately)
-        def validate_complete_values_callback_wrapper(
-            self_ref: "XSingletonBase[T]", 
-            values: Mapping[Literal["value"], T]
-        ) -> tuple[bool, str]:
+        def validate_complete_values_callback_wrapper(_: Self, values: Mapping[Literal["value"], T]) -> tuple[bool, str]:
             """Validate the complete values using the user's validation method."""
             if "value" not in values:
                 return False, "Value key not found in values"
@@ -107,9 +111,7 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
             return True, "Value is valid"
 
         # Create invalidation callback wrapper for XBase
-        def xbase_invalidate_after_update_callback_wrapper(
-            self_ref: "XSingletonBase[T]"
-        ) -> tuple[bool, str]:
+        def xbase_invalidate_after_update_callback_wrapper() -> tuple[bool, str]:
             """Call user's invalidate callback if provided."""
             if invalidate_after_update_callback is not None:
                 try:
@@ -122,7 +124,7 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
         XBase.__init__( # type: ignore
             self,
             invalidate_after_update_callback=xbase_invalidate_after_update_callback_wrapper,
-            validate_complete_values_callback=validate_complete_values_callback_wrapper,
+            validate_complete_values_callback=validate_complete_values_callback_wrapper, # type: ignore
             logger=logger,
             nexus_manager=nexus_manager
         )
@@ -137,7 +139,7 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
     # CarriesSingleHookProtocol implementation
     #########################################################
 
-    def _get_single_hook(self) -> OwnedHook[T]:
+    def _get_single_hook(self) -> OwnedWritableHook[T, Self]:
         """
         Get the hook for the single value.
         
@@ -157,7 +159,7 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
         Returns:
             The value of the single hook
         """
-        return self._value_hook.value
+        return self._value_hook._get_value() # type: ignore
 
     def _get_nexus(self) -> Nexus[T]:
         """
@@ -174,7 +176,7 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
     # Public API
     #########################################################
 
-    def join(self, target_hook: Hook[T] | ReadOnlyHook[T] | CarriesSingleHookProtocol[T], sync_mode: Literal["use_caller_value", "use_target_value"] = "use_caller_value") -> None:
+    def join(self, target_hook: HookProtocol[T] | CarriesSingleHookProtocol[T], sync_mode: Literal["use_caller_value", "use_target_value"] = "use_caller_value") -> None:
         """
         Join this observable to another hook (thread-safe).
         
@@ -209,7 +211,7 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
         with self._lock:
             self._value_hook.isolate()
 
-    def is_joined_with(self, hook: Hook[T] | ReadOnlyHook[T] | CarriesSingleHookProtocol[T]) -> bool:
+    def is_joined_with(self, hook: HookProtocol[T] | CarriesSingleHookProtocol[T]) -> bool:
         """
         Check if this observable is joined with another hook (thread-safe).
         
@@ -292,7 +294,7 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
     # CarriesSomeHooksProtocol implementation
     #########################################################
 
-    def _get_hook_by_key(self, key: Literal["value"]) -> OwnedHookProtocol[T]:
+    def _get_hook_by_key(self, key: Literal["value"]) -> OwnedWritableHook[T, Self]:
         """
         Get a hook by its key.
 
@@ -315,7 +317,7 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
         Args:
             key: The key of the hook to get the value of
         """
-        return self._value_hook.value
+        return self._value_hook._get_value() # type: ignore
 
     def _get_hook_keys(self) -> set[Literal["value"]]:
         """
@@ -328,7 +330,7 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
         """
         return set(["value"])
 
-    def _get_key_by_hook_or_nexus(self, hook_or_nexus: OwnedHookProtocol[T]|Nexus[T]) -> Literal["value"]:
+    def _get_key_by_hook_or_nexus(self, hook_or_nexus: OwnedHookProtocol[T, Any]|Nexus[T]) -> Literal["value"]:
         """
         Get the key for a hook or nexus.
 
@@ -342,7 +344,7 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
         """
         return "value"
 
-    def _join(self, source_hook_key: Literal["value"], target_hook: Hook[T] | ReadOnlyHook[T] | CarriesSingleHookProtocol[T], initial_sync_mode: Literal["use_caller_value", "use_target_value"] = "use_caller_value") -> None:
+    def _join(self, source_hook_key: Literal["value"], target_hook: HookProtocol[T] | CarriesSingleHookProtocol[T], initial_sync_mode: Literal["use_caller_value", "use_target_value"] = "use_caller_value") -> None:
         """
         Join the single hook to the target hook.
 
@@ -366,9 +368,9 @@ class XSingletonBase(ListeningBase, XBase[Literal["value"], T, "XSingletonBase[T
     #########################################################
 
     def get_values_for_serialization(self) -> Mapping[Literal["value"], T]:
-        return {"value": self._value_hook.value}
+        return {"value": self._value_hook._get_value()} # type: ignore
 
     def set_values_from_serialization(self, values: Mapping[Literal["value"], T]) -> None:
-        success, msg = self._submit_value("value", values["value"])
+        success, msg = self._submit_values({"value": values["value"]})
         if not success:
-            raise ValueError(msg)
+            raise ValueError(f"Failed to set values from serialization: {msg}")

@@ -1,16 +1,15 @@
-from typing import Callable, Generic, Mapping, Optional, TypeVar
+from typing import Callable, Generic, Mapping, Optional, TypeVar, Self
 from logging import Logger
 
-from ...core.hooks.owned_hook import OwnedHook
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...core.auxiliary.listening_base import ListeningBase
+from nexpy.core.hooks.implementations.owned_read_only_hook import OwnedReadOnlyHook
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
+from nexpy.core.hooks.protocols.hook_protocol import HookProtocol
 from ...foundations.x_base import XBase
 from ...core.nexus_system.nexus import Nexus
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER as DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 
 # Type variables for input and output hook names and values
 IHK = TypeVar("IHK")  # Input Hook Keys
@@ -19,31 +18,31 @@ IHV = TypeVar("IHV")  # Input Hook Values
 OHV = TypeVar("OHV")  # Output Hook Values
 
 
-class XOneWayFunction(ListeningBase, XBase[IHK|OHK, IHV|OHV, "XOneWayFunction"], Generic[IHK, OHK, IHV, OHV]):
+class XOneWayFunction(XBase[IHK|OHK, IHV|OHV], Generic[IHK, OHK, IHV, OHV]):
 
 
     def __init__(
         self,
-        input_variables_per_key: Mapping[IHK, Hook[IHV]|ReadOnlyHook[IHV]],
+        input_variables_per_key: Mapping[IHK, HookProtocol[IHV]|IHV],
         one_way_function_callable: Callable[[Mapping[IHK, IHV]], Mapping[OHK, OHV]],
         function_output_hook_keys: set[OHK],
         *,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ) -> None:
 
         self._one_way_function_callable: Callable[[Mapping[IHK, IHV]], Mapping[OHK, OHV]] = one_way_function_callable
 
-        self._input_hooks: dict[IHK, OwnedHook[IHV]] = {}
-        self._output_hooks: dict[OHK, OwnedHook[OHV]] = {}
+        self._input_hooks: dict[IHK, OwnedWritableHook[IHV, Self]] = {}
+        self._output_hooks: dict[OHK, OwnedReadOnlyHook[OHV, Self]] = {}
 
         # Create input hooks for all keys, connecting to external hooks when provided
         for key, external_hook_or_value in input_variables_per_key.items():
             # Create internal hook
-            initial_value_input: IHV = external_hook_or_value.value if isinstance(external_hook_or_value, ManagedHookProtocol) else external_hook_or_value # type: ignore
-            internal_hook_input: OwnedHook[IHV] = OwnedHook(
+            initial_value_input: IHV = external_hook_or_value.value if isinstance(external_hook_or_value, HookProtocol) else external_hook_or_value # type: ignore
+            internal_hook_input: OwnedWritableHook[IHV, Self] = OwnedWritableHook[IHV, Self](
                 owner=self,
-                initial_value=initial_value_input,
+                value=initial_value_input,
                 logger=logger,
                 nexus_manager=nexus_manager
             )
@@ -54,18 +53,16 @@ class XOneWayFunction(ListeningBase, XBase[IHK|OHK, IHV|OHV, "XOneWayFunction"],
         for key in function_output_hook_keys:
             if key not in output_values:
                 raise ValueError(f"Function callable must return all output keys. Missing key: {key}")
-            internal_hook_output: OwnedHook[OHV] = OwnedHook(
+            internal_hook_output: OwnedReadOnlyHook[OHV, Self] = OwnedReadOnlyHook[OHV, Self](
                 owner=self,
-                initial_value=output_values[key],
+                value=output_values[key],
                 logger=logger,
                 nexus_manager=nexus_manager
             )
             self._output_hooks[key] = internal_hook_output
 
-        ListeningBase.__init__(self, logger)
-
         def add_values_to_be_updated_callback(
-            self_ref: "XOneWayFunction[IHK, OHK, IHV, OHV]",
+            self_ref: Self,
             update_values: UpdateFunctionValues[IHK|OHK, IHV|OHV]
         ) -> Mapping[IHK|OHK, IHV|OHV]:
             """
@@ -109,20 +106,20 @@ class XOneWayFunction(ListeningBase, XBase[IHK|OHK, IHV|OHV, "XOneWayFunction"],
             logger=logger,
             invalidate_after_update_callback=None,
             validate_complete_values_callback=None,
-            compute_missing_values_callback=add_values_to_be_updated_callback
+            compute_missing_values_callback=add_values_to_be_updated_callback # type: ignore
         )
 
         # Connect internal input hooks to external hooks if provided
         for key, external_hook_or_value in input_variables_per_key.items():
             internal_hook_input = self._input_hooks[key]
-            if isinstance(external_hook_or_value, ManagedHookProtocol): # type: ignore
-                internal_hook_input.connect_hook(external_hook_or_value, "use_caller_value") # type: ignore
+            if isinstance(external_hook_or_value, HookProtocol):
+                internal_hook_input.join(external_hook_or_value, "use_caller_value") # type: ignore
 
     #########################################################################
     # CarriesSomeHooksBase abstract methods
     #########################################################################
 
-    def _get_hook_by_key(self, key: IHK|OHK) -> OwnedHook[IHV|OHV]:
+    def _get_hook_by_key(self, key: IHK|OHK) -> OwnedWritableHook[IHV|OHV, Self]|OwnedReadOnlyHook[IHV|OHV, Self]:
         """
         Get a hook by its key.
 
@@ -175,9 +172,9 @@ class XOneWayFunction(ListeningBase, XBase[IHK|OHK, IHV|OHV, "XOneWayFunction"],
             The set of keys for the hooks
         """
 
-        return set(self._input_hooks.keys()) | set(self._output_hooks.keys())
+        return set[IHK|OHK](self._input_hooks.keys()) | set[IHK|OHK](self._output_hooks.keys())
 
-    def _get_key_by_hook_or_nexus(self, hook_or_nexus: Hook[IHV]|ReadOnlyHook[OHV]|Nexus[IHV|OHV]) -> IHK|OHK: # type: ignore
+    def _get_key_by_hook_or_nexus(self, hook_or_nexus: OwnedWritableHook[IHV, Self]|OwnedReadOnlyHook[OHV, Self]|Nexus[IHV|OHV]) -> IHK|OHK: # type: ignore
         """
         Get the key for a hook or nexus.
 
@@ -207,7 +204,7 @@ class XOneWayFunction(ListeningBase, XBase[IHK|OHK, IHV|OHV, "XOneWayFunction"],
 
     #-------------------------------- Hooks, values, and keys --------------------------------
 
-    def hook(self, key: IHK|OHK) -> Hook[IHV|OHV]:
+    def hook(self, key: IHK|OHK) -> OwnedWritableHook[IHV|OHV, Self]|OwnedReadOnlyHook[IHV|OHV, Self]:
         """
         Get a hook by its key.
 
@@ -229,9 +226,9 @@ class XOneWayFunction(ListeningBase, XBase[IHK|OHK, IHV|OHV, "XOneWayFunction"],
             The set of all hook keys.
         """
         with self._lock:
-            return set(self._get_hook_keys())
+            return set[IHK|OHK](self._get_hook_keys())
 
-    def key(self, hook: Hook[IHV]|ReadOnlyHook[OHV]) -> IHK|OHK:
+    def key(self, hook: OwnedWritableHook[IHV|OHV, Self]|OwnedReadOnlyHook[IHV|OHV, Self]) -> IHK|OHK:
         """
         Get a key by its hook.
 
@@ -241,9 +238,9 @@ class XOneWayFunction(ListeningBase, XBase[IHK|OHK, IHV|OHV, "XOneWayFunction"],
             The key associated with the hook.
         """
         with self._lock:
-            return self._get_key_by_hook_or_nexus(hook)
+            return self._get_key_by_hook_or_nexus(hook) # type: ignore
 
-    def hooks(self) -> dict[IHK|OHK, Hook[IHV|OHV]]:
+    def hooks(self) -> dict[IHK|OHK, OwnedWritableHook[IHV|OHV, Self]|OwnedReadOnlyHook[IHV|OHV, Self]]:
         """
         Get all hooks.
 

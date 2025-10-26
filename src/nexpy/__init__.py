@@ -241,14 +241,11 @@ from .x_objects.adapters.x_optional_adapter import XOptionalAdapter
 from .x_objects.adapters.x_int_float_adapter import XIntFloatAdapter
 from .x_objects.adapters.x_set_sequence_adapter import XSetSequenceAdapter
 
-# Backward compatibility aliases
-XOptionalTransfer = XOptionalAdapter
-XFloatIntTransfer = XIntFloatAdapter
-XSetSequenceTransfer = XSetSequenceAdapter
-XBlockNone = XOptionalAdapter
+# Hook protocols
+from nexpy.core.hooks.protocols.hook_protocol import HookProtocol as Hook
 
-from .core.hooks.floating_hook import FloatingHook
-from .core.hooks.hook_aliases import Hook, ReadOnlyHook
+# Hook implementations
+from nexpy.core.hooks.implementations.floating_hook import FloatingHook
 
 from .core.publisher_subscriber.publisher_protocol import PublisherProtocol
 from .core.publisher_subscriber.value_publisher import ValuePublisher
@@ -256,8 +253,6 @@ from .core.publisher_subscriber.publisher import Publisher
 
 from .core.nexus_system.update_function_values import UpdateFunctionValues
 from .core.nexus_system.system_analysis import write_report
-
-from .foundations.x_object_serializable_mixin import XObjectSerializableMixin
 
 # Configuration module
 from . import default
@@ -285,17 +280,11 @@ __all__ = [
     'XFunction',
     'XOneWayFunction',
 
-           # Adapter objects
-           'XOptionalAdapter',
-           'XIntFloatAdapter',
-           'XSetSequenceAdapter',
+    # Adapter objects
+    'XOptionalAdapter',
+    'XIntFloatAdapter',
+    'XSetSequenceAdapter',
     
-    # Backward compatibility aliases
-    'XOptionalTransfer',
-    'XFloatIntTransfer',
-    'XSetSequenceTransfer',
-    'XBlockNone',
-
     # Specialized objects
     'XSubscriber',
     'XRootedPaths',
@@ -314,7 +303,6 @@ __all__ = [
     # Hooks (user-facing)
     'FloatingHook',
     'Hook',
-    'ReadOnlyHook',
     
     # Function utilities
     'FunctionValues',
@@ -326,7 +314,6 @@ __all__ = [
     'Publisher',
 
     # Utilities
-    'XObjectSerializableMixin',
     'write_report',
 
     # Configuration

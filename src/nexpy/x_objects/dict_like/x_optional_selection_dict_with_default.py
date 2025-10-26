@@ -1,8 +1,8 @@
-from typing import Literal, TypeVar, Generic, Optional, Mapping, Any, Callable
+from typing import Literal, TypeVar, Generic, Optional, Mapping, Any, Callable, Self
 from logging import Logger
 
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
+from nexpy.core.hooks.protocols.hook_protocol import HookProtocol
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
 from .x_dict_selection_base import XDictSelectionBase
 from .protocols import XOptionalSelectionDictWithDefaultProtocol, XDictProtocol
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
@@ -40,9 +40,9 @@ class XOptionalSelectionDictWithDefault(
 
     def __init__(
         self,
-        dict_hook: Mapping[K, V] | Hook[Mapping[K, V]] | ReadOnlyHook[Mapping[K, V]] | XDictProtocol[K, V],
-        key_hook: Optional[K] | Hook[Optional[K]] | ReadOnlyHook[Optional[K]] = None,
-        value_hook: Optional[Hook[Optional[V]]] | ReadOnlyHook[Optional[V]] = None,
+        dict_hook: Mapping[K, V] | HookProtocol[Mapping[K, V]] | XDictProtocol[K, V],
+        key_hook: Optional[K] | HookProtocol[Optional[K]] = None,
+        value_hook: Optional[HookProtocol[Optional[V]]] = None,
         default_value: V | Callable[[K], V] = None,
         logger: Optional[Logger] = None
     ):
@@ -63,12 +63,12 @@ class XOptionalSelectionDictWithDefault(
             dict_hook = dict_hook.dict
 
         # Pre-process dict to add default entry if needed (before wrapping in Map)
-        if not isinstance(dict_hook, ManagedHookProtocol):
+        if not isinstance(dict_hook, HookProtocol):
             # Extract initial key
-            initial_key = key_hook.value if isinstance(key_hook, ManagedHookProtocol) else key_hook # type: ignore
+            initial_key = key_hook._get_value() if isinstance(key_hook, HookProtocol) else key_hook # type: ignore
             # Add default entry if key is not None and not in dict
             if initial_key is not None and initial_key not in dict_hook:
-                _dict = dict(dict_hook)
+                _dict = dict[K, V](dict_hook)
                 _dict[initial_key] = self._get_default_value(initial_key) # type: ignore
                 dict_hook = _dict
         
@@ -247,7 +247,7 @@ class XOptionalSelectionDictWithDefault(
     #-------------------------------- Key --------------------------------
 
     @property
-    def key_hook(self) -> "Hook[Optional[K]]":
+    def key_hook(self) -> OwnedWritableHook[Optional[K], Self]:
         """Get the key hook."""
         return self._primary_hooks["key"]
     
@@ -270,7 +270,7 @@ class XOptionalSelectionDictWithDefault(
     #-------------------------------- Value --------------------------------
     
     @property
-    def value_hook(self) -> "Hook[Optional[V]]":
+    def value_hook(self) -> OwnedWritableHook[Optional[V], Self]:
         """Get the value hook."""
         return self._primary_hooks["value"]
     

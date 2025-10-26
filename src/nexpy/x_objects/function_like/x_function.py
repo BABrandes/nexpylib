@@ -1,28 +1,25 @@
-from typing import Generic, TypeVar, Optional, Mapping, Callable
+from typing import Generic, TypeVar, Optional, Mapping, Callable, Self
 from logging import Logger
 
-from ...core.hooks.owned_hook import OwnedHook
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...core.hooks.hook_protocols.owned_full_hook_protocol import OwnedFullHookProtocol
-from ...core.auxiliary.listening_base import ListeningBase
-from ...foundations.x_base import XBase
-from ...core.nexus_system.nexus import Nexus
-from ...core.nexus_system.update_function_values import UpdateFunctionValues
-from ...core.nexus_system.submission_error import SubmissionError
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
+from nexpy.core.hooks.protocols.hook_protocol import HookProtocol
+from nexpy.foundations.x_base import XBase
+from nexpy.core.nexus_system.nexus import Nexus
+from nexpy.core.nexus_system.update_function_values import UpdateFunctionValues
+from nexpy.core.nexus_system.submission_error import SubmissionError
 from .function_values import FunctionValues
-from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
+from nexpy.core.nexus_system.nexus_manager import NexusManager
+from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 
 SHK = TypeVar("SHK")
 SHV = TypeVar("SHV")
 
-class XFunction(ListeningBase, XBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
+class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
 
 
     def __init__(
         self,
-        complete_variables_per_key: Mapping[SHK, Hook[SHV]|ReadOnlyHook[SHV]|SHV],
+        complete_variables_per_key: Mapping[SHK, HookProtocol[SHV]|SHV],
         completing_function_callable: Callable[[FunctionValues[SHK, SHV]], tuple[bool, dict[SHK, SHV]]],
         *,
         logger: Optional[Logger] = None,
@@ -33,20 +30,18 @@ class XFunction(ListeningBase, XBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
         self._completing_function_callable = completing_function_callable
 
         # Create sync hooks with initial values
-        self._sync_hooks: dict[SHK, OwnedHook[SHV]] = {}
+        self._sync_hooks: dict[SHK, OwnedWritableHook[SHV, Self]] = {}
         for key, initial_value in complete_variables_per_key.items():
-            sync_hook: OwnedHook[SHV] = OwnedHook[SHV](
+            sync_hook: OwnedWritableHook[SHV, Self] = OwnedWritableHook[SHV, Self](
                 owner=self,
-                initial_value=initial_value.value if isinstance(initial_value, ManagedHookProtocol) else initial_value, # type: ignore
+                initial_value=initial_value.value if isinstance(initial_value, HookProtocol) else initial_value, # type: ignore
                 logger=logger,
                 nexus_manager=nexus_manager
             )
             self._sync_hooks[key] = sync_hook
 
-        ListeningBase.__init__(self, logger)
-
         def add_values_to_be_updated_callback(
-            self_ref: "XFunction[SHK, SHV]",
+            self_ref: Self,
             update_values: UpdateFunctionValues[SHK, SHV]
         ) -> Mapping[SHK, SHV]:
             """
@@ -97,20 +92,20 @@ class XFunction(ListeningBase, XBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
             logger=logger,
             invalidate_after_update_callback=None,
             validate_complete_values_callback=None,
-            compute_missing_values_callback=add_values_to_be_updated_callback
+            compute_missing_values_callback=add_values_to_be_updated_callback # type: ignore
         )
 
         # Connect internal hooks to external hooks if provided
         for key, external_hook_or_value in complete_variables_per_key.items():
             internal_hook = self._sync_hooks[key]
-            if isinstance(external_hook_or_value, ManagedHookProtocol):
+            if isinstance(external_hook_or_value, HookProtocol):
                 internal_hook.join(external_hook_or_value, "use_caller_value") # type: ignore
 
     #########################################################################
     # CarriesSomeHooksBase abstract methods
     #########################################################################
 
-    def _get_hook_by_key(self, key: SHK) -> OwnedFullHookProtocol[SHV]:
+    def _get_hook_by_key(self, key: SHK) -> OwnedWritableHook[SHV, Self]:
         """
         Get a hook by its key.
         
@@ -135,7 +130,7 @@ class XFunction(ListeningBase, XBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
         """
 
         if key in self._sync_hooks:
-            return self._sync_hooks[key].value
+            return self._sync_hooks[key]._get_value() # type: ignore
         else:
             raise ValueError(f"Key {key} not found in hooks")
 
@@ -150,7 +145,7 @@ class XFunction(ListeningBase, XBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
         """
         return set(self._sync_hooks.keys())
 
-    def _get_key_by_hook_or_nexus(self, hook_or_nexus: "Hook[SHV]|Nexus[SHV]") -> SHK:
+    def _get_key_by_hook_or_nexus(self, hook_or_nexus: HookProtocol[SHV]|Nexus[SHV]) -> SHK:
         """
         Get a key by its hook or nexus.
 
@@ -170,7 +165,7 @@ class XFunction(ListeningBase, XBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
 
     #-------------------------------- Hooks, values, and keys --------------------------------
 
-    def hook(self, key: SHK) -> Hook[SHV]:
+    def hook(self, key: SHK) -> OwnedWritableHook[SHV, Self]:
         """
         Get a hook by its key.
 
@@ -194,7 +189,7 @@ class XFunction(ListeningBase, XBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
         with self._lock:
             return set(self._get_hook_keys())
 
-    def key(self, hook: Hook[SHV]) -> SHK:
+    def key(self, hook: OwnedWritableHook[SHV, Self]) -> SHK:
         """
         Get a key by its hook.
 
@@ -206,7 +201,7 @@ class XFunction(ListeningBase, XBase[SHK, SHV, "XFunction"], Generic[SHK, SHV]):
         with self._lock:
             return self._get_key_by_hook_or_nexus(hook)
 
-    def hooks(self) -> dict[SHK, Hook[SHV]]:
+    def hooks(self) -> dict[SHK, OwnedWritableHook[SHV, Self]]:
         """
         Get all hooks.
 

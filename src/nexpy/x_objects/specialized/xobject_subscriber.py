@@ -37,13 +37,13 @@ from ...core.publisher_subscriber.subscriber import Subscriber
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ...core.nexus_system.submission_error import SubmissionError
-from ...core.utils import make_weak_callback
+from nexpy.core.auxiliary.utils import make_weak_callback
 
 HK = TypeVar("HK")
 HV = TypeVar("HV")
 
 
-class XSubscriber(XCompositeBase[HK, None, HV, None, "XSubscriber"], Subscriber, Generic[HK, HV]):
+class XSubscriber(XCompositeBase[HK, None, HV, None], Subscriber, Generic[HK, HV]):
     """
     X object that automatically updates in response to Publisher publications.
     
@@ -213,6 +213,10 @@ class XSubscriber(XCompositeBase[HK, None, HV, None, "XSubscriber"], Subscriber,
             should handle the None case appropriately.
         """
 
+        #########################################################
+        # Stuff
+        #########################################################
+
         self._on_publication_callback = make_weak_callback(on_publication_callback)
         self._raise_submission_error_flag = raise_submission_error_flag
 
@@ -222,6 +226,10 @@ class XSubscriber(XCompositeBase[HK, None, HV, None, "XSubscriber"], Subscriber,
             initial_values: Mapping[HK, HV] = self._on_publication_callback(None)
         except Exception as e:
             raise ValueError(f"Error in on_publication_callback: {e}")
+
+        #########################################################
+        # Prepare and initialize base class
+        #########################################################
 
         Subscriber.__init__(self)
 
@@ -235,6 +243,10 @@ class XSubscriber(XCompositeBase[HK, None, HV, None, "XSubscriber"], Subscriber,
             invalidate_after_update_callback=None,
             logger=logger,
             nexus_manager=nexus_manager)
+
+        #########################################################
+        # Subscribe to publisher(s)
+        #########################################################
         
         # Subscribe to publisher(s)
         if isinstance(publisher, Publisher):
