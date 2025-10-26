@@ -32,7 +32,7 @@ Example:
 from typing import Generic, TypeVar, Callable, Mapping, Optional, Literal
 from logging import Logger
 from ...foundations.x_composite_base import XCompositeBase
-from ...core.publisher_subscriber.publisher_mixin import PublisherMixin as Publisher
+from ...core.publisher_subscriber.publisher_protocol import PublisherProtocol
 from ...core.publisher_subscriber.subscriber import Subscriber
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
@@ -142,8 +142,8 @@ class XSubscriber(XCompositeBase[HK, None, HV, None], Subscriber, Generic[HK, HV
 
     def __init__(
         self,
-        publisher: Publisher|set[Publisher],
-        on_publication_callback: Callable[[None|Publisher], Mapping[HK, HV]],
+        publisher: PublisherProtocol|set[PublisherProtocol],
+        on_publication_callback: Callable[[None|PublisherProtocol], Mapping[HK, HV]],
         *,
         custom_validator: Optional[Callable[[Mapping[HK, HV]], tuple[bool, str]]] = None,
         raise_submission_error_flag: bool = True,
@@ -163,7 +163,7 @@ class XSubscriber(XCompositeBase[HK, None, HV, None], Subscriber, Generic[HK, HV
                 - Set[Publisher]: Subscribe to multiple sources (reacts to any of them)
                 The X object will automatically call `publisher.add_subscriber(self)`.
             on_publication_callback: Function that generates X object values when
-                publications occur. Signature: (publisher: None|Publisher) -> Mapping[HK, HV]
+                publications occur. Signature: (publisher: None|PublisherProtocol) -> Mapping[HK, HV]
                 - Called with None during initialization to get initial values
                 - Called with the publishing Publisher during updates
                 - Must return a mapping where keys are hook keys (type HK) and values
@@ -249,13 +249,13 @@ class XSubscriber(XCompositeBase[HK, None, HV, None], Subscriber, Generic[HK, HV
         #########################################################
         
         # Subscribe to publisher(s)
-        if isinstance(publisher, Publisher):
+        if isinstance(publisher, PublisherProtocol):
             publisher.add_subscriber(self)
         else:
             for pub in publisher:
                 pub.add_subscriber(self)
 
-    def _react_to_publication(self, publisher: Publisher, mode: Literal["async", "sync", "direct"]) -> None:
+    def _react_to_publication(self, publisher: PublisherProtocol, mode: Literal["async", "sync", "direct"]) -> None:
         """
         React to a publication by updating the X object's values.
         

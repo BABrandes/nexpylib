@@ -415,8 +415,8 @@ class TestHookCapabilities:
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        # Create a hook
-        hook = OwnedHook[str, Any](
+        # Create a writable hook for this test since we need change_value
+        hook = OwnedWritableHook[str, Any](
             owner=mock_owner,
             value="initial",
             logger=logger
@@ -508,8 +508,8 @@ class TestHookCapabilities:
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        # Create a hook
-        hook = OwnedHook[str, Any](
+        # Create a writable hook for this test since we need change_value
+        hook = OwnedWritableHook[str, Any](
             owner=mock_owner,
             value="value",
             logger=logger
@@ -661,8 +661,8 @@ class TestHookCapabilities:
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        # Create a hook
-        hook = OwnedHook[str, Any](
+        # Create a writable hook for this test since we need change_value
+        hook = OwnedWritableHook[str, Any](
             owner=mock_owner,
             value="value",
         )
@@ -756,8 +756,8 @@ class TestHookCapabilities:
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        # Create a hook
-        hook = OwnedHook[str, Any](
+        # Create a writable hook for this test since we need change_value
+        hook = OwnedWritableHook[str, Any](
             owner=mock_owner,
             value="value",
         )
@@ -800,8 +800,8 @@ class TestHookCapabilities:
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        # Create a hook
-        hook = OwnedHook[str, Any](
+        # Create a writable hook for this test since we need change_value
+        hook = OwnedWritableHook[str, Any](
             owner=mock_owner,
             value="value",
         )
