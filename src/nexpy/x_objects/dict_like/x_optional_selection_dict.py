@@ -1,7 +1,8 @@
-from typing import Literal, TypeVar, Generic, Mapping, Any, Callable, Optional
+from typing import Literal, TypeVar, Generic, Mapping, Any, Callable, Optional, Self
 from logging import Logger
 
-from .x_dict_selection_base import XDictSelectionBase, Hook
+from .x_dict_selection_base import XDictSelectionBase
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
 from .protocols import XOptionalSelectionDictProtocol
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.submission_error import SubmissionError
@@ -205,7 +206,7 @@ class XOptionalSelectionDict(
     #-------------------------------- Key --------------------------------
 
     @property
-    def key_hook(self) -> "Hook[Optional[K]]":
+    def key_hook(self) -> OwnedWritableHook[Optional[K], Self]:
         """Get the key hook."""
         return self._primary_hooks["key"]
     
@@ -229,7 +230,7 @@ class XOptionalSelectionDict(
     #-------------------------------- Value --------------------------------
 
     @property
-    def value_hook(self) -> "Hook[Optional[V]]":
+    def value_hook(self) -> OwnedWritableHook[Optional[V], Self]:
         """Get the value hook."""
         return self._primary_hooks["value"]
     

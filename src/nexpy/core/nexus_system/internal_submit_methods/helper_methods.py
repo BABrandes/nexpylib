@@ -8,14 +8,12 @@ to avoid code duplication and ensure consistency.
 from typing import Any, Optional, Mapping, TYPE_CHECKING
 from types import MappingProxyType
 
+from ...hooks.protocols.hook_protocol import HookProtocol
+
 if TYPE_CHECKING:
     from ..nexus_manager import NexusManager
     from ..nexus import Nexus
     from ....foundations.carries_some_hooks_protocol import CarriesSomeHooksProtocol
-    from ...hooks.hook_aliases import Hook
-else:
-    # Import Hook for runtime use
-    from ...hooks.hook_aliases import Hook
 
 
 def convert_value_for_storage(nexus_manager: "NexusManager", value: Any) -> tuple[Optional[str], Any]:
@@ -35,7 +33,7 @@ def convert_value_for_storage(nexus_manager: "NexusManager", value: Any) -> tupl
     return None, value
 
 
-def filter_nexus_and_values_for_owner(nexus_and_values: dict["Nexus[Any]", Any], owner: "CarriesSomeHooksProtocol[Any, Any]") -> tuple[dict[Any, Any], dict[Any, Hook[Any]]]:
+def filter_nexus_and_values_for_owner(nexus_and_values: dict["Nexus[Any]", Any], owner: "CarriesSomeHooksProtocol[Any, Any]") -> tuple[dict[Any, Any], dict[Any, HookProtocol[Any]]]:
     """
     Extract the value and hook dict from the nexus and values dictionary for a specific owner.
     
@@ -49,18 +47,18 @@ def filter_nexus_and_values_for_owner(nexus_and_values: dict["Nexus[Any]", Any],
     Returns:
         A tuple containing the value and hook dict corresponding to the owner
     """
-    from ...hooks.mixin_protocols.hook_with_owner_protocol import HookWithOwnerProtocol
-    from ...hooks.hook_aliases import Hook
+    from ...hooks.protocols.owned_hook_protocol import OwnedHookProtocol
+    from ...hooks.protocols.hook_protocol import HookProtocol
 
     key_and_value_dict: dict[Any, Any] = {}
-    key_and_hook_dict: dict[Any, Hook[Any]] = {}
+    key_and_hook_dict: dict[Any, HookProtocol[Any]] = {}
     for nexus, value in nexus_and_values.items():
         for hook in nexus.hooks:
-            if isinstance(hook, HookWithOwnerProtocol):
-                if hook.owner is owner:
+            if isinstance(hook, OwnedHookProtocol):
+                if hook.get_owner() is owner:
                     hook_key: Any = owner._get_key_by_hook_or_nexus(hook) # type: ignore
                     key_and_value_dict[hook_key] = value
-                    key_and_hook_dict[hook_key] = hook # type: ignore
+                    key_and_hook_dict[hook_key] = hook
     return key_and_value_dict, key_and_hook_dict
 
 
@@ -99,7 +97,7 @@ def complete_nexus_and_values_dict(nexus_manager: "NexusManager", nexus_and_valu
     Returns:
         A tuple of (success, message)
     """
-    def insert_value_and_hook_dict_into_nexus_and_values(nexus_and_values: dict["Nexus[Any]", Any], value_dict: dict[Any, Any], hook_dict: dict[Any, Hook[Any]]) -> tuple[bool, str]:
+    def insert_value_and_hook_dict_into_nexus_and_values(nexus_and_values: dict["Nexus[Any]", Any], value_dict: dict[Any, Any], hook_dict: dict[Any, HookProtocol[Any]]) -> tuple[bool, str]:
         """
         Insert the value and hook dict into the nexus and values dictionary.
         
@@ -154,7 +152,7 @@ def complete_nexus_and_values_dict(nexus_manager: "NexusManager", nexus_and_valu
         # Step 6: Return the nexus and values
         return number_of_inserted_items, "Successfully updated nexus and values"
 
-    from ...hooks.mixin_protocols.hook_with_owner_protocol import HookWithOwnerProtocol
+    from ...hooks.protocols.owned_hook_protocol import OwnedHookProtocol
         
     # This here is the main loop: We iterate over all the hooks to see if they belong to an owner, which require more values to be changed if the current values would change.
     while True:
@@ -163,9 +161,9 @@ def complete_nexus_and_values_dict(nexus_manager: "NexusManager", nexus_and_valu
         owners_to_check_for_additional_nexus_and_values: list["CarriesSomeHooksProtocol[Any, Any]"] = []
         for nexus in nexus_and_values:
             for hook in nexus.hooks:
-                if isinstance(hook, HookWithOwnerProtocol):
-                    if hook.owner not in owners_to_check_for_additional_nexus_and_values:
-                        owners_to_check_for_additional_nexus_and_values.append(hook.owner)
+                if isinstance(hook, OwnedHookProtocol):
+                    if hook.get_owner() not in owners_to_check_for_additional_nexus_and_values:
+                        owners_to_check_for_additional_nexus_and_values.append(hook.get_owner()) # type: ignore
 
         # Step 2: Check for each owner if there are additional nexus and values
         number_of_inserted_items: Optional[int] = 0

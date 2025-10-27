@@ -3,11 +3,11 @@ from types import MappingProxyType
 from logging import Logger
 
 from ..nexus import Nexus 
-from ...hooks.hook_aliases import Hook
+from ...hooks.protocols.hook_protocol import HookProtocol
 from ...nexus_system.update_function_values import UpdateFunctionValues
 from ....foundations.carries_some_hooks_protocol import CarriesSomeHooksProtocol
 from ...auxiliary.listening_protocol import ListeningProtocol
-from ...utils import log
+from ...publisher_subscriber.publisher_protocol import PublisherProtocol
 from .helper_methods import convert_value_for_storage, filter_nexus_and_values_for_owner, complete_nexus_and_values_for_owner
 
 if TYPE_CHECKING:
@@ -47,9 +47,6 @@ def internal_submit_values(
     if mode not in ["Normal submission", "Forced submission", "Check values"]:
         raise ValueError(f"Invalid mode: {mode}")
     
-    log(nexus_manager, "NexusManager._internal_submit_values_alternative", logger, True, 
-        f"Processing {len(processed_nexus_and_values)} nexus and values (mode: {mode})")
-
     # Phase 2: Value completion with optimized iteration
     complete_nexus_and_values = processed_nexus_and_values.copy()
     success, msg = _complete_nexus_and_values_dict_optimized(nexus_manager, complete_nexus_and_values)
@@ -72,7 +69,7 @@ def internal_submit_values(
     _update_nexus_values_atomic(nexus_manager, complete_nexus_and_values)
 
     # Phase 7: Batch notification and reaction
-    _execute_notifications_batch(nexus_manager, affected_components, complete_nexus_and_values, logger)
+    _execute_notifications_batch(nexus_manager, affected_components, logger)
 
     return True, "Values are submitted"
 
@@ -80,7 +77,7 @@ def _complete_nexus_and_values_dict_optimized(nexus_manager: "NexusManager", nex
     """
     Optimized version of value completion with reduced allocations and better iteration.
     """
-    from ...hooks.mixin_protocols.hook_with_owner_protocol import HookWithOwnerProtocol
+    from ...hooks.protocols.owned_hook_protocol import OwnedHookProtocol
     
     # Use lists for owners since they may not be hashable
     processed_owners: list["CarriesSomeHooksProtocol[Any, Any]"] = []
@@ -95,8 +92,8 @@ def _complete_nexus_and_values_dict_optimized(nexus_manager: "NexusManager", nex
         current_owners: list["CarriesSomeHooksProtocol[Any, Any]"] = []
         for nexus in nexus_and_values:
             for hook in nexus.hooks:
-                if isinstance(hook, HookWithOwnerProtocol) and hook.owner not in processed_owners:
-                    current_owners.append(hook.owner)
+                if isinstance(hook, OwnedHookProtocol) and hook.get_owner() not in processed_owners:
+                    current_owners.append(hook.get_owner()) # type: ignore
         
         # Process each owner only once per iteration
         for owner in current_owners:
@@ -159,70 +156,51 @@ def _collect_affected_components_optimized(nexus_manager: "NexusManager", nexus_
     """
     Efficiently collect all affected components in a single pass.
     """
-    from ...hooks.mixin_protocols.hook_with_owner_protocol import HookWithOwnerProtocol
-    from ...hooks.mixin_protocols.hook_with_isolated_validation_protocol import HookWithIsolatedValidationProtocol
-    from ...hooks.mixin_protocols.hook_with_reaction_protocol import HookWithReactionProtocol
-    
-    components: dict[str, Any] = {
-        'owners': [],
-        'hooks_with_validation': set(),
-        'hooks_with_reaction': set(),
-        'publishers': set(),
-        'all_hooks': set()
-    }
-    
+    from ...hooks.protocols.owned_hook_protocol import OwnedHookProtocol
+
+    # Step 2: Collect the owners and floating hooks to validate, react to, and notify
+    affected_hooks: set[HookProtocol[Any]] = set()
+    affected_owners: set["CarriesSomeHooksProtocol[Any, Any]"] = set()
     for nexus in nexus_and_values:
         for hook in nexus.hooks:
-            components['all_hooks'].add(hook)
-            
-            if isinstance(hook, HookWithReactionProtocol):
-                components['hooks_with_reaction'].add(hook)
-            
-            if isinstance(hook, HookWithIsolatedValidationProtocol):
-                if not isinstance(hook, HookWithOwnerProtocol):
-                    components['hooks_with_validation'].add(hook)
-            
-            if isinstance(hook, HookWithOwnerProtocol):
-                if hook.owner not in components['owners']:
-                    components['owners'].append(hook.owner)
-                if hasattr(hook.owner, 'publish'):
-                    components['publishers'].add(hook.owner)
-            
-            if hasattr(hook, 'publish'):
-                components['publishers'].add(hook)
+            affected_hooks.add(hook)
+            if isinstance(hook, OwnedHookProtocol):
+                owner: "CarriesSomeHooksProtocol[Any, Any]" = hook.get_owner() # type: ignore
+                affected_owners.add(owner) # type: ignore
+    
+    components: dict[str, Any] = {
+        'owners': list(affected_owners),
+        'hooks': affected_hooks,
+    }
     
     return components
 
-def _validate_values_batch(nexus_manager: "NexusManager", components: dict[str, Any], nexus_and_values: dict["Nexus[Any]", Any]) -> tuple[bool, str]:
+def _validate_values_batch(nexus_manager: "NexusManager", components: dict[str, Any], complete_nexus_and_values: dict["Nexus[Any]", Any]) -> tuple[bool, str]:
     """
     Batch validation with early exit on first failure.
     """
+    from ...hooks.protocols.isolated_validatable_hook_protocol import IsolatedValidatableHookProtocol
 
-    # Validate owners
+    # Step 3: Validate the values
     for owner in components['owners']:
+        value_dict, _ = filter_nexus_and_values_for_owner(complete_nexus_and_values, owner)
+        complete_nexus_and_values_for_owner(value_dict, owner, as_reference_values=True)
         try:
-            value_dict, _ = filter_nexus_and_values_for_owner(nexus_and_values, owner)
-            complete_nexus_and_values_for_owner(value_dict, owner, as_reference_values=True)
-            
             success, msg = owner._validate_complete_values_in_isolation(value_dict)
-            if not success:
-                return False, f"Owner validation failed: {msg}"
-                
         except Exception as e:
-            return False, f"Owner validation error: {e}"
+            return False, f"Error in '_validate_complete_values_in_isolation' of owner '{owner}': {e} (value_dict: {value_dict})"
+        if success == False:    
+            return False, msg
     
-    # Validate floating hooks
-    for hook in components['hooks_with_validation']:
-        try:
-            nexus = hook._get_nexus()
-            value = nexus_and_values[nexus]
-            success, msg = hook.validate_value_in_isolation(value)
-            if not success:
-                return False, f"Hook validation failed: {msg}"
-                
-        except Exception as e:
-            return False, f"Hook validation error: {e}"
-    
+    for isolated_validatable_hook in components['hooks']:
+        if isinstance(isolated_validatable_hook, IsolatedValidatableHookProtocol):
+            try:
+                success, msg = isolated_validatable_hook._validate_value_in_isolation(complete_nexus_and_values[isolated_validatable_hook._get_nexus()]) # type: ignore
+            except Exception as e:
+                return False, f"Error in 'validate_value_in_isolation' of isolated validatable hook '{isolated_validatable_hook}': {e} (complete_nexus_and_values: {complete_nexus_and_values})"
+            if success == False:
+                return False, msg
+
     return True, "Values are valid"
 
 def _update_nexus_values_atomic(nexus_manager: "NexusManager", nexus_and_values: dict["Nexus[Any]", Any]) -> None:
@@ -233,55 +211,35 @@ def _update_nexus_values_atomic(nexus_manager: "NexusManager", nexus_and_values:
         nexus._previous_stored_value = nexus._stored_value  # type: ignore
         nexus._stored_value = value  # type: ignore
 
-def _execute_notifications_batch(nexus_manager: "NexusManager", components: dict[str, Any], _nexus_and_values: dict["Nexus[Any]", Any], logger: Optional[Logger] = None) -> None:
+def _execute_notifications_batch(nexus_manager: "NexusManager", components: dict[str, Any], logger: Optional[Logger] = None) -> None:
     """
     Execute all notifications in optimized batches.
     """
+    from ...hooks.protocols.reactive_hook_protocol import ReactiveHookProtocol
     
-    # Phase 1: Invalidation
-    for owner in components['owners']:
-        owner._invalidate()
-    
-    # Phase 2: Reactions
-    for hook in components['hooks_with_reaction']:
-        hook.react_to_value_changed()
-    
-    # Phase 3: Publishing (async)
-    for publisher in components['publishers']:
-        publisher.publish(None)
-    
-    # Phase 4: Listener notifications
-    _notify_listeners_batch(nexus_manager, components, _nexus_and_values, logger)
+    # --------- Take care of the affected hooks ---------
 
-def _notify_listeners_batch(nexus_manager: "NexusManager", components: dict[str, Any], _nexus_and_values: dict["Nexus[Any]", Any], logger: Optional[Logger] = None) -> None:
-    """
-    Batch listener notifications with error handling.
-    """
-    from ...auxiliary.listening_protocol import ListeningProtocol
-    
-    def safe_notify(obj: "ListeningProtocol | Hook[Any]", context: str) -> None:
-        try:
-            obj._notify_listeners()  # type: ignore
-        except RuntimeError:
-            raise  # Re-raise RuntimeError (programming errors)
-        except Exception as e:
-            if logger:
-                logger.error(f"Error in {context} listener callback: {e}")
-    
-    # Notify owners first
+    for hook in components['hooks']:
+        # Reaction
+        if isinstance(hook, ReactiveHookProtocol):
+            hook._react_to_value_change(raise_error_mode="warn") # type: ignore
+        # Publication
+        if isinstance(hook, PublisherProtocol):
+            hook.publish(None, raise_error_mode="warn")
+        # Listener notification
+        if isinstance(hook, ListeningProtocol):
+            hook._notify_listeners(raise_error_mode="warn") # type: ignore
+
+    # --------- Take care of the affected owners ---------
+
+    # Step 5a: Invalidate the affected owners
     for owner in components['owners']:
+        # Invalidation
+        owner._invalidate(raise_error_mode="warn")
+        # Publication
+        if isinstance(owner, PublisherProtocol):
+            owner.publish(None, raise_error_mode="warn")
+        # Listener notification
         if isinstance(owner, ListeningProtocol):
-            safe_notify(owner, "owner")
-    
-    # Notify hooks (avoid duplicates)
-    notified_hooks = set[Any]()
-    for owner in components['owners']:
-        for hook in owner._get_dict_of_hooks().values():
-            if hook in components['all_hooks'] and hook not in notified_hooks:
-                safe_notify(hook, "owned_hook")
-                notified_hooks.add(hook)
-    
-    # Notify remaining floating hooks
-    for hook in components['all_hooks']:
-        if hook not in notified_hooks:
-            safe_notify(hook, "floating_hook")
+            owner._notify_listeners(raise_error_mode="warn") # type: ignore
+

@@ -761,7 +761,7 @@ class TestXRootedPaths:
                 return False, "Path must exist"
             return True, "Valid path"
         
-        root_path_observable = XValue(self.test_root, validator=validate_path)
+        root_path_observable = XValue(self.test_root, validate_value_callback=validate_path)
         
         # Connect the hooks
         root_path_hook: Hook[Path|None] = manager._get_hook_by_key(XRootedPaths.ROOT_PATH_KEY) # type: ignore

@@ -1,23 +1,25 @@
-from typing import Generic, TypeVar, Optional, Literal, Any, Mapping, Sequence
+from typing import Generic, TypeVar, Optional, Literal, Any, Mapping, Sequence, Self
 from collections.abc import Set as AbstractSet
 from logging import Logger
 
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
+from nexpy.core.hooks.implementations.owned_read_only_hook import OwnedReadOnlyHook
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
+
+from ...core.hooks.protocols.hook_protocol import HookProtocol
 from ...foundations.x_composite_base import XCompositeBase
 from .protocols import XDictProtocol
 from ...core.nexus_system.nexus_manager import NexusManager
-from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER
+from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ...core.nexus_system.submission_error import SubmissionError
 
 K = TypeVar("K")
 V = TypeVar("V")
     
-class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"], Mapping[K, V], int|set[K]|list[V], "XDict"], XDictProtocol[K, V], Generic[K, V]):
+class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"], Mapping[K, V], int|set[K]|list[V]], XDictProtocol[K, V], Generic[K, V]):
 
     def __init__(
         self,
-        observable_or_hook_or_value: Mapping[K, V] | Hook[Mapping[K, V]] | ReadOnlyHook[Mapping[K, V]] | XDictProtocol[K, V] | None = None,
+        observable_or_hook_or_value: Mapping[K, V] | HookProtocol[Mapping[K, V]] | XDictProtocol[K, V] | None = None,
         *,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
@@ -25,14 +27,14 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
 
         if observable_or_hook_or_value is None:
             initial_dict_value: Mapping[K, V] = {}
-            hook: Optional[ManagedHookProtocol[Mapping[K, V]]] = None
+            hook: Optional[HookProtocol[Mapping[K, V]]] = None
         elif isinstance(observable_or_hook_or_value, Mapping):
             initial_dict_value = observable_or_hook_or_value
             hook = None
         elif isinstance(observable_or_hook_or_value, XDictProtocol):
             initial_dict_value = observable_or_hook_or_value.dict
             hook = observable_or_hook_or_value.dict_hook
-        elif isinstance(observable_or_hook_or_value, ManagedHookProtocol): # type: ignore
+        elif isinstance(observable_or_hook_or_value, HookProtocol): # type: ignore
             initial_dict_value = observable_or_hook_or_value.value
             hook = observable_or_hook_or_value
         else:
@@ -69,13 +71,13 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
     #-------------------------------- Dict --------------------------------
 
     @property
-    def dict_hook(self) -> Hook[Mapping[K, V]]:
+    def dict_hook(self) -> OwnedWritableHook[Mapping[K, V], Self]:
         """Get the dictionary hook."""
         
         return self._primary_hooks["dict"]
     
     @property
-    def dict(self) -> dict[K, V]: # type: ignore
+    def dict(self) -> dict[K, V]:
         """Get the current dictionary."""
         return self._value_wrapped("dict") # type: ignore
     
@@ -98,7 +100,7 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         return len(self._value_wrapped("dict")) # type: ignore
     
     @property
-    def length_hook(self) -> ReadOnlyHook[int]:
+    def length_hook(self) -> OwnedReadOnlyHook[int, Self]:
         """Get the hook for the dictionary length."""
         return self._secondary_hooks["length"] # type: ignore
 
@@ -110,7 +112,7 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         return frozenset(self._value_wrapped("dict").keys()) # type: ignore
     
     @property
-    def keys_hook(self) -> ReadOnlyHook[AbstractSet[K]]:
+    def keys_hook(self) -> OwnedReadOnlyHook[AbstractSet[K], Self]:
         """Get the hook for the dictionary keys."""
         return self._secondary_hooks["keys"] # type: ignore
 
@@ -122,7 +124,7 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         return list(self._value_wrapped("dict").values()) # type: ignore
     
     @property
-    def values_hook(self) -> ReadOnlyHook[Sequence[V]]:
+    def values_hook(self) -> OwnedReadOnlyHook[Sequence[V], Self]:
         """Get the hook for the dictionary values."""
         return self._secondary_hooks["values"] # type: ignore
 
@@ -140,15 +142,11 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
             key: The key to set or update
             value: The value to associate with the key
         """
-        current = self._primary_hooks["dict"].value
-        if key in current and current[key] == value:
-            return  # No change
-        new_dict = dict(current)
-        new_dict[key] = value
-        
-        success, msg = self._submit_value("dict", new_dict)
-        if not success:
-            raise ValueError(msg)
+        current_dict: Mapping[K, V] = self._get_value_by_key("dict") # type: ignore
+        if key in current_dict and current_dict[key] == value:
+            return
+        new_dict = {**current_dict, key: value}
+        self.change_dict(new_dict)
     
     def get_item(self, key: K, default: Optional[V] = None) -> Optional[V]:
         """
@@ -161,7 +159,8 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         Returns:
             The value associated with the key, or the default value if key not found
         """
-        return self._primary_hooks["dict"].value.get(key, default)
+        current_dict: Mapping[K, V] = self._get_value_by_key("dict") # type: ignore
+        return current_dict.get(key, default)
     
     def has_key(self, key: K) -> bool:
         """
@@ -173,7 +172,8 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         Returns:
             True if the key exists, False otherwise
         """
-        return key in self._primary_hooks["dict"].value
+        current_dict: Mapping[K, V] = self._get_value_by_key("dict") # type: ignore
+        return key in current_dict
     
     def remove_item(self, key: K) -> None:
         """
@@ -184,13 +184,11 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         Args:
             key: The key to remove
         """
-        current = self._primary_hooks["dict"].value
-        if key not in current:
-            return  # No change
-        new_dict = {k: v for k, v in current.items() if k != key}
-        success, msg = self._submit_value("dict", new_dict)
-        if not success:
-            raise ValueError(msg)
+        current_dict: Mapping[K, V] = self._get_value_by_key("dict") # type: ignore
+        if key not in current_dict:
+            return
+        new_dict = {k: v for k, v in current_dict.items() if k != key}
+        self.change_dict(new_dict)
     
     def clear(self) -> None:
         """
@@ -198,11 +196,9 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         
         Creates a new empty Mapping.
         """
-        if not self._primary_hooks["dict"].value:
-            return  # No change
-        success, msg = self._submit_value("dict", {})
-        if not success:
-            raise ValueError(msg)
+        if not self._get_value_by_key("dict"):
+            return
+        self.change_dict({})
     
     def update(self, other_dict: Mapping[K, V]) -> None:
         """
@@ -216,21 +212,19 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         if not other_dict:
             return  # No change
         # Check if any values would actually change
-        current = self._primary_hooks["dict"].value
+        current_dict: Mapping[K, V] = self._get_value_by_key("dict") # type: ignore
         has_changes = False
         for key, value in other_dict.items():
-            if key not in current or current[key] != value:
+            if key not in current_dict or current_dict[key] != value:
                 has_changes = True
                 break
         
         if not has_changes:
             return  # No change
         
-        new_dict = dict(current)
+        new_dict = dict(current_dict)
         new_dict.update(other_dict)
-        success, msg = self._submit_value("dict", new_dict)
-        if not success:
-            raise ValueError(msg)
+        self.change_dict(new_dict)
     
     def items(self) -> tuple[tuple[K, V], ...]:
         """
@@ -239,7 +233,8 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         Returns:
             A tuple of tuples, each containing a key-value pair
         """
-        return tuple(self._primary_hooks["dict"].value.items())
+        current_dict: Mapping[K, V] = self._get_value_by_key("dict") # type: ignore
+        return tuple(current_dict.items())
     
     def __len__(self) -> int:
         """
@@ -248,7 +243,7 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         Returns:
             The number of key-value pairs
         """
-        return len(self._primary_hooks["dict"].value)
+        return len(self._get_value_by_key("dict")) # type: ignore
     
     def __contains__(self, key: K) -> bool:
         """
@@ -260,7 +255,7 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         Returns:
             True if the key exists, False otherwise
         """
-        return key in self._primary_hooks["dict"].value
+        return key in self._get_value_by_key("dict") # type: ignore
     
     def __getitem__(self, key: K) -> V:
         """
@@ -275,10 +270,10 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         Raises:
             KeyError: If the key is not found in the dictionary
         """
-        current = self._primary_hooks["dict"].value
-        if key not in current:
+        current_dict: Mapping[K, V] = self._get_value_by_key("dict") # type: ignore
+        if key not in current_dict:
             raise KeyError(f"Key '{key}' not found in dictionary")
-        return current[key]
+        return current_dict[key]
     
     def __setitem__(self, key: K, value: V) -> None:
         """
@@ -290,11 +285,9 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
             key: The key to set or update
             value: The value to associate with the key
         """
-        current = self._primary_hooks["dict"].value
-        new_dict = {**current, key: value}
-        success, msg = self._submit_value("dict", new_dict)
-        if not success:
-            raise ValueError(msg)
+        current_dict: Mapping[K, V] = self._get_value_by_key("dict") # type: ignore
+        new_dict = {**current_dict, key: value}
+        self.change_dict(new_dict)
     
     def __delitem__(self, key: K) -> None:
         """
@@ -308,26 +301,16 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         Raises:
             KeyError: If the key is not found in the dictionary
         """
-        current = self._primary_hooks["dict"].value
-        if key not in current:
+        current_dict: Mapping[K, V] = self._get_value_by_key("dict") # type: ignore
+        if key not in current_dict:
             raise KeyError(f"Key '{key}' not found in dictionary")
-        new_dict = {k: v for k, v in current.items() if k != key}
-        success, msg = self._submit_value("dict", new_dict)
-        if not success:
-            raise ValueError(msg)
+        new_dict = {k: v for k, v in current_dict.items() if k != key}
+        self.change_dict(new_dict)
     
     def __str__(self) -> str:
-        return f"OD(dict={dict(self._primary_hooks['dict'].value)})"
+        current_dict: Mapping[K, V] = self._get_value_by_key("dict") # type: ignore
+        return f"XDict({dict(current_dict)})"
     
     def __repr__(self) -> str:
-        return f"XDict({dict(self._primary_hooks['dict'].value)})"
-
-    #### ObservableSerializable implementation ####
-
-    def get_values_for_serialization(self) -> Mapping[Literal["dict", "length", "keys", "values"], Any]:
-        return {"dict": self._primary_hooks["dict"].value}
-
-    def set_values_from_serialization(self, values: Mapping[Literal["dict", "length", "keys", "values"], Any]) -> None:
-        success, msg = self._submit_values({"dict": values["dict"]})
-        if not success:
-            raise ValueError(msg)
+        current_dict: Mapping[K, V] = self._get_value_by_key("dict") # type: ignore
+        return f"XDict({dict(current_dict)})"

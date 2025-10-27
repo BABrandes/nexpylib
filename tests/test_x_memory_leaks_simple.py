@@ -79,7 +79,7 @@ def test_observable_with_validator_gc():
         return True, "Valid"
     
     # Create an observable with validator
-    obs = XValue("test_value", validator=validator)
+    obs = XValue("test_value", validate_value_callback=validator)
     obs_ref = weakref.ref(obs)
     
     # Delete the observable

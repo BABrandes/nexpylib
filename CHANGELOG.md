@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-01-29
+
+### Changed
+- **Hook System Architecture**: Complete overhaul of internal hook type system
+  - Replaced generic `OwnedHook` with specialized hook types: `OwnedReadOnlyHook` and `OwnedWritableHook`
+  - Clear separation between read-only and writable hooks based on use case
+  - Improved type safety and API clarity with specific hook implementations
+  - Read-only hooks for computed/derived values, writable hooks for primary values
+- **Documentation Refactoring**: Comprehensive API documentation updates
+  - Clarified hook system architecture with accurate hook type documentation
+  - Replaced generic `OwnedHook` references with specific `OwnedReadOnlyHook` and `OwnedWritableHook` types
+  - Updated all documentation to reflect actual API implementation
+- **Terminology Updates**: Unified terminology across all documentation
+  - Replaced "Observables" with "NexPy" branding
+  - Changed "observable objects" to "NexPy objects" or "X objects"
+  - Updated "bindings" to "fusion domains"
+  - Updated class name references to modern conventions
+
+### Documentation
+- **API Reference**: Complete rewrite of hook documentation with accurate API details
+- **Usage Guide**: Updated hook usage examples and use cases
+- **Architecture**: Updated architectural diagrams and component lists
+- **Module Documentation**: Updated core module docstrings and examples
+- **Protocol Documentation**: Updated serialization protocol terminology
+
+### Fixed
+- **Documentation Accuracy**: Fixed all inconsistencies between documentation and actual API
+- **Terminology**: Unified terminology throughout all documentation files
+- **Examples**: Updated all code examples to use correct API and modern conventions
+
 ## [0.3.0] - 2025-10-25
 
 ### Added

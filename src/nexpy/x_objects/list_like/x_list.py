@@ -1,9 +1,10 @@
-from typing import Generic, TypeVar, Callable, Literal, Optional, Any, Mapping
+from typing import Generic, TypeVar, Callable, Literal, Optional, Any, Mapping, Self
 from collections.abc import Iterator, Sequence
 from logging import Logger
 
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
+from nexpy.core.hooks.implementations.owned_read_only_hook import OwnedReadOnlyHook
+from nexpy.core.hooks.protocols.hook_protocol import HookProtocol
 from ...foundations.x_composite_base import XCompositeBase
 from ...core.nexus_system.submission_error import SubmissionError
 from ...core.nexus_system.nexus_manager import NexusManager
@@ -13,7 +14,7 @@ from .protocols import XListProtocol
 T = TypeVar("T")
   
 
-class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int, "XList"], XListProtocol[T], Generic[T]):
+class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int], XListProtocol[T], Generic[T]):
     """
     Acting like a list.
 
@@ -21,7 +22,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
     """
     def __init__(
         self,
-        value: Sequence[T] | Hook[Sequence[T]] | ReadOnlyHook[Sequence[T]] | XListProtocol[T] | None = None,
+        value: Sequence[T] | HookProtocol[Sequence[T]] | XListProtocol[T] | None = None,
         *,
         logger: Optional[Logger] = None,
         custom_validator: Optional[Callable[[Mapping[Literal["value", "length"], Any]], tuple[bool, str]]] = None,
@@ -31,13 +32,13 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
 
         if value is None:
             initial_value: Sequence[T] = ()
-            hook: Optional[ManagedHookProtocol[Sequence[T]]] = None
+            hook: Optional[HookProtocol[Sequence[T]]] = None
 
         elif isinstance(value, XListProtocol):
             initial_value = value.list
             hook = value.list_hook
 
-        elif isinstance(value, ManagedHookProtocol):
+        elif isinstance(value, HookProtocol):
             initial_value = value.value
             hook = value
 
@@ -73,7 +74,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
     #-------------------------------- list value --------------------------------   
 
     @property
-    def list_hook(self) -> Hook[Sequence[T]]:
+    def list_hook(self) -> OwnedWritableHook[Sequence[T], Self]:
         """
         Get the hook for the list (contains Sequence).
         """
@@ -84,7 +85,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         """
         Get the list value as mutable list (copied from the hook).
         """
-        value = self._primary_hooks["value"].value
+        value = self._primary_hooks["value"]._get_value() # type: ignore
         return list(value)
 
     @list.setter
@@ -110,18 +111,18 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
     #-------------------------------- length --------------------------------
 
     @property
-    def length_hook(self) -> ReadOnlyHook[int]:
+    def length_hook(self) -> OwnedReadOnlyHook[int, Self]:
         """
         Get the hook for the list length.
         """
-        return self._secondary_hooks["length"] # type: ignore
+        return self._secondary_hooks["length"]
 
     @property
     def length(self) -> int:
         """
         Get the current length of the list.
         """
-        return len(self._primary_hooks["value"].value)
+        return self._get_value_by_key("length") # type: ignore
 
     #########################################################
     # Standard list methods
@@ -137,8 +138,8 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         Args:
             item: The item to add to the list
         """
-        current_value = self._primary_hooks["value"].value
-        new_list: list[T] = list(current_value) + [item]
+        current_value: Sequence[T] = self._primary_hooks["value"]._get_value() # type: ignore
+        new_list: list[T] = list[T](current_value) + [item]
         self.change_list(new_list)
     
     def extend(self, iterable: Sequence[T]) -> None:
@@ -150,8 +151,8 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         Args:
             iterable: The iterable containing elements to add
         """
-        current_value = self._primary_hooks["value"].value
-        new_list = list(current_value) + list(iterable)
+        current_value: Sequence[T] = self._primary_hooks["value"]._get_value() # type: ignore
+        new_list: list[T] = list[T](current_value) + list[T](iterable)
         self.change_list(new_list)
     
     def insert(self, index: int, item: T) -> None:
@@ -164,8 +165,8 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
             index: The position to insert the item at
             item: The item to insert
         """
-        current = self._primary_hooks["value"].value
-        new_list = list(current)
+        current: Sequence[T] = self._primary_hooks["value"]._get_value() # type: ignore
+        new_list: list[T] = list[T](current)
         new_list.insert(index, item)
         self.change_list(new_list)
     
@@ -181,12 +182,12 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         Raises:
             ValueError: If the item is not in the list
         """
-        current = self._primary_hooks["value"].value
+        current: Sequence[T] = self._primary_hooks["value"]._get_value() # type: ignore
         if item not in current:
             raise ValueError(f"{item} not in list")
         
         # Create new list without the first occurrence
-        new_list = list(current)
+        new_list: list[T] = list[T](current)
         new_list.remove(item)
         self.change_list(new_list)
     
@@ -205,8 +206,8 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         Raises:
             IndexError: If the index is out of range
         """
-        current = self._primary_hooks["value"].value
-        new_list = list(current)
+        current: Sequence[T] = self._primary_hooks["value"]._get_value() # type: ignore
+        new_list: list[T] = list[T](current)
         item: T = new_list.pop(index)
         self.change_list(new_list)
         return item
@@ -217,7 +218,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         
         Creates an empty list.
         """
-        if self._primary_hooks["value"].value:
+        if self._primary_hooks["value"]._get_value() is not None: # type: ignore
             self.change_list([])
     
     def sort(self, key: Optional[Callable[[T], Any]] = None, reverse: bool = False) -> None:
@@ -230,7 +231,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
             key: Optional function to extract comparison key from each element
             reverse: If True, sort in descending order (default: False)
         """
-        current_value = self._primary_hooks["value"].value
+        current_value: Sequence[T] = self._primary_hooks["value"]._get_value() # type: ignore
         self.change_list(sorted(current_value, key=key, reverse=reverse)) # type: ignore
     
     def reverse(self) -> None:
@@ -239,7 +240,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         
         Creates a new tuple with elements in reversed order.
         """
-        current_value = self._primary_hooks["value"].value
+        current_value: Sequence[T] = self._primary_hooks["value"]._get_value() # type: ignore
         self.change_list(reversed(current_value)) # type: ignore
     
     def count(self, item: T) -> int:
@@ -252,7 +253,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         Returns:
             The number of times the item appears in the list
         """
-        return list(self._primary_hooks["value"].value).count(item)
+        return list[T](self._primary_hooks["value"]._get_value()).count(item) # type: ignore
     
     def index(self, item: T, start: int = 0, stop: Optional[int] = None) -> int:
         """
@@ -269,17 +270,17 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         Raises:
             ValueError: If the item is not found in the specified range
         """
-        list_value = list(self._primary_hooks["value"].value)
+        list_value: list[T] = list[T](self._primary_hooks["value"]._get_value()) # type: ignore
         if stop is None:
             return list_value.index(item, start)
         else:
             return list_value.index(item, start, stop)
     
     def __str__(self) -> str:
-        return f"OL(value={self._primary_hooks['value'].value})"
+        return f"OL(value={self._primary_hooks['value']._get_value()})" # type: ignore
     
     def __repr__(self) -> str:
-        return f"XList({self._primary_hooks['value'].value})"
+        return f"XList({self._primary_hooks['value']._get_value()})" # type: ignore
     
     def __len__(self) -> int:
         """
@@ -288,7 +289,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         Returns:
             The number of items in the list
         """
-        return len(list(self._primary_hooks["value"].value))
+        return len(list[T](self._primary_hooks["value"]._get_value())) # type: ignore
     
     def __getitem__(self, index: int) -> T:
         """
@@ -303,7 +304,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         Raises:
             IndexError: If the index is out of range
         """
-        return list(self._primary_hooks["value"].value)[index]
+        return list[T](self._primary_hooks["value"]._get_value())[index] # type: ignore
     
     def __setitem__(self, index: int, value: T) -> None:
         """
@@ -318,7 +319,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         Raises:
             IndexError: If the index is out of range
         """
-        current = self._primary_hooks["value"].value
+        current: Sequence[T] = self._primary_hooks["value"]._get_value() # type: ignore
         # Modify list
         new_list = list(current)
         new_list[index] = value
@@ -337,9 +338,9 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         Raises:
             IndexError: If the index is out of range
         """
-        current = self._primary_hooks["value"].value
+        current: Sequence[T] = self._primary_hooks["value"]._get_value() # type: ignore
         # Create list without the item at index
-        new_list = list(current)
+        new_list: list[T] = list[T](current)
         del new_list[index]
         self.change_list(new_list)
     
@@ -353,7 +354,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         Returns:
             True if the item is in the list, False otherwise
         """
-        return item in self._primary_hooks["value"].value
+        return item in self._primary_hooks["value"]._get_value() # type: ignore
     
     def __iter__(self) -> Iterator[T]:
         """
@@ -362,7 +363,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         Returns:
             An iterator that yields each item in the list
         """
-        return iter(self._primary_hooks["value"].value)
+        return iter(self._primary_hooks["value"]._get_value()) # type: ignore
     
     def __reversed__(self) -> Iterator[T]:
         """
@@ -371,7 +372,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         Returns:
             A reverse iterator that yields each item in the list in reverse order
         """
-        return reversed(list(self._primary_hooks["value"].value))
+        return reversed(list[T](self._primary_hooks["value"]._get_value())) # type: ignore
     
     def __eq__(self, other: Any) -> bool:
         """
@@ -384,7 +385,7 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
             True if the lists contain the same items in the same order, False otherwise
         """
         if isinstance(other, XList):
-            return self._primary_hooks["value"].value == other._primary_hooks["value"].value # type: ignore
+            return self._primary_hooks["value"]._get_value() == other._primary_hooks["value"]._get_value() # type: ignore
         return self._primary_hooks["value"].value == other
     
     def __ne__(self, other: Any) -> bool:
@@ -495,10 +496,9 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         return other * self._primary_hooks["value"].value # type: ignore
     
     def __hash__(self) -> int:
-        """
-        Get the hash value based on the current list contents.
-        
-        Returns:
-            Hash value of the tuple
-        """
-        return hash(self._primary_hooks["value"].value)
+        """Make XList hashable using UUID from XBase."""
+        if hasattr(self, '_uuid'):
+            return hash(self._uuid)
+        else:
+            # Fall back to id during initialization
+            return hash(id(self))

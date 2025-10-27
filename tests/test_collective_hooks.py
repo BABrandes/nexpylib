@@ -17,17 +17,18 @@ class TestCollectiveHooks:
 
     def setup_method(self):
         """Set up test fixtures."""
+        # Create XSet instances with color sets (compatible types)
+        self.set1: XSet[str] = XSet({"Red", "Green", "Blue"}, logger=logger)
+        self.set2: XSet[str] = XSet({"Red", "Green", "Blue"}, logger=logger)
+        
         # Create XSetSingleSelect instances with compatible initial states
-        self.selector1: XSetSingleSelect[str] = XSetSingleSelect("Red", {"Red", "Green", "Blue"}, logger=logger)
-        self.selector2: XSetSingleSelect[str] = XSetSingleSelect("Red", {"Red", "Green", "Blue"}, logger=logger)
+        # Pass XSet directly since XSetSingleSelect now expects XSetProtocol
+        self.selector1: XSetSingleSelect[str] = XSetSingleSelect("Red", self.set1, logger=logger)
+        self.selector2: XSetSingleSelect[str] = XSetSingleSelect("Red", self.set2, logger=logger)
         
         # Create XValue instances with colors (compatible types)
         self.value1: XValue[str] = XValue("Red", logger=logger)
         self.value2: XValue[str] = XValue("Red", logger=logger)
-        
-        # Create XSet instances with color sets (compatible types)
-        self.set1: XSet[str] = XSet({"Red", "Green", "Blue"}, logger=logger)
-        self.set2: XSet[str] = XSet({"Red", "Green", "Blue"}, logger=logger)
 
     def test_collective_hooks_property(self):
         """Test that collective_hooks property returns the correct hooks."""

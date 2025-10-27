@@ -1,7 +1,8 @@
-from typing import Any, Callable, Generic, Optional, TypeVar
+from typing import Any, Generic, Optional, TypeVar, Self, Callable
 from logging import Logger
 
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
+from nexpy.core.hooks.protocols.hook_protocol import HookProtocol
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
 from ...foundations.x_singleton_base import XSingletonBase
 from ...foundations.carries_single_hook_protocol import CarriesSingleHookProtocol
 from ...core.nexus_system.submission_error import SubmissionError
@@ -11,7 +12,7 @@ from .protocols import XSingleValueProtocol
 
 T = TypeVar("T")
 
-class XSingleValue(XSingletonBase[T], XSingleValueProtocol[T, Hook[T]], CarriesSingleHookProtocol[T], Generic[T]):
+class XSingleValue(XSingletonBase[T], XSingleValueProtocol[T], CarriesSingleHookProtocol[T], Generic[T]):
     """
     Reactive value wrapper providing seamless integration with NexPy's synchronization system.
     
@@ -137,36 +138,60 @@ class XSingleValue(XSingletonBase[T], XSingleValueProtocol[T, Hook[T]], CarriesS
 
     def __init__(
         self,
-        value: T | Hook[T] | ReadOnlyHook[T] | CarriesSingleHookProtocol[T],
+        value: T | HookProtocol[T] | XSingleValueProtocol[T],
         *,
-        validator: Optional[Callable[[T], tuple[bool, str]]] = None,
+        validate_value_callback: Optional[Callable[[T], tuple[bool, str]]] = None,
+        invalidate_after_update_callback: Optional[Callable[[], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
-    ) -> None:
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
 
+        #########################################################
+        # Get initial values and hooks
+        #########################################################
 
-        # Initialize the base class
+        #-------------------------------- value --------------------------------
+
+        if isinstance(value, XSingleValueProtocol):
+            initial_value: T = value.value # type: ignore
+            value_hook: Optional[HookProtocol[T]] = value.value_hook # type: ignore
+        elif isinstance(value, HookProtocol):
+            initial_value = value.value # type: ignore
+            value_hook = value # type: ignore
+        else:
+            initial_value = value
+            value_hook = None
+
+        #########################################################
+        # Prepare and initialize base class
+        #########################################################
+
+        #-------------------------------- Initialize base class --------------------------------
+
         super().__init__(
-            value_or_hook=value,
-            validate_value_callback=validator,
-            invalidate_after_update_callback=None,
+            value_or_hook=initial_value, # type: ignore
+            validate_value_callback=validate_value_callback,
+            invalidate_after_update_callback=invalidate_after_update_callback, # type: ignore
             logger=logger,
             nexus_manager=nexus_manager
         )
 
+        #########################################################
+        # Establish joining
+        #########################################################
+
+        self._join("value", value_hook, "use_target_value") if value_hook is not None else None
     #########################################################
     # Access
     #########################################################
 
     @property
-    def value_hook(self) -> Hook[T]:
+    def value_hook(self) -> OwnedWritableHook[T, Self]:
         """
         Get the hook for the value (thread-safe).
         
         This hook can be used for joining operations with other x_objects.
         """
-        with self._lock:
-            return self._get_single_hook()
+        return self._value_hook
 
     @property
     def value(self) -> T:
@@ -222,8 +247,12 @@ class XSingleValue(XSingletonBase[T], XSingleValueProtocol[T, Hook[T]], CarriesS
         return f"XAnyValue({self.value!r})"
     
     def __hash__(self) -> int:
-        """Make the X object hashable for use in sets and as dictionary keys."""
-        return hash(id(self))
+        """Make XSingleValue hashable using UUID from XSingletonBase."""
+        if hasattr(self, '_uuid'):
+            return hash(self._uuid)
+        else:
+            # Fall back to id during initialization
+            return hash(id(self))
     
     def __eq__(self, other: object) -> bool:
         """Check if this X object equals another object."""

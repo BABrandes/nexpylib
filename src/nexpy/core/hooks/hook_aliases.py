@@ -1,18 +1,31 @@
-# observables/hooks.py
-from typing import Protocol, TypeVar, runtime_checkable
-from .hook_protocols.full_hook_protocol import FullHookProtocol as _FullHookProtocol
-from .hook_protocols.read_only_hook_protocol import ReadOnlyHookProtocol as _ReadOnlyHookProtocol
+"""
+Type aliases for common hook patterns.
+
+This module provides convenient type aliases for frequently used hook types,
+making code more readable and reducing verbosity.
+"""
+
+from typing import TypeVar, Any
+
+from .protocols.hook_protocol import HookProtocol
+from .implementations.owned_writable_hook import OwnedWritableHook
+from .implementations.owned_read_only_hook import OwnedReadOnlyHook
 
 T = TypeVar("T")
+O = TypeVar("O")
 
-@runtime_checkable
-class Hook(_FullHookProtocol[T], Protocol[T]):
-    """Bidirectional hook (send + receive)."""
-    pass
+# General hook alias (any hook type)
+Hook = HookProtocol
 
-@runtime_checkable
-class ReadOnlyHook(_ReadOnlyHookProtocol[T], Protocol[T]):
-    """Receive-only hook (no send)."""
-    pass
+# Read-only hooks (owned by Any by default for flexibility)
+ReadOnlyHook = OwnedReadOnlyHook
 
-__all__ = ["Hook", "ReadOnlyHook"]
+# Writable hooks (owned by Any by default for flexibility)  
+WritableHook = OwnedWritableHook
+
+__all__ = [
+    'Hook',
+    'ReadOnlyHook',
+    'WritableHook',
+]
+

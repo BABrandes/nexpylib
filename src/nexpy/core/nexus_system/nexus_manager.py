@@ -1,11 +1,12 @@
-from typing import Mapping, Any, Optional, Callable, Literal, Sequence
+from typing import Mapping, Any, Optional, Callable, Literal, Sequence, TYPE_CHECKING
 import weakref
 
 from threading import RLock, local
 from logging import Logger
 
-from ..hooks.hook_aliases import Hook
-from .nexus import Nexus
+if TYPE_CHECKING:
+    from ..hooks.protocols.hook_protocol import HookProtocol
+    from .nexus import Nexus
 
 class NexusManager:
     """
@@ -567,6 +568,8 @@ class NexusManager:
         """
 
         if isinstance(nexus_and_values, Sequence):
+            # Import Nexus here for isinstance check at runtime
+            from .nexus import Nexus
             # check if the sequence is a list of tuples of (Nexus[Any], Any) and that the hook nexuses are unique
             if not all(isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], Nexus) for item in nexus_and_values): # type: ignore
                 raise ValueError("The sequence must be a list of tuples of (Nexus[Any], Any)")
@@ -608,11 +611,11 @@ class NexusManager:
     ########################################################################################################################
 
     @staticmethod
-    def get_nexus_and_values(hooks: set["Hook[Any]"]) -> dict[Nexus[Any], Any]:
+    def get_nexus_and_values(hooks: set["HookProtocol[Any]"]) -> Mapping["Nexus[Any]", Any]:
         """
         Get the nexus and values dictionary for a set of hooks.
         """
-        nexus_and_values: dict[Nexus[Any], Any] = {}
+        nexus_and_values: dict["Nexus[Any]", Any] = {}
         for hook in hooks:
             nexus_and_values[hook._get_nexus()] = hook.value # type: ignore
         return nexus_and_values

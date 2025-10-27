@@ -3,10 +3,10 @@ import logging
 import weakref
 import time
 
-from ..utils import log
+from ..auxiliary.utils import log
 
 if TYPE_CHECKING:
-    from ..hooks.mixin_protocols.hook_with_connection_protocol import HookWithConnectionProtocol
+    from ..hooks.protocols.hook_protocol import HookProtocol
     from ...foundations.carries_single_hook_protocol import CarriesSingleHookProtocol
     from .nexus_manager import NexusManager
     
@@ -72,7 +72,7 @@ class Nexus(Generic[T]):
     def __init__(
         self,
         value: T,
-        hooks: set["HookWithConnectionProtocol[T]"] = set(), # type: ignore
+        hooks: set["HookProtocol[T]"] = set(),
         logger: Optional[logging.Logger] = None,
         nexus_manager: Optional["NexusManager"] = None
         ) -> None:
@@ -119,15 +119,15 @@ class Nexus(Generic[T]):
         self._creation_time: float = time.time()
         
         self._nexus_manager: "NexusManager" = nexus_manager
-        self._hooks: set[weakref.ref["HookWithConnectionProtocol[T]"]] = {weakref.ref(hook) for hook in hooks}
+        self._hooks: set[weakref.ref["HookProtocol[T]"]] = {weakref.ref(hook) for hook in hooks} # type: ignore
         self._stored_value: T = value
         self._previous_stored_value: T = value
         self._logger: Optional[logging.Logger] = logger
         self._submit_depth_counter: int = 0
-        self._submit_touched_hooks: set["HookWithConnectionProtocol[T]"] = set()
+        self._submit_touched_hooks: set["HookProtocol[T]"] = set()
         
         # Track hook count for performance optimization
-        self._hook_count: int = len(hooks)
+        self._hook_count: int = len(hooks) # type: ignore
 
         # Register this nexus with the manager for tracking
         self._nexus_manager._register_nexus(self) # type: ignore
@@ -144,10 +144,10 @@ class Nexus(Generic[T]):
             # Ignore errors during cleanup - the manager might already be destroyed
             pass
 
-    def _get_hooks(self) -> set["HookWithConnectionProtocol[T]"]:
+    def _get_hooks(self) -> set["HookProtocol[T]"]:
         """Get the actual hooks from weak references, filtering out dead references."""
-        alive_hooks: set["HookWithConnectionProtocol[T]"] = set()
-        dead_refs: set[weakref.ref["HookWithConnectionProtocol[T]"]] = set()
+        alive_hooks: set["HookProtocol[T]"] = set()
+        dead_refs: set[weakref.ref["HookProtocol[T]"]] = set()
         
         for hook_ref in self._hooks:
             hook = hook_ref()
@@ -163,13 +163,13 @@ class Nexus(Generic[T]):
         
         return alive_hooks
 
-    def add_hook(self, hook: "HookWithConnectionProtocol[T]") -> tuple[bool, str]:
+    def add_hook(self, hook: "HookProtocol[T]") -> tuple[bool, str]:
         self._hooks.add(weakref.ref(hook))
         self._hook_count += 1
         log(self, "add_hook", self._logger, True, "Successfully added hook")
         return True, "Successfully added hook"
 
-    def remove_hook(self, hook: "HookWithConnectionProtocol[T]") -> tuple[bool, str]:
+    def remove_hook(self, hook: "HookProtocol[T]") -> tuple[bool, str]:
         try:
             # Find and remove the weak reference to this hook
             hook_ref_to_remove = None
@@ -190,7 +190,7 @@ class Nexus(Generic[T]):
             return False, "Hook not found in nexus"
 
     @property
-    def hooks(self) -> tuple["HookWithConnectionProtocol[T]", ...]:
+    def hooks(self) -> tuple["HookProtocol[T]", ...]:
         return tuple(self._get_hooks())
     
     @property
@@ -279,37 +279,38 @@ class Nexus(Generic[T]):
         for hook_nexus in nexuses:
             for hook in hook_nexus._get_hooks():
                 if value_type is None:
-                    value_type = type(hook.value)
-                elif type(hook.value) != value_type:
+                    value_type = type(hook._get_value()) # type: ignore
+                elif type(hook._get_value()) != value_type: # type: ignore
                     raise ValueError("The hooks in the hook nexuses must have the same value type")
 
-        # Check if any groups have overlapping hooks (not disjoint) and collect all hooks
+        # Check if any nexuses have overlapping hooks (not disjoint) and collect all hooks
         # Optimize: Use a single set to track all hooks instead of O(n²) pairwise intersection
-        all_hooks: set["HookWithConnectionProtocol[T]"] = set()
-        list_of_hook_nexus: list[set["HookWithConnectionProtocol[T]"]] = []
+        all_hooks: set["HookProtocol[T]"] = set()
+        list_of_hook_sets: list[set["HookProtocol[T]"]] = []
         
         for hook_nexus in nexuses:
-            hook_nexus = hook_nexus._get_hooks()
-            if all_hooks & hook_nexus:  # Check for intersection with existing hooks
+            hook_set = hook_nexus._get_hooks()
+            if all_hooks & hook_set:  # Check for intersection with existing hooks
                 raise ValueError("The hook nexuses must be disjoint")
-            all_hooks.update(hook_nexus)
-            list_of_hook_nexus.append(hook_nexus)  # Store for later use
+            all_hooks.update(hook_set)
+            list_of_hook_sets.append(hook_set)  # Store for later use
         
-        # Create new merged nexus with the reference value
+        # Create new merged nexus with the reference value and empty hooks (will be added below)
         merged_nexus: Nexus[T] = Nexus[T](
             value=reference_value,
+            hooks=set(),
             nexus_manager=nexus_manager,
         )
         
         # Add all hooks to the merged nexus (reuse the already computed hook sets)
-        for hook_nexus in list_of_hook_nexus:
-            for hook in hook_nexus:
+        for hook_set in list_of_hook_sets:
+            for hook in hook_set:
                 merged_nexus.add_hook(hook)
         
         return merged_nexus
     
     @staticmethod
-    def join_hook_pairs(*hook_pairs: tuple["HookWithConnectionProtocol[T]|CarriesSingleHookProtocol[T]", "HookWithConnectionProtocol[T]|CarriesSingleHookProtocol[T]"]) -> tuple[bool, str]:
+    def join_hook_pairs(*hook_pairs: tuple["HookProtocol[T]|CarriesSingleHookProtocol[T]", "HookProtocol[T]|CarriesSingleHookProtocol[T]"]) -> tuple[bool, str]:
         """
         Join a list of hook pairs together.
 
@@ -363,15 +364,15 @@ class Nexus(Generic[T]):
                 
             merged_nexus: Nexus[T] = Nexus[T]._create_merged_nexuses(hook_nexus_1, hook_nexus_2)
             
-            # Replace nexus for all hooks
+            # Update all hooks to point to the merged nexus
             # NOTE: Caller (join method) already holds locks in proper order via lock ordering
             for hook in merged_nexus._get_hooks():
-                hook._hook_nexus = merged_nexus # type: ignore  # Direct assignment bypasses _replace_nexus lock
+                hook._nexus = merged_nexus # type: ignore  # Direct assignment bypasses _replace_nexus lock
 
         return True, "Successfully linked hook pairs"
     
     @staticmethod
-    def link_hooks(source_hook: "HookWithConnectionProtocol[T]", target_hook: "HookWithConnectionProtocol[T]") -> tuple[bool, str]:
+    def link_hooks(source_hook: "HookProtocol[T]", target_hook: "HookProtocol[T]") -> tuple[bool, str]:
         """
         Link two hooks together.
 

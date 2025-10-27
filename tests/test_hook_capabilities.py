@@ -1,14 +1,18 @@
-from typing import Any, Mapping, Optional
+from typing import Any, Literal, Mapping, Optional
 import threading
 from logging import Logger
 
 from nexpy import XCompositeBase
-from nexpy.core.hooks.owned_hook import OwnedHook
+from nexpy.core.hooks.implementations.owned_read_only_hook import OwnedReadOnlyHook as OwnedReadOnlyHook
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook as OwnedWritableHook
+
+# Alias for backward compatibility with existing tests
+OwnedHook = OwnedReadOnlyHook
 
 from run_tests import console_logger as logger
 import pytest
 
-class MockObservable(XCompositeBase[Any, Any, Any, Any, "MockObservable"]):
+class MockObservable(XCompositeBase[Literal["value"], str, Any, Any]):
     """Mock observable for testing purposes that can handle arbitrary hooks."""
     
     def __init__(self, name: str):
@@ -57,9 +61,9 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create hook with invalidate callback
-        hook = OwnedHook[str](
+        hook = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="initial_value",
+            value="initial_value",
             logger=logger
         )
         
@@ -74,9 +78,9 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create hook without invalidate callback
-        hook = OwnedHook[str](
+        hook = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="initial_value",
+            value="initial_value",
             logger=logger
         )
             
@@ -91,9 +95,9 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create a hook
-        hook = OwnedHook[str](
+        hook = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="test_value",
+            value="test_value",
             logger=logger
         )
         
@@ -109,9 +113,9 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create a hook
-        hook = OwnedHook[str](
+        hook = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
             logger=logger
         )
         
@@ -127,9 +131,9 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create a hook
-        hook = OwnedHook[str](
+        hook = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
             logger=logger
         )
         
@@ -148,9 +152,9 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create a hook
-        hook = OwnedHook[str](
+        hook = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
             logger=logger
         )
         
@@ -172,15 +176,15 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create two hooks
-        hook1 = OwnedHook[str](
+        hook1 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value1",
+            value="value1",
             logger=logger
         )
         
-        hook2 = OwnedHook[str](
+        hook2 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value2",
+            value="value2",
             logger=logger
         )
         
@@ -201,15 +205,15 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create two hooks
-        hook1 = OwnedHook[str](
+        hook1 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value1",
+            value="value1",
             logger=logger
         )
         
-        hook2 = OwnedHook[str](
+        hook2 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value2",
+            value="value2",
             logger=logger
         )
         
@@ -223,9 +227,9 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
     
         # Create a hook
-        hook = OwnedHook[str](
+        hook = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
             logger=logger
         )
         
@@ -233,9 +237,9 @@ class TestHookCapabilities:
         original_nexus = hook._get_nexus()  # type: ignore
         
         # Create another hook to connect with
-        hook2 = OwnedHook[str](
+        hook2 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",  # Same value as first hook
+            value="value",  # Same value as first hook
             logger=logger
         )
         
@@ -256,16 +260,16 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
     
         # Create a hook
-        hook = OwnedHook[str](
+        hook = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
             logger=logger
         )
         
         # Create another hook to connect with
-        hook2 = OwnedHook[str](
+        hook2 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",  # Same value as first hook
+            value="value",  # Same value as first hook
             logger=logger
         )
         
@@ -295,10 +299,10 @@ class TestHookCapabilities:
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        # Create a hook
-        hook = OwnedHook[str](
+        # Create a writable hook
+        hook = OwnedWritableHook[str, Any](
             owner=mock_owner,
-            initial_value="initial_value",
+            value="initial_value",
             logger=logger
         )
         
@@ -314,10 +318,10 @@ class TestHookCapabilities:
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        # Create a hook without invalidate callback
-        hook = OwnedHook[str](
+        # Create a writable hook without invalidate callback
+        hook = OwnedWritableHook[str, Any](
             owner=mock_owner,
-            initial_value="initial_value",
+            value="initial_value",
             logger=logger
         )
         
@@ -331,15 +335,15 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create two hooks
-        hook1 = OwnedHook[str](
+        hook1 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value1",
+            value="value1",
             logger=logger
         )
         
-        hook2 = OwnedHook[str](
+        hook2 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value2",
+            value="value2",
             logger=logger
         )
         
@@ -355,48 +359,54 @@ class TestHookCapabilities:
         assert hook2.is_joined_with(hook1)
 
     def test_hook_is_valid_value(self):
-        """Test the is_valid_value method of hooks."""
+        """Test the _validate_value method of hooks."""
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
         # Create a hook
-        hook = OwnedHook[str](
+        hook = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
             logger=logger
         )
         
-        # Test validation - should delegate to owner
-        success = hook.is_valid("new_value") # type: ignore
-        # The actual result depends on the owner's validation logic
+        # Test validation using the new API
+        success, message = hook._validate_value("new_value", logger=logger)
+        # The actual result depends on the validation logic
         assert isinstance(success, bool)
+        assert isinstance(message, str)
 
     def test_hook_replace_nexus(self):
-        """Test the _replace_nexus method."""
+        """Test the isolate method creates a new nexus after joining."""
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        # Create a hook
-        hook = OwnedHook[str](
+        # Create two hooks
+        hook1 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
             logger=logger
         )
         
-        # Get the original hook nexus
-        original_nexus = hook._get_nexus()  # type: ignore
+        hook2 = OwnedHook[str, Any](
+            owner=mock_owner,
+            value="value2",
+            logger=logger
+        )
         
-        # Create a new hook nexus
-        from nexpy.core.nexus_system.nexus import Nexus
-        new_nexus = Nexus[str]("new_value", hooks={hook})
+        # Join them first
+        hook1.join(hook2, "use_caller_value")
         
-        # Replace the hook nexus
-        hook._replace_nexus(new_nexus) #type: ignore
+        # Get the shared nexus
+        shared_nexus = hook1._get_nexus()  # type: ignore
         
-        # Verify the hook is now in the new hook nexus
-        assert hook._get_nexus() == new_nexus  # type: ignore
-        assert hook._get_nexus() != original_nexus  # type: ignore
-        assert hook in new_nexus.hooks
+        # Isolate hook1 - should create a new nexus
+        hook1.isolate()
+        
+        # Verify hook1 is now in a separate nexus
+        assert hook1._get_nexus() != shared_nexus  # type: ignore
+        assert hook1._get_nexus() != hook2._get_nexus()  # type: ignore
+        assert len(hook1._get_nexus().hooks) == 1  # type: ignore
 
     def test_hook_thread_safety_basic(self):
         """Test basic thread safety of hooks."""
@@ -405,10 +415,10 @@ class TestHookCapabilities:
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        # Create a hook
-        hook = OwnedHook[str](
+        # Create a writable hook for this test since we need change_value
+        hook = OwnedWritableHook[str, Any](
             owner=mock_owner,
-            initial_value="initial",
+            value="initial",
             logger=logger
         )
         
@@ -452,9 +462,9 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create a hook
-        hook = OwnedHook[str](
+        hook = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
             logger=logger
         )
         
@@ -498,10 +508,10 @@ class TestHookCapabilities:
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        # Create a hook
-        hook = OwnedHook[str](
+        # Create a writable hook for this test since we need change_value
+        hook = OwnedWritableHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
             logger=logger
         )
         
@@ -544,14 +554,14 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create multiple hooks
-        hook1 = OwnedHook[str](
+        hook1 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value1",
+            value="value1",
         )
         
-        hook2 = OwnedHook[str](
+        hook2 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value2",
+            value="value2",
         )
         
         # Test concurrent hook nexus operations
@@ -600,9 +610,9 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create a hook
-        hook = OwnedHook[str](
+        hook = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
         )
         
         # Test concurrent detach operations
@@ -610,9 +620,9 @@ class TestHookCapabilities:
             for _ in range(50):
                 try:
                     # Create another hook to connect with first
-                    hook2 = OwnedHook[str](
+                    hook2 = OwnedHook[str, Any](
                         owner=mock_owner,
-                        initial_value="value",
+                        value="value",
                     )
                     hook.join(hook2, "use_caller_value")  # type: ignore
                     hook.isolate()
@@ -651,10 +661,10 @@ class TestHookCapabilities:
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        # Create a hook
-        hook = OwnedHook[str](
+        # Create a writable hook for this test since we need change_value
+        hook = OwnedWritableHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
         )
         
         # Test concurrent submit operations
@@ -696,14 +706,14 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create hooks
-        hook1 = OwnedHook[str](
+        hook1 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value1",
+            value="value1",
         )
         
-        hook2 = OwnedHook[str](
+        hook2 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value2",
+            value="value2",
         )
         
         # Test concurrent connect operations
@@ -746,10 +756,10 @@ class TestHookCapabilities:
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        # Create a hook
-        hook = OwnedHook[str](
+        # Create a writable hook for this test since we need change_value
+        hook = OwnedWritableHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
         )
         
         # Test many concurrent operations
@@ -790,10 +800,10 @@ class TestHookCapabilities:
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        # Create a hook
-        hook = OwnedHook[str](
+        # Create a writable hook for this test since we need change_value
+        hook = OwnedWritableHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
         )
         
         # Test lock contention
@@ -838,9 +848,9 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create a hook
-        _ = OwnedHook[str](
+        _ = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
         )
         
         # Test race conditions
@@ -879,33 +889,33 @@ class TestHookCapabilities:
         """Test hooks with different data types."""
         # Test with int
         mock_owner = MockObservable("test_owner")
-        int_hook = OwnedHook[int](
+        int_hook = OwnedHook[int, Any](
             owner=mock_owner,
-            initial_value=42,
+            value=42,
             logger=logger
         )
         assert int_hook.value == 42
         
         # Test with float
-        float_hook = OwnedHook[float](
+        float_hook = OwnedHook[float, Any](
             owner=mock_owner,
-            initial_value=3.14,
+            value=3.14,
             logger=logger
         )
         assert float_hook.value == 3.14
         
         # Test with bool
-        bool_hook = OwnedHook[bool](
+        bool_hook = OwnedHook[bool, Any](
             owner=mock_owner,
-            initial_value=True,
+            value=True,
             logger=logger
         )
         assert bool_hook.value == True
         
         # Test with list
-        list_hook = OwnedHook[list[str]](
+        list_hook = OwnedHook[list[str], Any](
             owner=mock_owner,
-            initial_value=["a", "b", "c"],
+            value=["a", "b", "c"],
             logger=logger
         )
         # Lists are stored as-is (no immutability conversion)
@@ -917,15 +927,15 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create two identical hooks
-        hook1 = OwnedHook[str](
+        hook1 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
             logger=logger
         )
         
-        hook2 = OwnedHook[str](
+        hook2 = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
             logger=logger
         )
         
@@ -946,9 +956,9 @@ class TestHookCapabilities:
         mock_owner = MockObservable("test_owner")
         
         # Create a hook
-        hook = OwnedHook[str](
+        hook = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
             logger=logger
         )
         
@@ -965,9 +975,9 @@ class TestHookCapabilities:
         # Note: Current implementation doesn't validate owner parameter
         # This test documents the current behavior
         try:
-            hook = OwnedHook[str](
+            hook = OwnedHook[str, Any](
                 owner=None,  # type: ignore
-                initial_value="value",
+                value="value",
                 logger=logger
             )
             # If no exception is raised, that's the current behavior
@@ -982,11 +992,12 @@ class TestHookCapabilities:
         # Create mock observable for owner
         mock_owner = MockObservable("test_owner")
         
-        hook = OwnedHook[str](
+        hook = OwnedHook[str, Any](
             owner=mock_owner,
-            initial_value="value",
+            value="value",
             logger=logger
         )
         
-        # Test that safe callback works
-        hook.invalidate_owner()  # Should not raise error
+        # Test that a hook can access its owner
+        assert hook.owner == mock_owner
+        assert hook.owner is mock_owner

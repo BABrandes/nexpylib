@@ -241,10 +241,10 @@ class TestXValue:
             return (is_valid, "Value must be positive" if not is_valid else "Validation passed")
         
         # Create a source observable with validator
-        source = XValue(50, validator=validate_positive, logger=logger)
+        source = XValue(50, validate_value_callback=validate_positive, logger=logger)
         
         # Create a target observable initialized with the source and validator
-        target = XValue(source.value_hook, validator=validate_positive, logger=logger)
+        target = XValue(source.value_hook, validate_value_callback=validate_positive, logger=logger)
         
         # Check that the target has the same initial value
         assert target.value == 50
@@ -371,10 +371,10 @@ class TestXValue:
             return (is_valid, "Value must be even" if not is_valid else "Validation passed")
         
         # Create source with even value
-        source = XValue(10, validator=validate_even, logger=logger)
+        source = XValue(10, validate_value_callback=validate_even, logger=logger)
         
         # Target should initialize successfully with even value
-        target = XValue(source, validator=validate_even, logger=logger)
+        target = XValue(source, validate_value_callback=validate_even, logger=logger)
         assert target.value == 10
         
         # Try to set odd value in source, should fail

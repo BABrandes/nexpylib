@@ -1,12 +1,11 @@
-from typing import Generic, TypeVar, Optional
+from typing import Generic, TypeVar, Optional, Self
 from logging import Logger
 
 from ...foundations.x_adapter_base import XAdapterBase
-from ...core.hooks.hook_protocols.owned_full_hook_protocol import OwnedFullHookProtocol
-from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
+from ...core.hooks.protocols.hook_protocol import HookProtocol
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
+from ...core.hooks.implementations.owned_writable_hook import OwnedWritableHook
 
 T = TypeVar("T")
 
@@ -119,19 +118,19 @@ class XOptionalAdapter(XAdapterBase[T, Optional[T]], Generic[T]):
     
     def __init__(
         self,
-        hook_t_or_value: Hook[T] | ReadOnlyHook[T] | None | T,
-        hook_optional: Hook[Optional[T]] | ReadOnlyHook[Optional[T]] | None = None,
+        hook_t_or_value: HookProtocol[T] | None | T,
+        hook_optional: HookProtocol[Optional[T]] | None = None,
         *,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ):
         # Collect the external hooks
-        external_hook_t: Optional[ManagedHookProtocol[T]] = None
-        external_hook_optional: Optional[ManagedHookProtocol[Optional[T]]] = None
+        external_hook_t: Optional[HookProtocol[T]] = None
+        external_hook_optional: Optional[HookProtocol[Optional[T]]] = None
         
-        if isinstance(hook_t_or_value, ManagedHookProtocol):
+        if isinstance(hook_t_or_value, HookProtocol):
             external_hook_t = hook_t_or_value  # type: ignore
-        if isinstance(hook_optional, ManagedHookProtocol):
+        if isinstance(hook_optional, HookProtocol):
             external_hook_optional = hook_optional
         
         # Determine initial value
@@ -141,7 +140,7 @@ class XOptionalAdapter(XAdapterBase[T, Optional[T]], Generic[T]):
             initial_value: T = hook_optional.value
         
         elif hook_optional is None and hook_t_or_value is not None:
-            if isinstance(hook_t_or_value, ManagedHookProtocol):
+            if isinstance(hook_t_or_value, HookProtocol):
                 if hook_t_or_value.value is None: # type: ignore
                     raise ValueError("Cannot initialize with None value")
                 initial_value = hook_t_or_value.value  # type: ignore
@@ -152,7 +151,7 @@ class XOptionalAdapter(XAdapterBase[T, Optional[T]], Generic[T]):
                 initial_value = hook_t_or_value
         
         elif hook_optional is not None and hook_t_or_value is not None:
-            if isinstance(hook_t_or_value, ManagedHookProtocol):
+            if isinstance(hook_t_or_value, HookProtocol):
                 if nexus_manager.is_not_equal(hook_optional.value, hook_t_or_value.value): # type: ignore
                     raise ValueError("Values do not match of the two given hooks!")
                 if hook_optional.value is None:
@@ -211,28 +210,28 @@ class XOptionalAdapter(XAdapterBase[T, Optional[T]], Generic[T]):
     #########################################################################
     
     @property
-    def hook_t(self) -> OwnedFullHookProtocol[T]:
+    def hook_t(self) -> OwnedWritableHook[T, Self]:
         """Get the T hook (left side)."""
         return self._primary_hooks["left"]  # type: ignore
     
     @property
-    def hook_optional(self) -> OwnedFullHookProtocol[Optional[T]]:
+    def hook_optional(self) -> OwnedWritableHook[Optional[T], Self]:
         """Get the Optional[T] hook (right side)."""
         return self._primary_hooks["right"]
     
     # Aliases for backward compatibility
     @property
-    def hook_non_optional(self) -> OwnedFullHookProtocol[T]:
+    def hook_non_optional(self) -> OwnedWritableHook[T, Self]:
         """Alias for hook_t (backward compatibility)."""
         return self.hook_t
     
     @property
-    def hook_without_None(self) -> OwnedFullHookProtocol[T]:
+    def hook_without_None(self) -> OwnedWritableHook[T, Self]:
         """Alias for hook_t (backward compatibility)."""
         return self.hook_t
     
     @property
-    def hook_with_None(self) -> OwnedFullHookProtocol[Optional[T]]:
+    def hook_with_None(self) -> OwnedWritableHook[Optional[T], Self]:
         """Alias for hook_optional (backward compatibility)."""
         return self.hook_optional
 

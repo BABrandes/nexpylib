@@ -72,8 +72,8 @@ class TestXSetMultiSelect:
         # Create a source observable multi-selection option
         source = XSetMultiSelect({"Red", "Green"}, {"Red", "Green", "Blue"})
         
-        # Create a new observable multi-selection option initialized with the source
-        target: XSetMultiSelect[str] = XSetMultiSelect(source)
+        # Create a new observable multi-selection option initialized with the source's hooks
+        target: XSetMultiSelect[str] = XSetMultiSelect(source.selected_options_hook, source.available_options_hook)
         
         # Check that the target has the same initial value
         assert target.selected_options == {"Red", "Green"}
@@ -91,8 +91,8 @@ class TestXSetMultiSelect:
         """Test initialization with CarriesBindableMultiSelectionOption in a chain"""
         # Create a chain of observable multi-selection options
         obs1: XSetMultiSelect[str] = XSetMultiSelect({"Small"}, {"Small", "Medium"})
-        obs2: XSetMultiSelect[str] = XSetMultiSelect(obs1)
-        obs3: XSetMultiSelect[str] = XSetMultiSelect(obs2)
+        obs2: XSetMultiSelect[str] = XSetMultiSelect(obs1.selected_options_hook, obs1.available_options_hook)
+        obs3: XSetMultiSelect[str] = XSetMultiSelect(obs2.selected_options_hook, obs2.available_options_hook)
         
         # Check initial values
         assert obs1.selected_options == {"Small"}
@@ -114,9 +114,9 @@ class TestXSetMultiSelect:
     def test_initialization_with_carries_bindable_multi_selection_option_unbinding(self):
         """Test that initialization with CarriesBindableMultiSelectionOption can be unbound"""
         source = XSetMultiSelect({"Red"}, {"Red", "Green"})
-        target: XSetMultiSelect[str] = XSetMultiSelect(source)
-        
-        # Verify they are bound
+        target: XSetMultiSelect[str] = XSetMultiSelect(source.selected_options_hook, source.available_options_hook)
+        target.selected_options_hook.join(source.selected_options_hook, "use_target_value")
+# Verify they are bound
         assert target.selected_options == {"Red"}
         source.change_selected_options({"Green"})
         assert target.selected_options == {"Green"}
@@ -135,9 +135,12 @@ class TestXSetMultiSelect:
     def test_initialization_with_carries_bindable_multi_selection_option_multiple_targets(self):
         """Test multiple targets initialized with the same source"""
         source = XSetMultiSelect({"Red"}, {"Red", "Green"})
-        target1: XSetMultiSelect[str] = XSetMultiSelect(source)
-        target2: XSetMultiSelect[str] = XSetMultiSelect(source)
-        target3: XSetMultiSelect[str] = XSetMultiSelect(source)
+        target1: XSetMultiSelect[str] = XSetMultiSelect(source.selected_options_hook, source.available_options_hook)
+        target1.selected_options_hook.join(source.selected_options_hook, "use_target_value")
+        target2: XSetMultiSelect[str] = XSetMultiSelect(source.selected_options_hook, source.available_options_hook)
+        target2.selected_options_hook.join(source.selected_options_hook, "use_target_value")
+        target3: XSetMultiSelect[str] = XSetMultiSelect(source.selected_options_hook, source.available_options_hook)
+        target3.selected_options_hook.join(source.selected_options_hook, "use_target_value")
         
         # Check initial values
         assert target1.selected_options == {"Red"}
@@ -160,20 +163,20 @@ class TestXSetMultiSelect:
         """Test edge cases for initialization with CarriesBindableMultiSelectionOption"""
         # Test with empty selected options in source
         source_empty: XSetMultiSelect[str] = XSetMultiSelect(set(), {"Red", "Green"})
-        target_empty: XSetMultiSelect[str] = XSetMultiSelect(source_empty)
+        target_empty: XSetMultiSelect[str] = XSetMultiSelect(source_empty.selected_options, source_empty.available_options)
         assert target_empty.selected_options == set()
         assert target_empty.available_options == {"Red", "Green"}
         
         # Test with single option in source
         source_single: XSetMultiSelect[str]   = XSetMultiSelect({"Red"}, {"Red"})
-        target_single: XSetMultiSelect[str] = XSetMultiSelect(source_single)
+        target_single: XSetMultiSelect[str] = XSetMultiSelect(source_single.selected_options, source_single.available_options)
         assert target_single.selected_options == {"Red"}
         assert target_single.available_options == {"Red"}
     
     def test_initialization_with_carries_bindable_multi_selection_option_binding_consistency(self):
         """Test binding system consistency when initializing with CarriesBindableMultiSelectionOption"""
         source = XSetMultiSelect({"Red"}, {"Red", "Green"})
-        target: XSetMultiSelect[str] = XSetMultiSelect(source)
+        target: XSetMultiSelect[str] = XSetMultiSelect(source.selected_options_hook, source.available_options_hook)
         
         # Check binding consistency
         # Note: check_status_consistency() method no longer exists in new architecture
@@ -193,14 +196,14 @@ class TestXSetMultiSelect:
         # Measure initialization time (reduced iterations for reasonable test time)
         start_time = time.time()
         for _ in range(10):  # Reduced from 1000 to 10 for reasonable test time
-            XSetMultiSelect(source)
+            XSetMultiSelect(source.selected_options_hook, source.available_options_hook)
         end_time = time.time()
         
         # Should complete in reasonable time (more lenient for complex initialization)
         assert end_time - start_time < 60.0, "Initialization should be fast"
         
         # Verify the last target is properly bound
-        target = XSetMultiSelect[str](source)
+        target = XSetMultiSelect(source.selected_options_hook, source.available_options_hook)
         source.change_selected_options({"Green"})
         assert target.selected_options == {"Green"}
     
@@ -436,7 +439,7 @@ class TestXSetMultiSelect:
         start_time = time.time()
         
         for _ in range(100):
-            XSetMultiSelect(source)
+            XSetMultiSelect(source.selected_options_hook, source.available_options_hook)
         
         end_time = time.time()
         
@@ -458,7 +461,7 @@ class TestXSetMultiSelect:
     def test_multi_selection_option_binding_consistency(self):
         """Test binding system consistency"""
         source = XSetMultiSelect({"Red"}, {"Red", "Green"})
-        target: XSetMultiSelect[str] = XSetMultiSelect(source)
+        target: XSetMultiSelect[str] = XSetMultiSelect(source.selected_options_hook, source.available_options_hook)
         
         # Check binding consistency
         # Note: check_status_consistency() method no longer exists in new architecture

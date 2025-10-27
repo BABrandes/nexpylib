@@ -9,11 +9,10 @@ from typing import Any, Literal, Mapping, Optional, TYPE_CHECKING
 from logging import Logger
 
 from ..nexus import Nexus
-from ...hooks.hook_aliases import Hook
+from ...hooks.protocols.hook_protocol import HookProtocol
 from ...auxiliary.listening_protocol import ListeningProtocol
 from ...publisher_subscriber.publisher_protocol import PublisherProtocol
 from ....foundations.carries_some_hooks_protocol import CarriesSomeHooksProtocol
-from ...utils import log
 from .helper_methods import convert_value_for_storage, filter_nexus_and_values_for_owner, complete_nexus_and_values_for_owner, complete_nexus_and_values_dict
 
 if TYPE_CHECKING:
@@ -46,10 +45,9 @@ def internal_submit_values(
         - "Check values": Only validates without updating
     """
 
-    from ...hooks.mixin_protocols.hook_with_owner_protocol import HookWithOwnerProtocol
-    from ...hooks.mixin_protocols.hook_with_isolated_validation_protocol import HookWithIsolatedValidationProtocol
-    from ...hooks.mixin_protocols.hook_with_reaction_protocol import HookWithReactionProtocol
-    from ...hooks.mixin_protocols.hook_with_connection_protocol import HookWithConnectionProtocol
+    from ...hooks.protocols.isolated_validatable_hook_protocol import IsolatedValidatableHookProtocol
+    from ...hooks.protocols.reactive_hook_protocol import ReactiveHookProtocol
+    from ...hooks.protocols.owned_hook_protocol import OwnedHookProtocol
 
     #########################################################
     # Check if the values are immutable
@@ -75,8 +73,6 @@ def internal_submit_values(
                     filtered_nexus_and_values[nexus] = value
             
             _nexus_and_values = filtered_nexus_and_values
-
-            log(nexus_manager, "NexusManager._internal_submit_values", logger, True, f"Initially {len(nexus_and_values)} nexus and values submitted, after checking for equality {len(_nexus_and_values)}")
 
             if len(_nexus_and_values) == 0:
                 return True, "Values are the same as the current values. No submission needed."
@@ -104,31 +100,21 @@ def internal_submit_values(
         return False, msg
 
     # Step 2: Collect the owners and floating hooks to validate, react to, and notify
-    owners_that_are_affected: list["CarriesSomeHooksProtocol[Any, Any]"] = []
-    hooks_with_validation: set[HookWithIsolatedValidationProtocol[Any]] = set()
-    hooks_with_reaction: set[HookWithReactionProtocol] = set()
-    publishers: set[PublisherProtocol] = set()
+    affected_hooks: set[HookProtocol[Any]] = set()
+    affected_owners: set["CarriesSomeHooksProtocol[Any, Any]"] = set()
     for nexus, value in complete_nexus_and_values.items():
         for hook in nexus.hooks:
-            if isinstance(hook, HookWithReactionProtocol):
-                hooks_with_reaction.add(hook)
-            if isinstance(hook, HookWithIsolatedValidationProtocol):
-                # Hooks that are owned by an observable are validated by the observable. They do not need to be validated in isolation.
-                if not isinstance(hook, HookWithOwnerProtocol):
-                    hooks_with_validation.add(hook)
-            if isinstance(hook, HookWithOwnerProtocol):
-                if hook.owner not in owners_that_are_affected:
-                    owners_that_are_affected.append(hook.owner)
-                if isinstance(hook.owner, PublisherProtocol):
-                    publishers.add(hook.owner)
-            publishers.add(hook) # type: ignore
+            affected_hooks.add(hook)
+            if isinstance(hook, OwnedHookProtocol):
+                owner: "CarriesSomeHooksProtocol[Any, Any]" = hook.get_owner() # type: ignore
+                affected_owners.add(owner) # type: ignore
 
     #########################################################
     # Value Validation
     #########################################################
 
     # Step 3: Validate the values
-    for owner in owners_that_are_affected:
+    for owner in affected_owners:
         value_dict, _ = filter_nexus_and_values_for_owner(complete_nexus_and_values, owner)
         complete_nexus_and_values_for_owner(value_dict, owner, as_reference_values=True)
         try:
@@ -137,12 +123,12 @@ def internal_submit_values(
             return False, f"Error in '_validate_complete_values_in_isolation' of owner '{owner}': {e} (value_dict: {value_dict})"
         if success == False:    
             return False, msg
-    for floating_hook in hooks_with_validation:
-        assert isinstance(floating_hook, HookWithConnectionProtocol)
+    for isolated_validatable_hook in affected_hooks:
+        assert isinstance(isolated_validatable_hook, IsolatedValidatableHookProtocol)
         try:
-            success, msg = floating_hook.validate_value_in_isolation(complete_nexus_and_values[floating_hook._get_nexus()]) # type: ignore
+            success, msg = isolated_validatable_hook._validate_value_in_isolation(complete_nexus_and_values[isolated_validatable_hook._get_nexus()]) # type: ignore
         except Exception as e:
-            return False, f"Error in 'validate_value_in_isolation' of floating hook '{floating_hook}': {e} (complete_nexus_and_values: {complete_nexus_and_values})"
+            return False, f"Error in 'validate_value_in_isolation' of isolated validatable hook '{isolated_validatable_hook}': {e} (complete_nexus_and_values: {complete_nexus_and_values})"
         if success == False:
             return False, msg
 
@@ -162,53 +148,32 @@ def internal_submit_values(
     # Invalidation, Reaction, and Notification
     #########################################################
 
-    # Step 5a: Invalidate the affected owners and hooks
-    for owner in owners_that_are_affected:
-        owner._invalidate() # type: ignore
+    # --------- Take care of the affected hooks ---------
 
-    # Step 5b: React to the value changes
-    for hook in hooks_with_reaction:
-        hook.react_to_value_changed()
+    for hook in affected_hooks:
+        # Reaction
+        if isinstance(hook, ReactiveHookProtocol):
+            hook._react_to_value_change(raise_error_mode="warn") # type: ignore
+        # Publication
+        if isinstance(hook, PublisherProtocol):
+            hook.publish(None, raise_error_mode="warn")
+        # Listener notification
+        if isinstance(hook, ListeningProtocol):
+            hook._notify_listeners(raise_error_mode="warn") # type: ignore
 
-    # Step 5c: Publish the value changes
-    for publisher in publishers:
-        publisher.publish(None)
+    # --------- Take care of the affected owners ---------
 
-    # Step 5d: Notify the listeners
+    # Step 5a: Invalidate the affected owners
+    for owner in affected_owners:
+        # Invalidation
+        owner._invalidate(raise_error_mode="warn") # type: ignore
+        # Publication
+        if isinstance(owner, PublisherProtocol):
+            owner.publish(None, raise_error_mode="warn")
+        # Listener notification
+        if isinstance(owner, ListeningProtocol): # type: ignore
+            owner._notify_listeners(raise_error_mode="warn") # type: ignore
 
-    # Optimize: Only notify hooks that are actually affected by the value changes
-    hooks_to_be_notified: set[Hook[Any]] = set()
-    for nexus, value in complete_nexus_and_values.items():
-        hooks_of_nexus: set[Hook[Any]] = set(nexus.hooks) # type: ignore
-        hooks_to_be_notified.update(hooks_of_nexus)
-
-    def notify_listeners(obj: "ListeningProtocol | Hook[Any]"):
-        """
-        This method notifies the listeners of an object.
-        """
-
-        try:
-            obj._notify_listeners() # type: ignore
-        except RuntimeError:
-            # RuntimeError indicates a programming error (like recursive submit_values)
-            # that should not be silently caught - re-raise it immediately
-            raise
-        except Exception as e:
-            if logger is not None:
-                logger.error(f"Error in listener callback: {e}")
-
-    # Notify owners and hooks that are owned        
-    for owner in owners_that_are_affected:
-        if isinstance(owner, ListeningProtocol):
-            notify_listeners(owner)
-        # Only notify hooks that are actually affected
-        for hook in owner._get_dict_of_hooks().values(): # type: ignore
-            if hook in hooks_to_be_notified:
-                hooks_to_be_notified.remove(hook)
-                notify_listeners(hook)
-
-    # Notify the remaining hooks
-    for hook in hooks_to_be_notified:
-        notify_listeners(hook)
+    #########################################################
 
     return True, "Values are submitted"

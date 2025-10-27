@@ -101,19 +101,59 @@ Submit a new value to the hook.
 
 ---
 
-### OwnedHook
+### OwnedReadOnlyHook
 
 ```python
-class OwnedHook(Generic[T])
+class OwnedReadOnlyHook(Generic[T, O])
 ```
 
-Hook owned by an X object, integrated with object's internal synchronization.
+Read-only hook owned by an X object, integrated with object's internal synchronization.
 
 **Constructor**:
 ```python
-OwnedHook(
-    owner: CarriesSomeHooksProtocol[Any, Any],
-    initial_value: T,
+OwnedReadOnlyHook(
+    owner: O,
+    value: T,
+    logger: Optional[Logger] = None,
+    nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
+)
+```
+
+**Properties**:
+- `value: T` — Current value (read-only)
+- `owner: O` — The owning X object
+
+**Methods**:
+- `join(other: Hook[T])` — Join with another hook
+- `isolate()` — Isolate from fusion domain
+- `is_joined_with(other: Hook[T]) -> bool` — Check if joined
+- `add_listener(callback: Callable[[], None])` — Add listener
+- `remove_listener(callback: Callable[[], None])` — Remove listener
+- `set_reaction_callback(callback: Callable[[], tuple[bool, str]])` — Set reaction callback
+- `get_reaction_callback() -> Optional[Callable[[], tuple[bool, str]]]` — Get reaction callback
+- `remove_reaction_callback()` — Remove reaction callback
+
+**Key Differences from FloatingHook**:
+- Read-only (no value setter)
+- Validation delegated to owner object
+- Participates in owner's internal synchronization
+- Automatically triggers owner invalidation on changes
+
+---
+
+### OwnedWritableHook
+
+```python
+class OwnedWritableHook(Generic[T, O])
+```
+
+Writable hook owned by an X object, integrated with object's internal synchronization.
+
+**Constructor**:
+```python
+OwnedWritableHook(
+    owner: O,
+    value: T,
     logger: Optional[Logger] = None,
     nexus_manager: NexusManager = DEFAULT_NEXUS_MANAGER
 )
@@ -121,12 +161,23 @@ OwnedHook(
 
 **Properties**:
 - `value: T` — Current value (read/write)
-- `owner: CarriesSomeHooksProtocol` — The owning X object
+- `owner: O` — The owning X object
 
 **Methods**:
-Same as FloatingHook: `join()`, `isolate()`, `is_joined_with()`, `add_listener()`, `remove_listener()`, `submit_value()`
+- `join(other: Hook[T])` — Join with another hook
+- `isolate()` — Isolate from fusion domain
+- `is_joined_with(other: Hook[T]) -> bool` — Check if joined
+- `add_listener(callback: Callable[[], None])` — Add listener
+- `remove_listener(callback: Callable[[], None])` — Remove listener
+- `submit_value(value: T) -> tuple[bool, str]` — Submit new value
+- `change_value(value: T, *, raise_submission_error_flag: bool = True) -> tuple[bool, str]` — Change value
+- `set_reaction_callback(callback: Callable[[], tuple[bool, str]])` — Set reaction callback
+- `get_reaction_callback() -> Optional[Callable[[], tuple[bool, str]]]` — Get reaction callback
+- `remove_reaction_callback()` — Remove reaction callback
 
-**Key Differences from FloatingHook**:
+**Key Differences from OwnedReadOnlyHook**:
+- Provides write access via `value` property setter
+- Includes `change_value()` method for explicit updates
 - Validation delegated to owner object
 - Participates in owner's internal synchronization
 - Automatically triggers owner invalidation on changes

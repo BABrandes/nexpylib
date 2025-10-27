@@ -7,7 +7,8 @@ import asyncio
 import pytest
 
 
-from nexpy import Publisher, XSubscriber
+from nexpy.core.publisher_subscriber.value_publisher import ValuePublisher
+from nexpy import XSubscriber
 
 from test_base import ObservableTestCase
 from run_tests import console_logger as logger
@@ -19,20 +20,20 @@ class TestXSubscriber(ObservableTestCase):
         super().setup_method()
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        self.publisher = Publisher(logger=logger)
+        self.publisher = ValuePublisher(0, preferred_publish_mode="sync")
         self.callback_call_count = 0
-        self.last_publisher: Optional[Publisher] = None
+        self.last_publisher: Optional[ValuePublisher] = None
     
     def teardown_method(self):
         self.loop.close()
     
-    def simple_callback(self, pub: Optional[Publisher]) -> Mapping[str, int]:
+    def simple_callback(self, pub: Optional[ValuePublisher]) -> Mapping[str, int]:
         """Simple callback that tracks calls and returns test data"""
         self.callback_call_count += 1
         self.last_publisher = pub
         
         if pub is None:
-            return {"initial": 0}
+            return {"value": 0}
         else:
             return {"value": self.callback_call_count}
     
@@ -53,8 +54,8 @@ class TestXSubscriber(ObservableTestCase):
     
     def test_initialization_with_multiple_publishers(self):
         """Test creating XSubscriber with multiple publishers"""
-        publisher2 = Publisher(logger=logger)
-        publisher3 = Publisher(logger=logger)
+        publisher2 = ValuePublisher(0, preferred_publish_mode="sync")
+        publisher3 = ValuePublisher(0, preferred_publish_mode="sync")
         
         publishers = {self.publisher, publisher2, publisher3}
         
@@ -108,8 +109,8 @@ class TestXSubscriber(ObservableTestCase):
     
     def test_multiple_publishers_trigger_reactions(self):
         """Test that all publishers trigger reactions"""
-        publisher2 = Publisher(logger=logger)
-        publisher3 = Publisher(logger=logger)
+        publisher2 = ValuePublisher(0, preferred_publish_mode="sync")
+        publisher3 = ValuePublisher(0, preferred_publish_mode="sync")
         
         _ = XSubscriber(   
             {self.publisher, publisher2, publisher3},
@@ -134,11 +135,11 @@ class TestXSubscriber(ObservableTestCase):
     
     def test_callback_with_publisher_parameter(self):
         """Test that callback receives correct publisher"""
-        publisher2 = Publisher(logger=logger)
+        publisher2 = ValuePublisher(0, preferred_publish_mode="sync")
         
-        publishers_seen: list[Publisher] = []
+        publishers_seen: list[ValuePublisher] = []
         
-        def tracking_callback(pub: Optional[Publisher]) -> Mapping[str, str]:
+        def tracking_callback(pub: Optional[ValuePublisher]) -> Mapping[str, str]:
             if pub is not None:
                 publishers_seen.append(pub)
             return {"data": "value"}
@@ -165,9 +166,9 @@ class TestXSubscriber(ObservableTestCase):
         """Test that submit_values is called with callback result"""
         values_to_return = {"key1": 100, "key2": 200}
         
-        def callback(pub: Optional[Publisher]) -> Mapping[str, int]:
+        def callback(pub: Optional[ValuePublisher]) -> Mapping[str, int]:
             if pub is None:
-                return {"initial": 0}
+                return {"key1": 0, "key2": 0}
             return values_to_return
         
         _ = XSubscriber(
@@ -190,7 +191,7 @@ class TestXSubscriber(ObservableTestCase):
         
         call_times: list[float] = []
         
-        def slow_callback(pub: Optional[Publisher]) -> Mapping[str, int]:
+        def slow_callback(pub: Optional[ValuePublisher]) -> Mapping[str, int]:
             call_times.append(time.time())
             return {"value": 1}
         
@@ -229,25 +230,26 @@ class TestXSubscriberEdgeCases(ObservableTestCase):
     
     def test_callback_exception_handling(self):
         """Test that callback exceptions are handled"""
-        def failing_callback(pub: Optional[Publisher]) -> Mapping[str, int]:
+        def failing_callback(pub: Optional[ValuePublisher]) -> Mapping[str, int]:
             if pub is None:
-                return {"initial": 0}
+                return {"value": 0}
             raise ValueError("Test error in callback")
         
-        publisher = Publisher(logger=logger)
-        _ = XSubscriber(
+        publisher = ValuePublisher(0, "sync")
+        subscriber = XSubscriber(
             publisher,
             failing_callback,
             logger=logger
         )
         
-        # This should not crash - error should be logged
-        publisher.publish()
+        # This should raise - callback errors are propagated
+        with pytest.raises(ValueError, match="Error in on_publication_callback"):
+            publisher.publish()
         self.loop.run_until_complete(asyncio.sleep(0.01))
     
     def test_empty_publisher_set(self):
         """Test creating XSubscriber with empty publisher set"""
-        def callback(pub: Optional[Publisher]) -> Mapping[str, int]:
+        def callback(pub: Optional[ValuePublisher]) -> Mapping[str, int]:
             return {"value": 0}
         
         observable = XSubscriber(
@@ -261,14 +263,14 @@ class TestXSubscriberEdgeCases(ObservableTestCase):
     
     def test_initial_callback_with_none(self):
         """Test that initial callback receives None"""
-        received_values: list[Optional[Publisher]] = []
+        received_values: list[Optional[ValuePublisher]] = []
         
-        def callback(pub: Optional[Publisher]) -> Mapping[str, int]:
+        def callback(pub: Optional[ValuePublisher]) -> Mapping[str, int]:
             received_values.append(pub)
             return {"value": 0}
         
         XSubscriber(
-            Publisher(logger=logger),
+            ValuePublisher(0, preferred_publish_mode="sync"),
             callback,
             logger=logger
         )
@@ -290,18 +292,18 @@ class TestXSubscriberIntegration(ObservableTestCase):
     
     @pytest.mark.skip(reason="Flaky async test - timing issues with subscriber notifications")
     def test_multiple_xobjects_same_publisher(self):
-        """Test multiple XSubscribers on same Publisher"""
-        publisher = Publisher(logger=logger)
+        """Test multiple XSubscribers on same ValuePublisher"""
+        publisher = ValuePublisher(0, preferred_publish_mode="sync")
         
         count1 = [0]
         count2 = [0]
         
-        def callback1(pub: Optional[Publisher]) -> Mapping[str, int]:
+        def callback1(pub: Optional[ValuePublisher]) -> Mapping[str, int]:
             if pub is not None:
                 count1[0] += 1
             return {"value": count1[0]}
         
-        def callback2(pub: Optional[Publisher]) -> Mapping[str, int]:
+        def callback2(pub: Optional[ValuePublisher]) -> Mapping[str, int]:
             if pub is not None:
                 count2[0] += 1
             return {"value": count2[0]}
@@ -325,19 +327,19 @@ class TestXSubscriberIntegration(ObservableTestCase):
         assert count2[0] == 2
     
     def test_chained_xobjects(self):
-        """Test chaining Publishers and XSubscribers"""
-        publisher1 = Publisher(logger=logger)
-        publisher2 = Publisher(logger=logger)
+        """Test chaining ValuePublishers and XSubscribers"""
+        publisher1 = ValuePublisher(0, preferred_publish_mode="sync")
+        publisher2 = ValuePublisher(0, preferred_publish_mode="sync")
         
         values_from_pub1: list[str] = []
         values_from_pub2: list[str] = []
         
-        def callback1(pub: Optional[Publisher]) -> Mapping[str, str]:
+        def callback1(pub: Optional[ValuePublisher]) -> Mapping[str, str]:
             if pub is not None:
                 values_from_pub1.append("pub1")
             return {"source": "pub1"}
         
-        def callback2(pub: Optional[Publisher]) -> Mapping[str, str]:
+        def callback2(pub: Optional[ValuePublisher]) -> Mapping[str, str]:
             if pub is not None:
                 values_from_pub2.append("pub2")
             return {"source": "pub2"}

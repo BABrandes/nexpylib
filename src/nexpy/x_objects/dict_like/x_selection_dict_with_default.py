@@ -1,8 +1,9 @@
-from typing import Literal, TypeVar, Generic, Optional, Mapping, Any, Callable
+from typing import Literal, TypeVar, Generic, Optional, Mapping, Any, Callable, Self
 from logging import Logger
 
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
-from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
+from nexpy.core.hooks.protocols.hook_protocol import HookProtocol
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
+from nexpy.x_objects.dict_like.protocols import XDictProtocol
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from .x_dict_selection_base import XDictSelectionBase
 from .protocols import XSelectionDictWithDefaultProtocol
@@ -41,10 +42,10 @@ class XSelectionDictWithDefault(
 
     def __init__(
         self,
-        dict_hook: Mapping[K, V] | Hook[Mapping[K, V]] | ReadOnlyHook[Mapping[K, V]],
-        key_hook: K | Hook[K] | ReadOnlyHook[K],
+        dict_hook: Mapping[K, V] | HookProtocol[Mapping[K, V]] | XDictProtocol[K, V],
+        key_hook: K | HookProtocol[K],
         default_value: V | Callable[[K], V],
-        value_hook: Optional[Hook[V]] | ReadOnlyHook[V] = None,
+        value_hook: Optional[HookProtocol[V]] = None,
         logger: Optional[Logger] = None
     ):
 
@@ -52,14 +53,14 @@ class XSelectionDictWithDefault(
         self._default_value: V | Callable[[K], V] = default_value
         
         # Pre-process dict to add default entry if needed (before wrapping in Map)
-        if not isinstance(dict_hook, ManagedHookProtocol):
+        if not isinstance(dict_hook, HookProtocol):
             # Extract initial key
-            initial_key = key_hook.value if isinstance(key_hook, ManagedHookProtocol) else key_hook # type: ignore
+            initial_key = key_hook._get_value() if isinstance(key_hook, HookProtocol) else key_hook # type: ignore
             # Add default entry if key not in dict
             if initial_key not in dict_hook: # type: ignore
-                _dict = dict(dict_hook) # type: ignore
+                _dict = dict[K, V](dict_hook) # type: ignore
                 _dict[initial_key] = self._get_default_value(initial_key) # type: ignore
-                dict_hook = _dict # type: ignore
+                dict_hook = _dict
         
         # Call parent constructor
         super().__init__(dict_hook, key_hook, value_hook, invalidate_callback=None, logger=logger) # type: ignore
@@ -68,7 +69,7 @@ class XSelectionDictWithDefault(
         """Helper to get default value (call if callable, return if constant)."""
         if callable(self._default_value):
             return self._default_value(key)  # type: ignore
-        return self._default_value  # type: ignore
+        return self._default_value
 
     def _create_add_values_callback(self) -> Callable[
         ["XSelectionDictWithDefault[K, V]", UpdateFunctionValues[Literal["dict", "key", "value"], Any]], 
@@ -204,9 +205,9 @@ class XSelectionDictWithDefault(
     #-------------------------------- Key --------------------------------
 
     @property
-    def key_hook(self) -> "Hook[K]":
+    def key_hook(self) -> OwnedWritableHook[K, Self]:
         """Get the key hook."""
-        return self._primary_hooks["key"] # type: ignore
+        return self._primary_hooks["key"]
     
     @property
     def key(self) -> K:
@@ -227,9 +228,9 @@ class XSelectionDictWithDefault(
     #-------------------------------- Value --------------------------------
 
     @property
-    def value_hook(self) -> "Hook[V]":
+    def value_hook(self) -> OwnedWritableHook[V, Self]:
         """Get the value hook."""
-        return self._primary_hooks["value"] # type: ignore
+        return self._primary_hooks["value"]
     
     @property
     def value(self) -> V:

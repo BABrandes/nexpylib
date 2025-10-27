@@ -1,11 +1,9 @@
-from typing import Generic, TypeVar, Optional, Mapping, Callable
+from typing import Generic, TypeVar, Optional, Mapping, Callable, Self
 from pathlib import Path
 from logging import Logger
 
 from ...foundations.x_base import XBase
-from ...foundations.x_object_serializable_mixin import XObjectSerializableMixin
-from ...core.hooks.owned_hook import OwnedHook
-from ...core.hooks.hook_protocols.owned_full_hook_protocol import OwnedFullHookProtocol
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
 from ...core.nexus_system.nexus import Nexus
 from ...core.nexus_system.update_function_values import UpdateFunctionValues
 from ...core.nexus_system.nexus_manager import NexusManager
@@ -13,7 +11,7 @@ from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # 
 
 EK = TypeVar("EK", bound=str)
 
-class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializableMixin[str, str|Path|None], Generic[EK]):
+class XRootedPaths(XBase[str, str|Path|None], Generic[EK]):
     """
     Manages a root directory with associated elements (files or directories) and provides
     X object hooks for path management.
@@ -64,13 +62,15 @@ class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializabl
     ):
 
         self._rooted_element_keys: set[EK] = set(rooted_elements_initial_relative_path_values.keys())
-        self._rooted_element_path_hooks: dict[str, OwnedFullHookProtocol[Optional[str|Path]]] = {}
+        self._rooted_element_path_hooks: dict[str, OwnedWritableHook[Optional[str|Path], Self]] = {}
         self._custom_validator = custom_validator
 
+        #########################################################
         # Initialize the hooks
+        #########################################################
 
         # root
-        self._root_path_hook = OwnedHook[Optional[Path]](
+        self._root_path_hook = OwnedWritableHook[Optional[Path], Self](
             self,
             root_path_initial_value,
             logger=logger,
@@ -82,7 +82,7 @@ class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializabl
             # relative paths
             relative_path_key: str = self.element_key_to_relative_path_key(key)
             relative_path_initial_value: Optional[str] = rooted_elements_initial_relative_path_values[key]
-            relative_path_hook = OwnedHook[Optional[str]](
+            relative_path_hook = OwnedWritableHook[Optional[str], Self](
                 self,
                 relative_path_initial_value,
                 logger=logger,
@@ -92,12 +92,18 @@ class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializabl
             # absolute paths
             absolute_path_key: str = self.element_key_to_absolute_path_key(key)
             absolute_path_initial_value: Optional[Path] = root_path_initial_value / relative_path_initial_value if root_path_initial_value is not None and relative_path_initial_value is not None else None
-            absolute_path_hook = OwnedHook[Optional[Path]](
+            absolute_path_hook = OwnedWritableHook[Optional[Path], Self](
                 self,
                 absolute_path_initial_value,
                 logger=logger,
             )
             self._rooted_element_path_hooks[absolute_path_key] = absolute_path_hook # type: ignore
+
+        #########################################################
+        # Prepare and initialize base class
+        #########################################################
+
+        #-------------------------------- Validation function --------------------------------
 
         def validate_complete_values_in_isolation_callback(
             self_ref: "XRootedPaths[EK]",
@@ -143,8 +149,10 @@ class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializabl
 
             return True, "Valid"
 
+        #-------------------------------- Add values to be updated callback --------------------------------
+
         def add_values_to_be_updated_callback(
-            self_ref: "XRootedPaths[EK]",
+            self_ref: Self,
             update_values: UpdateFunctionValues[str, Path|str|None]
         ) -> Mapping[str, Path|str|None]:
             """
@@ -182,10 +190,12 @@ class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializabl
 
             return additional_values
 
+        #-------------------------------- Initialize base class --------------------------------
+
         XBase.__init__( # type: ignore
             self,
-            validate_complete_values_callback=validate_complete_values_in_isolation_callback,
-            compute_missing_values_callback=add_values_to_be_updated_callback,
+            validate_complete_values_callback=validate_complete_values_in_isolation_callback, # type: ignore
+            compute_missing_values_callback=add_values_to_be_updated_callback, # type: ignore
             logger=logger)
 
     ##########################################
@@ -194,7 +204,7 @@ class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializabl
 
     @property
     def root_path(self) -> Optional[Path]:
-        return self._root_path_hook.value
+        return self._root_path_hook.value # type: ignore
 
     @root_path.setter
     def root_path(self, path: Optional[Path]) -> None:
@@ -202,10 +212,10 @@ class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializabl
         if not success:
             raise ValueError(msg)
 
-    def get_relative_path_hook(self, key: EK) -> OwnedFullHookProtocol[Optional[str]]:
+    def get_relative_path_hook(self, key: EK) -> OwnedWritableHook[Optional[str], Self]:
         return self._get_hook_by_key(self.element_key_to_relative_path_key(key)) # type: ignore
 
-    def get_absolute_path_hook(self, key: EK) -> OwnedFullHookProtocol[Optional[Path]]:
+    def get_absolute_path_hook(self, key: EK) -> OwnedWritableHook[Optional[Path], Self]:
         return self._get_hook_by_key(self.element_key_to_absolute_path_key(key)) # type: ignore
 
     def set_root_path(self, path: Optional[Path]) -> tuple[bool, str]:
@@ -225,8 +235,8 @@ class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializabl
         return self._rooted_element_keys
 
     @property
-    def rooted_element_relative_path_hooks(self) -> dict[str, OwnedFullHookProtocol[Optional[str]]]:
-        relative_path_hooks: dict[str, OwnedFullHookProtocol[Optional[str]]] = {}
+    def rooted_element_relative_path_hooks(self) -> dict[str, OwnedWritableHook[Optional[str], Self]]:
+        relative_path_hooks: dict[str, OwnedWritableHook[Optional[str], Self]] = {}
         for key in self._rooted_element_keys:
             if key not in self._rooted_element_path_hooks:
                 raise ValueError(f"Key {key} not found in rooted_element_relative_path_hooks")
@@ -234,8 +244,8 @@ class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializabl
         return relative_path_hooks
 
     @property
-    def rooted_element_absolute_path_hooks(self) -> dict[str, OwnedFullHookProtocol[Optional[Path]]]:
-        absolute_path_hooks: dict[str, OwnedFullHookProtocol[Optional[Path]]] = {}
+    def rooted_element_absolute_path_hooks(self) -> dict[str, OwnedWritableHook[Optional[Path], Self]]:
+        absolute_path_hooks: dict[str, OwnedWritableHook[Optional[Path], Self]] = {}
         for key in self._rooted_element_keys:
             if key not in self._rooted_element_path_hooks:
                 raise ValueError(f"Key {key} not found in rooted_element_absolute_path_hooks")
@@ -246,7 +256,7 @@ class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializabl
     # CarriesHooks interface implementation
     ##########################################
 
-    def _get_hook_by_key(self, key: str) -> OwnedFullHookProtocol[Path|str|None]:
+    def _get_hook_by_key(self, key: str) -> OwnedWritableHook[Path|str|None, Self]:
         """
         Get a hook by its key.
         """
@@ -272,18 +282,18 @@ class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializabl
         Get the value of a hook by its key.
         """
         if key == XRootedPaths.ROOT_PATH_KEY:
-            return self._root_path_hook.value
+            return self._root_path_hook._get_value() # type: ignore
         elif key in self._rooted_element_path_hooks:
-            return self._rooted_element_path_hooks[key].value
+            return self._rooted_element_path_hooks[key]._get_value() # type: ignore
         else:
             raise ValueError(f"Key {key} not found in hooks")
 
-    def _get_key_by_hook_or_nexus(self, hook_or_nexus: OwnedFullHookProtocol[Path|str|None]|Nexus[Path|str|None]) -> EK:
+    def _get_key_by_hook_or_nexus(self, hook_or_nexus: OwnedWritableHook[Path|str|None, Self]|Nexus[Path|str|None]) -> EK: # type: ignore
         """
         Get the key of a hook or nexus.
         """
         
-        if isinstance(hook_or_nexus, OwnedFullHookProtocol):
+        if isinstance(hook_or_nexus, OwnedWritableHook):
             if hook_or_nexus is self._root_path_hook:
                 return XRootedPaths.ROOT_PATH_KEY # type: ignore
             else:
@@ -305,13 +315,13 @@ class XRootedPaths(XBase[str, str|Path|None, "XRootedPaths"], XObjectSerializabl
     #### ObservableSerializable implementation ####
     
     def get_values_for_serialization(self) -> Mapping[str, Path|str|None]:
-        root_path: Optional[Path] = self._root_path_hook.value
+        root_path: Optional[Path] = self._root_path_hook._get_value() # type: ignore
         if root_path is not None and not isinstance(root_path, Path): # type: ignore
             raise ValueError("Root path must be a path")
         rooted_elements_initial_relative_path_values: dict[EK, str|None] = {}
         for key in self._rooted_element_keys:
             relative_path_key: str = self.element_key_to_relative_path_key(key)
-            relative_path: Optional[str] = self._rooted_element_path_hooks[relative_path_key].value # type: ignore
+            relative_path: Optional[str] = self._rooted_element_path_hooks[relative_path_key]._get_value() # type: ignore
             if relative_path is not None and not isinstance(relative_path, str): # type: ignore
                 raise ValueError("Relative path must be a string")
             rooted_elements_initial_relative_path_values[key] = relative_path

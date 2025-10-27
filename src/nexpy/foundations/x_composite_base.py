@@ -1,33 +1,29 @@
-from typing import Callable, Generic, Mapping, Optional, TypeVar, Any, Literal
+from typing import Callable, Generic, Mapping, Optional, TypeVar, Literal, Self, Any
 from logging import Logger
 
-from ..core.auxiliary.listening_base import ListeningBase
-from ..core.hooks.hook_protocols.owned_hook_protocol import OwnedHookProtocol
-from ..core.hooks.hook_protocols.owned_read_only_hook_protocol import OwnedReadOnlyHookProtocol
-from ..core.hooks.hook_protocols.owned_full_hook_protocol import OwnedFullHookProtocol
-from ..core.hooks.owned_hook import OwnedHook
-from ..core.hooks.mixin_protocols.hook_with_owner_protocol import HookWithOwnerProtocol
-from ..core.hooks.mixin_protocols.hook_with_getter_protocol import HookWithGetterProtocol
-from ..core.hooks.hook_aliases import Hook, ReadOnlyHook
+from ..core.hooks import OwnedWritableHook, OwnedReadOnlyHook, OwnedHookProtocol, HookProtocol
 from ..core.nexus_system.nexus import Nexus
 from ..core.nexus_system.nexus_manager import NexusManager
 from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
-from ..core.utils import log
 from ..core.nexus_system.submission_error import SubmissionError
 
 from .x_base import XBase
 from ..core.nexus_system.update_function_values import UpdateFunctionValues
-from .x_object_serializable_mixin import XObjectSerializableMixin
 
 PHK = TypeVar("PHK")
 SHK = TypeVar("SHK")
 PHV = TypeVar("PHV", covariant=True)
 SHV = TypeVar("SHV", covariant=True)
-O = TypeVar("O", bound="XCompositeBase[Any, Any, Any, Any, Any]")
 
-class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializableMixin[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV, O]):
+class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
     """
     Base class for composite X objects (multiple hooks) in the hook-based architecture.
+
+    Generic type parameters:
+        PHK: The type of the primary hook keys
+        SHK: The type of the secondary hook keys
+        PHV: The type of the primary hook values
+        SHV: The type of the secondary hook values
 
     This class combines BaseListening and BaseCarriesHooks to provide the complete
     interface for observables. It implements a flexible hook-based system that replaces
@@ -160,8 +156,8 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
     def __init__(
             self,
             *,
-            initial_hook_values: Mapping[PHK, PHV|OwnedHookProtocol[PHV]],
-            compute_missing_primary_values_callback: Optional[Callable[[O, UpdateFunctionValues[PHK, PHV]], Mapping[PHK, PHV]]],
+            initial_hook_values: Mapping[PHK, PHV|HookProtocol[PHV]],
+            compute_missing_primary_values_callback: Optional[Callable[[Self, UpdateFunctionValues[PHK, PHV]], Mapping[PHK, PHV]]],
             compute_secondary_values_callback: Optional[Mapping[SHK, Callable[[Mapping[PHK, PHV]], SHV]]],
             validate_complete_primary_values_callback: Optional[Callable[[Mapping[PHK, PHV]], tuple[bool, str]]],
             invalidate_after_update_callback: Optional[Callable[[], None]] = None,
@@ -396,8 +392,8 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
         #-------------------------------- Initialization start --------------------------------
 
         # Initialize fields
-        self._primary_hooks: dict[PHK, OwnedFullHookProtocol[PHV]] = {}
-        self._secondary_hooks: dict[SHK, OwnedReadOnlyHookProtocol[SHV]] = {}
+        self._primary_hooks: dict[PHK, OwnedWritableHook[PHV, Self]] = {}
+        self._secondary_hooks: dict[SHK, OwnedReadOnlyHook[SHV, Self]] = {}
         self._secondary_values: dict[SHK, SHV] = {}
         """Just to ensure that the secondary values cannot be modified from outside. They can be different, but only within the nexus manager's equality check. These values are never used for anything else."""
 
@@ -418,22 +414,17 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
             for key, wrapper in output_value_wrapper.items():
                 self._output_value_wrappers[key] = wrapper
 
-        # Initialize the BaseListening
-        ListeningBase.__init__(self, logger)
-
         #--------------------------------Initialize BaseCarriesHooks--------------------------------
 
-        def internal_invalidate_callback(self_ref: O) -> tuple[bool, str]:
+        def internal_invalidate_callback() -> tuple[bool, str]:
             if invalidate_after_update_callback is not None:
                 try:
                     invalidate_after_update_callback()
                 except Exception as e:
-                    log(self_ref, "invalidate", self_ref._logger, False, f"Error in the act_on_invalidation_callback: {e}")
                     raise ValueError(f"Error in the act_on_invalidation_callback: {e}")
-            log(self_ref, "invalidate", self_ref._logger, True, "Successfully invalidated")
             return True, "Successfully invalidated"
 
-        def internal_validation_in_isolation_callback(self_ref: O, values: Mapping[PHK|SHK, PHV|SHV]) -> tuple[bool, str]:
+        def internal_validation_in_isolation_callback(self_ref: Self, values: Mapping[PHK|SHK, PHV|SHV]) -> tuple[bool, str]:
             
             # First, do the internal verification method
             if validate_complete_primary_values_callback is not None:
@@ -443,8 +434,8 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
                         primary_values_dict[key] = value # type: ignore
                     elif key in self_ref._secondary_hooks:
                         # Check if internal secondary values are equal to the values
-                        if not self_ref._get_nexus_manager().is_equal(self_ref._secondary_values[key], value):
-                            return False, f"Internal secondary value for key {key} ( {self_ref._secondary_values[key]} ) is not equal to the submitted value {value}"
+                        if not self_ref._get_nexus_manager().is_equal(self_ref._secondary_values[key], value): # type: ignore
+                            return False, f"Internal secondary value for key {key} ( {self_ref._secondary_values[key]} ) is not equal to the submitted value {value}" # type: ignore
                     else:
                         raise ValueError(f"Key {key} not found in component_hooks or secondary_hooks")
                 success, msg = validate_complete_primary_values_callback(primary_values_dict)
@@ -458,14 +449,14 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
                     return False, msg
             return True, "Values are valid"
 
-        def internal_add_values_to_be_updated_callback(self_ref: O, update_values: UpdateFunctionValues[PHK|SHK, PHV|SHV]) -> Mapping[PHK|SHK, PHV|SHV]:
+        def internal_add_values_to_be_updated_callback(self_ref: Self, update_values: UpdateFunctionValues[PHK|SHK, PHV|SHV]) -> Mapping[PHK|SHK, PHV|SHV]:
             # Step 1: Complete the primary values
             primary_values: dict[PHK, PHV] = {}
             for key, hook in self_ref._primary_hooks.items():
                 if key in update_values.submitted:
                     primary_values[key] = update_values.submitted[key] # type: ignore
                 else:
-                    primary_values[key] = hook.value
+                    primary_values[key] = hook._get_value() # type: ignore
 
             # Step 2: Generate additionally values if add_values_to_be_updated_callback is provided
             additional_values: dict[PHK|SHK, PHV|SHV] = {}
@@ -500,8 +491,8 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
             self,
             logger=logger,
             invalidate_after_update_callback=internal_invalidate_callback,
-            validate_complete_values_callback=internal_validation_in_isolation_callback,
-            compute_missing_values_callback=internal_add_values_to_be_updated_callback,
+            validate_complete_values_callback=internal_validation_in_isolation_callback, # type: ignore
+            compute_missing_values_callback=internal_add_values_to_be_updated_callback, # type: ignore
             nexus_manager=nexus_manager
         )
 
@@ -510,17 +501,17 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
         initial_primary_hook_values: dict[PHK, PHV] = {}
         for key, value in initial_hook_values.items():
 
-            if isinstance(value, HookWithGetterProtocol):
-                initial_value: PHV = value.value # type: ignore
+            if isinstance(value, HookProtocol):
+                initial_value: PHV = value._get_value() # type: ignore
             else:
                 initial_value = value
 
             initial_primary_hook_values[key] = initial_value
-            hook = OwnedHook(self, initial_value, logger, nexus_manager) # type: ignore
+            hook = OwnedWritableHook[PHV, Self](self, initial_value, logger, nexus_manager) # type: ignore
             self._primary_hooks[key] = hook
             
-            if isinstance(value, HookWithGetterProtocol):
-                value.join(hook, "use_target_value") # type: ignore
+            if isinstance(value, OwnedHookProtocol):
+                value._join(hook, "use_target_value") # type: ignore
 
         self._secondary_hook_callbacks: dict[SHK, Callable[[Mapping[PHK, PHV]], SHV]] = {}
         if compute_secondary_values_callback is not None:
@@ -528,7 +519,7 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
                 self._secondary_hook_callbacks[key] = _callback
                 value = _callback(initial_primary_hook_values)
                 self._secondary_values[key] = value
-                secondary_hook = OwnedHook[SHV](self, value, logger, nexus_manager)
+                secondary_hook = OwnedReadOnlyHook[SHV, Self](self, value, logger, nexus_manager)
                 self._secondary_hooks[key] = secondary_hook
 
         #-------------------------------- Initialize finished --------------------------------
@@ -537,7 +528,7 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
     # CarriesSomeHooksBase methods implementation
     #########################################################################
 
-    def _get_hook_by_key(self, key: PHK|SHK) -> OwnedHookProtocol[PHV|SHV]:
+    def _get_hook_by_key(self, key: PHK|SHK) -> OwnedHookProtocol[PHV|SHV, Self]:
         """
         Get a hook by its key.
         
@@ -548,7 +539,7 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
             
         Returns
         -------
-        HookWithOwnerProtocol[PHV|SHV]
+        OwnedHookProtocol[PHV|SHV, Self]
             The hook associated with the key
             
         Raises
@@ -591,13 +582,13 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
         """
         return self._get_hook_by_key(key).value
 
-    def _get_key_by_hook_or_nexus(self, hook_or_nexus: OwnedHookProtocol[PHV|SHV]|Nexus[PHV|SHV]) -> PHK|SHK:
+    def _get_key_by_hook_or_nexus(self, hook_or_nexus: OwnedHookProtocol[PHV|SHV, Any]|Nexus[PHV|SHV]) -> PHK|SHK:
         """
         Get the key for a hook or nexus.
 
         Parameters
         ----------
-        hook_or_nexus : HookWithOwnerProtocol[PHV|SHV] or Nexus[PHV|SHV]
+        hook_or_nexus : OwnedHookProtocol[PHV|SHV, Self] or Nexus[PHV|SHV]
             The hook or nexus to get the key for
 
         Returns
@@ -623,7 +614,7 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
                 if hook._get_nexus() == hook_or_nexus: # type: ignore
                     return key
             raise ValueError(f"Hook {hook_or_nexus} not found in component_hooks or secondary_hooks")
-        elif isinstance(hook_or_nexus, HookWithOwnerProtocol): #type: ignore
+        elif isinstance(hook_or_nexus, OwnedHookProtocol): #type: ignore
             for key, hook in self._primary_hooks.items():
                 if hook == hook_or_nexus:
                     return key
@@ -635,16 +626,22 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
             raise ValueError(f"Hook {hook_or_nexus} not found in component_hooks or secondary_hooks")
 
     #########################################################
-    # ObservableSerializable implementation
+    # Serialization methods implementation
     #########################################################
 
     def get_values_for_serialization(self) -> Mapping[PHK|SHK, PHV|SHV]:
-        return {key: self.value_by_key(key) for key in self._primary_hook_keys}
+        """
+        Get the values for serialization.
+        """
+        return {key: self._get_value_by_key(key) for key in self._get_hook_keys()}
 
     def set_values_from_serialization(self, values: Mapping[PHK|SHK, PHV|SHV]) -> None:
+        """
+        Set the values from serialization.
+        """
         success, msg = self._submit_values(values)
         if not success:
-            raise ValueError(msg)
+            raise ValueError(f"Failed to set values from serialization: {msg}")
 
     #########################################################################
     # Other methods (maybe for a future protocol)
@@ -656,14 +653,14 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
         else:
             return self._get_value_by_key(key)
 
-    def join_many_by_keys(self, source_hooks: Mapping[PHK|SHK, Hook[PHV|SHV]|ReadOnlyHook[PHV|SHV]], initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> None:
+    def join_many_by_keys(self, source_hooks: Mapping[PHK|SHK, HookProtocol[PHV|SHV]], initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> None:
         """
         Join many hooks by their keys.
         """
         for key, hook in source_hooks.items():
             self.join_by_key(key, hook, initial_sync_mode)
 
-    def join_by_key(self, source_hook_key: PHK|SHK, target_hook: Hook[PHV|SHV]|ReadOnlyHook[PHV|SHV], initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> None:
+    def join_by_key(self, source_hook_key: PHK|SHK, target_hook: HookProtocol[PHV|SHV], initial_sync_mode: Literal["use_caller_value", "use_target_value"]) -> None:
         """
         Join a hook by its key.
 
@@ -731,7 +728,7 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
         with self._lock:
             return self._value_wrapped(key)
 
-    def hook_by_key(self, key: PHK|SHK) -> OwnedFullHookProtocol[PHV|SHV]:
+    def hook_by_key(self, key: PHK|SHK) -> OwnedHookProtocol[PHV|SHV, Self]:
         """
         Get a hook by its key.
 
@@ -741,7 +738,7 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
             key: The key of the hook to get
 
         Returns:
-            OwnedFullHookProtocol[PHV|SHV]: The hook
+            OwnedHookProtocol[PHV|SHV, Self]: The hook
 
         Raises:
             ValueError: If the key is not found in component_hooks or secondary_hooks
@@ -851,13 +848,13 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
     # Other private methods
     #########################################################################
 
-    def _get_key_for_primary_hook(self, hook_or_nexus: OwnedFullHookProtocol[PHV|SHV]|Nexus[PHV|SHV]) -> PHK:
+    def _get_key_for_primary_hook(self, hook_or_nexus: OwnedHookProtocol[PHV|SHV, Self]|Nexus[PHV|SHV]) -> PHK:
         """
         Get the key for a primary hook.
         
         Parameters
         ----------
-        hook_or_nexus : HookWithOwnerProtocol[PHV|SHV] or Nexus[PHV|SHV]
+        hook_or_nexus : OwnedHookProtocol[PHV|SHV, Self] or Nexus[PHV|SHV]
             The hook or nexus to get the key for
             
         Returns
@@ -880,13 +877,13 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
                 return key
         raise ValueError(f"Hook {hook_or_nexus} is not a primary hook!")
 
-    def _get_key_for_secondary_hook(self, hook_or_nexus: OwnedReadOnlyHookProtocol[PHV|SHV]|Nexus[PHV|SHV]) -> SHK:
+    def _get_key_for_secondary_hook(self, hook_or_nexus: OwnedHookProtocol[PHV|SHV, Self]|Nexus[PHV|SHV]) -> SHK:
         """
         Get the key for a secondary hook.
         
         Parameters
         ----------
-        hook_or_nexus : HookWithOwnerProtocol[PHV|SHV] or Nexus[PHV|SHV]
+        hook_or_nexus : OwnedHookProtocol[PHV|SHV, Self] or Nexus[PHV|SHV]
             The hook or nexus to get the key for
             
         Returns
@@ -914,13 +911,13 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
     #########################################################################
 
     @property
-    def primary_hooks(self) -> dict[PHK, OwnedFullHookProtocol[PHV]]:
+    def primary_hooks(self) -> Mapping[PHK, OwnedWritableHook[PHV, Self]]:
         """
         Get the primary hooks of the X object.
         
         Returns
         -------
-        dict[PHK, HookWithOwnerProtocol[PHV]]
+        Mapping[PHK, OwnedWritableHook[PHV, Self]]
             Copy of the primary hooks dictionary
             
         Notes
@@ -931,13 +928,13 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
         return self._primary_hooks.copy()
     
     @property
-    def secondary_hooks(self) -> dict[SHK, OwnedReadOnlyHookProtocol[SHV]]:
+    def secondary_hooks(self) -> Mapping[SHK, OwnedReadOnlyHook[SHV, Self]]:
         """
         Get the secondary hooks of the X object.
         
         Returns
         -------
-        dict[SHK, HookWithOwnerProtocol[SHV]]
+        Mapping[SHK, OwnedReadOnlyHook[SHV, Self]]
             Copy of the secondary hooks dictionary
             
         Notes
@@ -962,7 +959,7 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
         This property must be implemented by subclasses to provide access to primary values.
         It should return the current values of all primary hooks.
         """
-        return {key: hook.value for key, hook in self._primary_hooks.items()}
+        return {key: hook._get_value() for key, hook in self._primary_hooks.items()} # type: ignore
     
     @property
     def secondary_values(self) -> dict[SHK, SHV]:
@@ -979,7 +976,7 @@ class XCompositeBase(ListeningBase, XBase[PHK|SHK, PHV|SHV, O], XObjectSerializa
         This property must be implemented by subclasses to provide access to secondary values.
         It should return the current values of all secondary hooks.
         """
-        return {key: hook.value for key, hook in self._secondary_hooks.items()}
+        return {key: hook._get_value() for key, hook in self._secondary_hooks.items()} # type: ignore
 
     @property
     def primary_hook_keys(self) -> set[PHK]:

@@ -50,29 +50,19 @@ from logging import Logger
 
 from ..auxiliary.weak_reference_storage import WeakReferenceStorage
 
-from .publisher_protocol import PublisherProtocol
-
 if TYPE_CHECKING:
     from .subscriber import Subscriber
 
-class Publisher(PublisherProtocol):
+class PublisherMixin():
     """
-    A Publisher that manages subscribers and publishes updates asynchronously.
+    A mixin that adds publisher functionality to a class.
     
-    The Publisher uses weak references to track subscribers, enabling automatic
-    cleanup when subscribers are garbage collected. It supports threshold-based
-    cleanup (time and size) to maintain performance with many subscribers.
+    This mixin provides the core publisher functionality, including:
     
-    **Asynchronous Non-Blocking Design**
-    
-    Publications are executed asynchronously, allowing subscribers to react
-    independently without blocking the publisher or each other. When `publish()`
-    is called, it:
-    
-    1. Returns immediately without waiting for subscriber reactions
-    2. Creates asyncio tasks for each subscriber's `react_to_publication()` method
-    3. Subscriber reactions execute independently in the event loop
-    4. Errors in subscriber reactions are handled without affecting other subscribers
+    - Adding and removing subscribers
+    - Publishing updates to subscribers
+    - Handling publication exceptions
+    - Managing publication modes
     
     This design is ideal for scenarios where reactions may involve I/O operations,
     network calls, or other potentially slow operations that should not block the
@@ -306,7 +296,7 @@ class Publisher(PublisherProtocol):
 
         return False
 
-    def _handle_task_exception(self, task: asyncio.Task[None], subscriber_or_callback: "Subscriber"|Callable[[], None]) -> None:
+    def _handle_task_exception(self, task: asyncio.Task[None], subscriber_or_callback: "Subscriber"|Callable[[], None], raise_error_mode: Literal["raise", "ignore", "warn"] = "raise") -> None:
         """
         Handle exceptions that occur in subscriber reaction tasks.
         
@@ -336,15 +326,17 @@ class Publisher(PublisherProtocol):
                 error_msg = f"Callback {subscriber_or_callback} failed to react to publication: {e}"
             else:
                 error_msg = f"subscriber_or_callback is not a Subscriber or Callable: {subscriber_or_callback}"
-                warnings.warn(f"subscriber_or_callback is not a Subscriber or Callable: {subscriber_or_callback}")
 
-            if self._logger:
-                self._logger.error(error_msg, exc_info=True)
-            else:
-                # Re-raise if no logger is configured so the error isn't silently ignored
-                raise RuntimeError(error_msg) from e
+            if raise_error_mode == "raise":
+                raise e
+            elif raise_error_mode == "ignore":
+                pass
+            elif raise_error_mode == "warn":
+                warnings.warn(error_msg, stacklevel=2)
+            else: 
+                raise ValueError(f"Invalid raise_error_mode: {raise_error_mode}")
 
-    def publish(self, mode: Literal["async", "sync", "direct", "off", None] = None) -> None:
+    def publish(self, mode: Literal["async", "sync", "direct", "off", None] = None, raise_error_mode: Literal["raise", "ignore", "warn"] = "raise") -> None:
         """
         Publish an update to all subscribed subscribers and/or callbacks.
         
@@ -576,7 +568,7 @@ class Publisher(PublisherProtocol):
                 for subscriber_ref in self._subscriber_storage.weak_references:
                     subscriber: Subscriber | None = subscriber_ref()
                     if subscriber is not None:
-                        task: asyncio.Task[None] = subscriber.react_to_publication_task(self, "async")
+                        task: asyncio.Task[None] = subscriber.react_to_publication_task(self, "async") # type: ignore
                         task.add_done_callback(
                             lambda task, subscriber=subscriber: self._handle_task_exception(task, subscriber)
                         )
@@ -585,7 +577,7 @@ class Publisher(PublisherProtocol):
                     if asyncio.iscoroutinefunction(callback):
                         task = asyncio.create_task(callback())
                         task.add_done_callback(
-                            lambda t, c=callback: self._handle_task_exception(t, callback)
+                            lambda t, c=callback: self._handle_task_exception(t, callback, raise_error_mode)
                         )
                     else:
                         # Wrap sync callback in async task
@@ -593,7 +585,7 @@ class Publisher(PublisherProtocol):
                             cb()
                         task = asyncio.create_task(run_sync_callback(callback))
                         task.add_done_callback(
-                            lambda task, callback=callback: self._handle_task_exception(task, callback)
+                            lambda task, callback=callback: self._handle_task_exception(task, callback, raise_error_mode)
                         )
 
             case "sync":
@@ -612,11 +604,12 @@ class Publisher(PublisherProtocol):
                             # Run the async reaction synchronously
                             loop.run_until_complete(subscriber._react_async_to_publication(self, "sync")) # type: ignore
                         except Exception as e:
-                            error_msg = f"Subscriber {subscriber} failed to react to publication: {e}"
-                            if self._logger:
-                                self._logger.error(error_msg, exc_info=True)
-                            else:
-                                raise RuntimeError(error_msg) from e
+                            if raise_error_mode == "raise":
+                                raise e
+                            elif raise_error_mode == "ignore":
+                                pass
+                            elif raise_error_mode == "warn":
+                                warnings.warn(f"Subscriber {subscriber} failed to react to publication: {e}", stacklevel=2)
                 
                 for callback in self._callback_storage:
                     try:
@@ -625,11 +618,12 @@ class Publisher(PublisherProtocol):
                         else:
                             callback()
                     except Exception as e:
-                        error_msg = f"Callback {callback} failed to react to publication: {e}"
-                        if self._logger:
-                            self._logger.error(error_msg, exc_info=True)
-                        else:
-                            raise RuntimeError(error_msg) from e
+                        if raise_error_mode == "raise":
+                            raise e
+                        elif raise_error_mode == "ignore":
+                            pass
+                        elif raise_error_mode == "warn":
+                            warnings.warn(f"Callback {callback} failed to react to publication: {e}", stacklevel=2)   
             
             case "direct":
                 # Direct mode: pure synchronous execution without asyncio overhead
@@ -643,11 +637,12 @@ class Publisher(PublisherProtocol):
                             # Direct synchronous call
                             subscriber._react_to_publication(self, "direct") # type: ignore
                         except Exception as e:
-                            error_msg = f"Subscriber {subscriber} failed to react in direct mode: {e}"
-                            if self._logger:
-                                self._logger.error(error_msg, exc_info=True)
-                            else:
-                                raise RuntimeError(error_msg) from e
+                            if raise_error_mode == "raise":
+                                raise RuntimeError(f"Subscriber {subscriber} failed to react in direct mode: {e}") from e
+                            elif raise_error_mode == "ignore":
+                                pass
+                            elif raise_error_mode == "warn":
+                                warnings.warn(f"Subscriber {subscriber} failed to react in direct mode: {e}", stacklevel=2)
                 
                 # Execute callbacks directly without asyncio
                 for callback in self._callback_storage:

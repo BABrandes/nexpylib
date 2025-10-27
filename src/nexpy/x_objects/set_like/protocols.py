@@ -1,6 +1,8 @@
-from typing import Any, TypeVar, Protocol, runtime_checkable, Optional
+from typing import Any, TypeVar, Protocol, runtime_checkable, Optional, Self
 from collections.abc import Set as AbstractSet
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
+from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
+from nexpy.core.hooks.implementations.owned_read_only_hook import OwnedReadOnlyHook
+from nexpy.core.hooks.protocols.hook_protocol import HookProtocol
 from ...foundations.carries_some_hooks_protocol import CarriesSomeHooksProtocol
 
 T = TypeVar("T")
@@ -12,7 +14,7 @@ class XSetProtocol(CarriesSomeHooksProtocol[Any, Any], Protocol[T]):
     #-------------------------------- set value --------------------------------
     
     @property
-    def set_hook(self) -> Hook[AbstractSet[T]]:
+    def set_hook(self) -> HookProtocol[AbstractSet[T]]:
         """
         Get the hook for the set - it can contain any iterable as long as it can be converted to a set.
         """
@@ -28,7 +30,7 @@ class XSetProtocol(CarriesSomeHooksProtocol[Any, Any], Protocol[T]):
     @set.setter
     def set(self, value: AbstractSet[T]) -> None:
         """
-        Set the set value (accepts any iterable).
+        Set the set value.
         """
         self.change_set(value)
     
@@ -41,7 +43,7 @@ class XSetProtocol(CarriesSomeHooksProtocol[Any, Any], Protocol[T]):
     #-------------------------------- length --------------------------------
     
     @property
-    def length_hook(self) -> ReadOnlyHook[int]:
+    def length_hook(self) -> HookProtocol[int]:
         """
         Get the hook for the set length.
         """
@@ -55,12 +57,12 @@ class XSetProtocol(CarriesSomeHooksProtocol[Any, Any], Protocol[T]):
         ...
 
 @runtime_checkable
-class XSelectionOptionsProtocol(Protocol[T]):
+class XSelectionOptionsProtocol(CarriesSomeHooksProtocol[Any, Any], Protocol[T]):
 
     #-------------------------------- available options --------------------------------
 
     @property
-    def available_options_hook(self) -> Hook[AbstractSet[T]]:
+    def available_options_hook(self) -> OwnedWritableHook[AbstractSet[T], Self]:
         ...
 
     @property
@@ -78,7 +80,7 @@ class XSelectionOptionsProtocol(Protocol[T]):
     #-------------------------------- selected options --------------------------------
 
     @property
-    def selected_option_hook(self) -> Hook[T]:
+    def selected_option_hook(self) -> OwnedWritableHook[T, Self]:
         ...
 
     @property
@@ -95,7 +97,7 @@ class XSelectionOptionsProtocol(Protocol[T]):
     #-------------------------------- length --------------------------------
     
     @property
-    def number_of_available_options_hook(self) -> ReadOnlyHook[int]:
+    def number_of_available_options_hook(self) -> OwnedReadOnlyHook[int, Self]:
         """
         Get the hook for the set length.
         """
@@ -114,12 +116,12 @@ class XSelectionOptionsProtocol(Protocol[T]):
         ...
 
 @runtime_checkable
-class XOptionalSelectionOptionProtocol(Protocol[T]):
+class XOptionalSelectionOptionProtocol(CarriesSomeHooksProtocol[Any, Any], Protocol[T]):
 
     #-------------------------------- available options --------------------------------
 
     @property
-    def available_options_hook(self) -> Hook[AbstractSet[T]]:
+    def available_options_hook(self) -> OwnedWritableHook[AbstractSet[T], Self]:
         ...
 
     @property
@@ -136,7 +138,7 @@ class XOptionalSelectionOptionProtocol(Protocol[T]):
     #-------------------------------- selected options --------------------------------
 
     @property
-    def selected_option_hook(self) -> Hook[Optional[T]]:
+    def selected_option_hook(self) -> OwnedWritableHook[Optional[T], Self]:
         ...
 
     @property
@@ -153,7 +155,7 @@ class XOptionalSelectionOptionProtocol(Protocol[T]):
     #-------------------------------- length --------------------------------
     
     @property
-    def number_of_available_options_hook(self) -> ReadOnlyHook[int]:
+    def number_of_available_options_hook(self) -> OwnedReadOnlyHook[int, Self]:
         """
         Get the hook for the set length.
         """
@@ -172,12 +174,12 @@ class XOptionalSelectionOptionProtocol(Protocol[T]):
         ...
 
 @runtime_checkable
-class XMultiSelectionOptionsProtocol(Protocol[T]):
+class XMultiSelectionOptionsProtocol(CarriesSomeHooksProtocol[Any, Any], Protocol[T]):
 
     #-------------------------------- available options --------------------------------
 
     @property
-    def available_options_hook(self) -> Hook[AbstractSet[T]]:
+    def available_options_hook(self) -> OwnedWritableHook[AbstractSet[T], Self]:
         ...
 
     @property
@@ -194,7 +196,7 @@ class XMultiSelectionOptionsProtocol(Protocol[T]):
     #-------------------------------- selected options --------------------------------
 
     @property
-    def selected_options_hook(self) -> Hook[AbstractSet[T]]:
+    def selected_options_hook(self) -> OwnedWritableHook[AbstractSet[T], Self]:
         ...
 
     @property
@@ -211,7 +213,7 @@ class XMultiSelectionOptionsProtocol(Protocol[T]):
     #-------------------------------- length --------------------------------
 
     @property
-    def number_of_available_options_hook(self) -> ReadOnlyHook[int]:
+    def number_of_available_options_hook(self) -> OwnedReadOnlyHook[int, Self]:
         """
         Get the hook for the number of available options.
         """
@@ -225,7 +227,7 @@ class XMultiSelectionOptionsProtocol(Protocol[T]):
         ...
     
     @property
-    def number_of_selected_options_hook(self) -> ReadOnlyHook[int]:
+    def number_of_selected_options_hook(self) -> OwnedReadOnlyHook[int, Self]:
         """
         Get the hook for the number of selected options.
         """

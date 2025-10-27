@@ -71,8 +71,11 @@ class TestXSetSingleSelect:
         # Create a source observable selection option
         source = XSetSingleSelect("Red", {"Red", "Green", "Blue"})
         
-        # Create a new observable selection option initialized with the source
-        target: XSetSingleSelect[str] = XSetSingleSelect(source)
+        # Create a new observable selection option with plain values
+        target: XSetSingleSelect[str] = XSetSingleSelect(source.selected_option, source.available_options)
+        
+        # Manually join the hooks to create the binding
+        target.selected_option_hook.join(source.selected_option_hook, "use_target_value")
         
         # Check that the target has the same initial value
         assert target.selected_option == "Red"
@@ -90,8 +93,10 @@ class TestXSetSingleSelect:
         """Test initialization with CarriesBindableSelectionOption in a chain"""
         # Create a chain of observable selection options
         obs1 = XSetSingleSelect("Small", {"Small", "Medium"})
-        obs2: XSetSingleSelect[str] = XSetSingleSelect(obs1)
-        obs3: XSetSingleSelect[str] = XSetSingleSelect(obs2)
+        obs2: XSetSingleSelect[str] = XSetSingleSelect(obs1.selected_option, obs1.available_options)
+        obs2.selected_option_hook.join(obs1.selected_option_hook, "use_target_value")
+        obs3: XSetSingleSelect[str] = XSetSingleSelect(obs2.selected_option, obs2.available_options)
+        obs3.selected_option_hook.join(obs2.selected_option_hook, "use_target_value")
         
         # Check initial values
         assert obs1.selected_option == "Small"
@@ -113,7 +118,8 @@ class TestXSetSingleSelect:
     def test_initialization_with_carries_bindable_selection_option_unbinding(self):
         """Test that initialization with CarriesBindableSelectionOption can be unbound"""
         source = XSetSingleSelect("Red", {"Red", "Green"})
-        target: XSetSingleSelect[str] = XSetSingleSelect(source)
+        target: XSetSingleSelect[str] = XSetSingleSelect(source.selected_option, source.available_options)
+        target.selected_option_hook.join(source.selected_option_hook, "use_target_value")
         
         # Verify they are bound
         assert target.selected_option == "Red"
@@ -135,9 +141,12 @@ class TestXSetSingleSelect:
     def test_initialization_with_carries_bindable_selection_option_multiple_targets(self):
         """Test multiple targets initialized with the same source"""
         source = XSetSingleSelect("Red", {"Red", "Green"})
-        target1: XSetSingleSelect[str] = XSetSingleSelect(source)
-        target2: XSetSingleSelect[str] = XSetSingleSelect(source)
-        target3: XSetSingleSelect[str] = XSetSingleSelect(source)
+        target1: XSetSingleSelect[str] = XSetSingleSelect(source.selected_option, source.available_options)
+        target1.selected_option_hook.join(source.selected_option_hook, "use_target_value")
+        target2: XSetSingleSelect[str] = XSetSingleSelect(source.selected_option, source.available_options)
+        target2.selected_option_hook.join(source.selected_option_hook, "use_target_value")
+        target3: XSetSingleSelect[str] = XSetSingleSelect(source.selected_option, source.available_options)
+        target3.selected_option_hook.join(source.selected_option_hook, "use_target_value")
         
         # Check initial values
         assert target1.selected_option == "Red"
@@ -160,20 +169,23 @@ class TestXSetSingleSelect:
         """Test edge cases for initialization with CarriesBindableSelectionOption"""
         # Test with None value in source
         source_none: XSetSingleSelectOptional[str] = XSetSingleSelectOptional(None, {"Red", "Green"})
-        target_none: XSetSingleSelectOptional[str] = XSetSingleSelectOptional(source_none)
+        target_none: XSetSingleSelectOptional[str] = XSetSingleSelectOptional(source_none.selected_option, source_none.available_options)
         assert target_none.selected_option is None
         assert target_none.available_options == {"Red", "Green"}
         
         # Test with single option in source
         source_single = XSetSingleSelect("Red", {"Red"})
-        target_single: XSetSingleSelect[str] = XSetSingleSelect(source_single)
+        target_single: XSetSingleSelect[str] = XSetSingleSelect(source_single.selected_option, source_single.available_options)
         assert target_single.selected_option == "Red"
         assert target_single.available_options == {"Red"}
     
     def test_initialization_with_carries_bindable_selection_option_binding_consistency(self):
         """Test binding system consistency when initializing with CarriesBindableSelectionOption"""
         source = XSetSingleSelect("Red", {"Red", "Green"})
-        target: XSetSingleSelect[str] = XSetSingleSelect(source)
+        target: XSetSingleSelect[str] = XSetSingleSelect(source.selected_option, source.available_options)
+        
+        # Join them
+        target.selected_option_hook.join(source.selected_option_hook, "use_target_value")
         
         # Check binding consistency
         # Note: check_status_consistency() method no longer exists in new architecture
@@ -194,14 +206,16 @@ class TestXSetSingleSelect:
         # Measure initialization time
         start_time = time.time()
         for _ in range(1000):
-            target: XSetSingleSelect[str] = XSetSingleSelect(source)
+            target: XSetSingleSelect[str] = XSetSingleSelect(source.selected_option, source.available_options)
+            target.selected_option_hook.join(source.selected_option_hook, "use_target_value")
         end_time = time.time()
         
         # Should complete in reasonable time (less than 6 seconds)
         assert end_time - start_time < 6.0, "Initialization should be fast"
         
         # Verify the last target is properly bound
-        target = XSetSingleSelect(source)
+        target = XSetSingleSelect(source.selected_option, source.available_options)
+        target.selected_option_hook.join(source.selected_option_hook, "use_target_value")
         source.selected_option = "Green"
         assert target.selected_option == "Green"
     
@@ -453,7 +467,8 @@ class TestXSetSingleSelect:
         start_time = time.time()
         
         for _ in range(100):
-            XSetSingleSelect(source)
+            target = XSetSingleSelect(source.selected_option, source.available_options)
+            target.selected_option_hook.join(source.selected_option_hook, "use_target_value")
         
         end_time = time.time()
         
@@ -475,7 +490,8 @@ class TestXSetSingleSelect:
     def test_selection_option_binding_consistency(self):
         """Test binding system consistency"""
         source = XSetSingleSelect("Red", {"Red", "Green"})
-        target: XSetSingleSelect[str] = XSetSingleSelect(source)
+        target: XSetSingleSelect[str] = XSetSingleSelect(source.selected_option, source.available_options)
+        target.selected_option_hook.join(source.selected_option_hook, "use_target_value")
         
         # Check binding consistency
         

@@ -1,11 +1,10 @@
-from typing import Optional, Sequence, TypeVar, Callable
+from typing import Optional, Sequence, TypeVar, Callable, Self
 from collections.abc import Set as AbstractSet
 from logging import Logger
 
 from ...foundations.x_adapter_base import XAdapterBase
-from ...core.hooks.hook_protocols.owned_full_hook_protocol import OwnedFullHookProtocol
-from ...core.hooks.hook_protocols.managed_hook_protocol import ManagedHookProtocol
-from ...core.hooks.hook_aliases import Hook, ReadOnlyHook
+from ...core.hooks.protocols.owned_hook_protocol import OwnedHookProtocol
+from ...core.hooks.protocols.hook_protocol import HookProtocol
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 
@@ -131,8 +130,8 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
     
     def __init__(
         self,
-        hook_set_or_value: Hook[AbstractSet[T]] | ReadOnlyHook[AbstractSet[T]] | AbstractSet[T] | None,
-        hook_sequence: Hook[Sequence[T]] | ReadOnlyHook[Sequence[T]] | Sequence[T] | None = None,
+        hook_set_or_value: HookProtocol[AbstractSet[T]] | AbstractSet[T] | None,
+        hook_sequence: HookProtocol[Sequence[T]] | Sequence[T] | None = None,
         *,
         sort_callable: Callable[[AbstractSet[T]], Sequence[T]] = sorted,
         logger: Optional[Logger] = None,
@@ -142,12 +141,12 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
         self._sort_callable = sort_callable
         
         # Collect the external hooks
-        external_hook_set: Optional[ManagedHookProtocol[AbstractSet[T]]] = None
-        external_hook_sequence: Optional[ManagedHookProtocol[Sequence[T]]] = None
+        external_hook_set: Optional[HookProtocol[AbstractSet[T]]] = None
+        external_hook_sequence: Optional[HookProtocol[Sequence[T]]] = None
         
-        if isinstance(hook_set_or_value, ManagedHookProtocol):
+        if isinstance(hook_set_or_value, HookProtocol):
             external_hook_set = hook_set_or_value
-        if isinstance(hook_sequence, ManagedHookProtocol):
+        if isinstance(hook_sequence, HookProtocol):
             external_hook_sequence = hook_sequence
         
         # Determine initial value
@@ -155,7 +154,7 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
         initial_sequence: Sequence[T]
         
         if hook_sequence is not None and hook_set_or_value is None:
-            if isinstance(hook_sequence, ManagedHookProtocol):
+            if isinstance(hook_sequence, HookProtocol):
                 initial_sequence = hook_sequence.value
             else:
                 initial_sequence = hook_sequence
@@ -166,7 +165,7 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
             initial_set = frozenset(initial_sequence)
         
         elif hook_sequence is None and hook_set_or_value is not None:
-            if isinstance(hook_set_or_value, ManagedHookProtocol):
+            if isinstance(hook_set_or_value, HookProtocol):
                 initial_set = hook_set_or_value.value
             else:
                 initial_set = hook_set_or_value
@@ -174,12 +173,12 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
             initial_sequence = self._sort_callable(initial_set)
         
         elif hook_sequence is not None and hook_set_or_value is not None:
-            if isinstance(hook_set_or_value, ManagedHookProtocol):
+            if isinstance(hook_set_or_value, HookProtocol):
                 initial_set = hook_set_or_value.value
             else:
                 initial_set = hook_set_or_value
             
-            if isinstance(hook_sequence, ManagedHookProtocol):
+            if isinstance(hook_sequence, HookProtocol):
                 initial_sequence = hook_sequence.value
             else:
                 initial_sequence = hook_sequence
@@ -256,12 +255,12 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
     #########################################################################
     
     @property
-    def hook_set(self) -> OwnedFullHookProtocol[AbstractSet[T]]:
+    def hook_set(self) -> OwnedHookProtocol[AbstractSet[T], Self]:
         """Get the set hook (left side)."""
         return self._primary_hooks["left"]  # type: ignore
     
     @property
-    def hook_sequence(self) -> OwnedFullHookProtocol[Sequence[T]]:
+    def hook_sequence(self) -> OwnedHookProtocol[Sequence[T], Self]:
         """Get the sequence hook (right side)."""
         return self._primary_hooks["right"]  # type: ignore
 

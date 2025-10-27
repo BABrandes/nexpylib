@@ -8,20 +8,21 @@ class TestReentrancyProtection:
     """Test reentrancy protection for submit_values."""
 
     def test_overlapping_recursive_submit_raises_error(self):
-        """Test that recursive submit to the SAME hook raises RuntimeError."""
+        """Test that recursive submit to the SAME hook warns about overlapping nexuses."""
         
         hook = FloatingHook[int](42)
         
         # Create a listener that tries to modify the same hook (BAD!)
         def bad_listener():
             # This listener tries to submit to the same hook being updated
-            # This should be caught and raise RuntimeError
+            # This should be caught and warn (but not raise to avoid crashing the system)
             hook.change_value(200, raise_submission_error_flag=False) # type: ignore
         
         hook.add_listener(bad_listener)
         
         # Try to update hook - this should trigger the listener which tries to submit to the same hook
-        with pytest.raises(RuntimeError, match="overlapping nexuses"):
+        # This should warn about overlapping nexuses (not raise to avoid crashing the system)
+        with pytest.warns(UserWarning, match="overlapping nexuses"):
             hook.change_value(99, raise_submission_error_flag=False) # type: ignore
 
     def test_independent_recursive_submit_allowed(self):

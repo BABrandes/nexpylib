@@ -41,15 +41,17 @@ Example:
         # observable automatically receives the new value
 """
 
-from typing import Generic, Literal, TypeVar
+from typing import Generic, Literal, TypeVar, Optional
+from logging import Logger
 
-from ..auxiliary.listening_base import ListeningBase
-
-from .publisher import Publisher
+from ..auxiliary.listening_mixin import ListeningMixin
+from ..auxiliary.listening_protocol import ListeningProtocol
+from .publisher_mixin import PublisherMixin
+from .publisher_protocol import PublisherProtocol
 
 T = TypeVar("T")
 
-class ValuePublisher(Publisher, ListeningBase, Generic[T]):
+class ValuePublisher(PublisherMixin, PublisherProtocol, ListeningMixin, ListeningProtocol, Generic[T]):
     """
     A Publisher that holds a value and publishes automatically on value changes.
     
@@ -68,7 +70,7 @@ class ValuePublisher(Publisher, ListeningBase, Generic[T]):
     
     Attributes:
         _value (T): The current value held by this publisher.
-        All Publisher and ListeningBase attributes are also available.
+        All PublisherMixin and ListeningMixin attributes are also available.
     
     Example:
         Simple value publishing::
@@ -146,7 +148,14 @@ class ValuePublisher(Publisher, ListeningBase, Generic[T]):
         - This is unidirectional: changes to subscribers don't affect the source
     """
 
-    def __init__(self, value: T, mode: Literal["async", "sync", "direct", "off"] = "sync"):
+    def __init__(
+        self,
+        value: T,
+        preferred_publish_mode: Literal["async", "sync", "direct", "off"],
+        logger: Optional[Logger] = None,
+        cleanup_interval: float = 60.0,
+        max_subscribers_before_cleanup: int = 100
+    ):
         """
         Initialize a new ValuePublisher with an initial value.
         
@@ -170,11 +179,16 @@ class ValuePublisher(Publisher, ListeningBase, Generic[T]):
                 # Custom objects
                 user = ValuePublisher(User(name="Alice"))
         """
-        self._mode: Literal["async", "sync", "direct", "off"] = mode
-        ListeningBase.__init__(self)
-        Publisher.__init__(self)
+        ListeningMixin.__init__(self)
+        PublisherMixin.__init__(
+            self,
+            preferred_publish_mode=preferred_publish_mode,
+            logger=logger,
+            cleanup_interval=cleanup_interval,
+            max_subscribers_before_cleanup=max_subscribers_before_cleanup
+        )
         self._value = value
-        self.publish(mode)
+        self.publish()
 
     @property
     def value(self) -> T:
@@ -253,7 +267,7 @@ class ValuePublisher(Publisher, ListeningBase, Generic[T]):
                 source.value = {"counter": 1}
         """
         self._value = value
-        self.publish(mode=self._mode)
+        self.publish()
 
     def change_value(self, value: T) -> None:
         """
@@ -312,4 +326,4 @@ class ValuePublisher(Publisher, ListeningBase, Generic[T]):
             - Use whichever style (property or method) fits your code better
         """
         self.value = value
-        self.publish(mode=self._mode)
+        self.publish()

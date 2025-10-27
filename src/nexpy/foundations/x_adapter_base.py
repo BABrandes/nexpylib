@@ -12,12 +12,16 @@ T1 = TypeVar("T1")  # First type (e.g., T, float, AbstractSet)
 T2 = TypeVar("T2")  # Second type (e.g., Optional[T], int, Sequence)
 
 class XAdapterBase(
-    XCompositeBase[Literal["left", "right"], Literal[...], T1 | T2, None, "XAdapterBase[T1, T2]"], 
+    XCompositeBase[Literal["left", "right"], Literal[...], T1 | T2, None], 
     Generic[T1, T2]
 ):
     """
     Base class for adapter X objects that bridge between incompatible types.
-    
+
+    Generic type parameters:
+        T1: The left-side type
+        T2: The right-side type
+
     Adapter objects maintain two synchronized hooks with different but related types,
     allowing connections between hooks that wouldn't normally be type-compatible.
     They validate and potentially transform values during adaptation to ensure consistency.

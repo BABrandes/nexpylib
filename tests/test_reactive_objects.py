@@ -33,7 +33,7 @@ class TestXValue(ObservableTestCase):
                 return True, "Valid"
             return False, "Must be positive"
         
-        val = nx.XValue(10, validator=validate_positive)
+        val = nx.XValue(10, validate_value_callback=validate_positive)
         
         val.value = 20  # OK
         assert val.value == 20
@@ -456,7 +456,7 @@ class TestValidationIntegration(ObservableTestCase):
                 return True, "Valid"
             return False, "Must be even"
         
-        val = nx.XValue(2, validator=validate_even)
+        val = nx.XValue(2, validate_value_callback=validate_even)
         
         val.value = 4  # OK
         assert val.value == 4
@@ -471,7 +471,7 @@ class TestValidationIntegration(ObservableTestCase):
                 return True, "Valid"
             return False, "Must be positive"
         
-        val1 = nx.XValue(10, validator=validate_positive)
+        val1 = nx.XValue(10, validate_value_callback=validate_positive)
         val2 = nx.XValue(20)
         
         val1.value_hook.join(val2.value_hook, "use_caller_value")

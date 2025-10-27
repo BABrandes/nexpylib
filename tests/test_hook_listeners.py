@@ -3,12 +3,12 @@ from typing import Any
 
 from nexpy import Hook
 from nexpy import XBase
-from nexpy.core.hooks.owned_hook import OwnedHook
+from nexpy.core.hooks.implementations.owned_read_only_hook import OwnedReadOnlyHook as OwnedHook
 
 from nexpy.core.nexus_system.nexus import Nexus
-from nexpy.core.auxiliary.listening_base import ListeningBase
+from nexpy.core.auxiliary.listening_protocol import ListeningProtocol
 
-class MockCarriesHooks(XBase[Any, Any, "MockCarriesHooks"]):
+class MockCarriesHooks(XBase[Any, Any]):
     """Mock class that implements CarriesHooks interface for testing."""
     
     def __init__(self, name: str = "MockOwner"):
@@ -49,8 +49,8 @@ class TestHookListeners:
         self.hook = OwnedHook(self.owner, "initial_value", self.invalidate_callback)
     
     def test_hook_inherits_from_base_listening(self):
-        """Test that Hook inherits from BaseListening."""
-        assert isinstance(self.hook, ListeningBase)
+        """Test that Hook inherits from ListeneingProtocol."""
+        assert isinstance(self.hook, ListeningProtocol)
     
     def test_initial_listeners_state(self):
         """Test initial state of listeners."""

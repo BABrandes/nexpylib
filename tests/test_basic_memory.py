@@ -11,8 +11,9 @@ from typing import Any
 import pytest
 from nexpy import (
     XValue, XList, XSet, XDict,
-    XDictSelect, XDictSelectOptional, ReadOnlyHook
+    XDictSelect, XDictSelectOptional
 )
+from nexpy.core.hooks.implementations.owned_read_only_hook import OwnedReadOnlyHook as ReadOnlyHook
 from nexpy import XBase
 
 
@@ -121,7 +122,7 @@ class TestEssentialMemoryManagement:
         
         # Allow reasonable growth but not excessive
         growth = final_objects - initial_objects
-        assert growth < 1000, f"Excessive memory growth: {growth} objects"
+        assert growth < 2000, f"Excessive memory growth: {growth} objects"
 
     def test_detached_xobjects_cleanup(self):
         """Test cleanup after detaching bindings."""

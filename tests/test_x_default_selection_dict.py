@@ -3,14 +3,14 @@ from logging import Logger, basicConfig, getLogger, DEBUG
 
 from nexpy import XDictSelectDefault, FloatingHook, Hook
 from nexpy import XCompositeBase
-from nexpy.core.hooks.owned_hook import OwnedHook
+from nexpy.core.hooks import OwnedReadOnlyHook as OwnedHook
 import pytest
 
 basicConfig(level=DEBUG)
 logger = getLogger(__name__)
 
 
-class MockObservable(XCompositeBase[Literal["value"], Any, Any, Any, "MockObservable"]):
+class MockObservable(XCompositeBase[Literal["value"], Any, Any, Any]):
     """Mock observable for testing purposes."""
     
     def __init__(self, name: str):
@@ -320,7 +320,7 @@ class TestObservableDefaultSelectionDict:
         )
         
         # Create external hook
-        external_hook = OwnedHook(owner=self.mock_owner, initial_value="b", logger=logger)
+        external_hook = OwnedHook(owner=self.mock_owner, value="b", logger=logger)
         
         # Connect to key hook
         selection_dict.join_by_key("key", external_hook, "use_target_value")  # type: ignore

@@ -10,7 +10,7 @@ import pytest
 basicConfig(level=DEBUG)
 logger = getLogger(__name__)
 
-class MockObservable(XCompositeBase[Literal["value"], Any, Any, Any, "MockObservable"]):
+class MockObservable(XCompositeBase[Literal["value"], Any, Any, Any]):
     """Mock observable for testing purposes."""
     
     def __init__(self, name: str):
