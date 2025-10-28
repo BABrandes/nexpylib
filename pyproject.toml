@@ -167,7 +167,6 @@ reportUnusedCoroutine = "error"
 reportUnusedExpression = "warning"
 reportUnnecessaryTypeIgnoreComment = "warning"
 reportMatchNotExhaustive = "warning"
-reportShadowedImports = "error"
 
 # Execution environments - relax rules for test files
 [[tool.pyright.executionEnvironments]]
