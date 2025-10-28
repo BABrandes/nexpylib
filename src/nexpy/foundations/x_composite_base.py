@@ -157,7 +157,7 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
             self,
             *,
             initial_hook_values: Mapping[PHK, PHV|HookProtocol[PHV]],
-            compute_missing_primary_values_callback: Optional[Callable[[Self, UpdateFunctionValues[PHK, PHV]], Mapping[PHK, PHV]]],
+            compute_missing_primary_values_callback: Optional[Callable[[UpdateFunctionValues[PHK, PHV]], Mapping[PHK, PHV]]],
             compute_secondary_values_callback: Optional[Mapping[SHK, Callable[[Mapping[PHK, PHV]], SHV]]],
             validate_complete_primary_values_callback: Optional[Callable[[Mapping[PHK, PHV]], tuple[bool, str]]],
             invalidate_after_update_callback: Optional[Callable[[], None]] = None,
@@ -180,18 +180,16 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
             These represent the primary state of the X object.
             This parameter is mandatory and must always be provided.
             
-        compute_missing_primary_values_callback : Optional[Callable[[O, UpdateFunctionValues[PHK, PHV]], Mapping[PHK, PHV]]] (required)
+        compute_missing_primary_values_callback : Optional[Callable[[UpdateFunctionValues[PHK, PHV]], Mapping[PHK, PHV]]] (required)
             Function that adds additional primary values to make a potentially invalid
             submission become valid. Called during value submission to complete partial updates.
             This parameter is mandatory but can be set to None if not needed.
             
             The function signature is:
-            ``(self: O, update_values: UpdateFunctionValues[PHK, PHV]) -> Mapping[PHK, PHV]``
+            ``(update_values: UpdateFunctionValues[PHK, PHV]) -> Mapping[PHK, PHV]``
             
             Parameters
             ----------
-            self : O
-                The X object instance (for accessing current state)
             update_values : UpdateFunctionValues[PHK, PHV]
                 Object containing current and submitted values
                 
@@ -209,12 +207,12 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
             
             Examples
             --------
-            >>> def complete_dict_updates(self, update_values):
+            >>> def complete_dict_updates(update_values):
             ...     additional = {}
             ...     if 'dict_value' in update_values.submitted:
             ...         # Update the dict when a dict value changes
             ...         new_dict = update_values.current['dict'].copy()
-            ...         new_dict[self.current_key] = update_values.submitted['dict_value']
+            ...         new_dict[update_values.current['key']] = update_values.submitted['dict_value']
             ...         additional['dict'] = new_dict
             ...     return additional
             
@@ -424,18 +422,18 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
                     raise ValueError(f"Error in the act_on_invalidation_callback: {e}")
             return True, "Successfully invalidated"
 
-        def internal_validation_in_isolation_callback(self_ref: Self, values: Mapping[PHK|SHK, PHV|SHV]) -> tuple[bool, str]:
+        def internal_validation_in_isolation_callback(values: Mapping[PHK|SHK, PHV|SHV]) -> tuple[bool, str]:
             
             # First, do the internal verification method
             if validate_complete_primary_values_callback is not None:
-                primary_values_dict: dict[PHK, PHV] = dict(self_ref.primary_values)
+                primary_values_dict: dict[PHK, PHV] = dict(self.primary_values)
                 for key, value in values.items():
-                    if key in self_ref._primary_hooks:
+                    if key in self._primary_hooks:
                         primary_values_dict[key] = value # type: ignore
-                    elif key in self_ref._secondary_hooks:
+                    elif key in self._secondary_hooks:
                         # Check if internal secondary values are equal to the values
-                        if not self_ref._get_nexus_manager().is_equal(self_ref._secondary_values[key], value): # type: ignore
-                            return False, f"Internal secondary value for key {key} ( {self_ref._secondary_values[key]} ) is not equal to the submitted value {value}" # type: ignore
+                        if not self._get_nexus_manager().is_equal(self._secondary_values[key], value): # type: ignore
+                            return False, f"Internal secondary value for key {key} ( {self._secondary_values[key]} ) is not equal to the submitted value {value}" # type: ignore
                     else:
                         raise ValueError(f"Key {key} not found in component_hooks or secondary_hooks")
                 success, msg = validate_complete_primary_values_callback(primary_values_dict)
@@ -449,10 +447,10 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
                     return False, msg
             return True, "Values are valid"
 
-        def internal_add_values_to_be_updated_callback(self_ref: Self, update_values: UpdateFunctionValues[PHK|SHK, PHV|SHV]) -> Mapping[PHK|SHK, PHV|SHV]:
+        def internal_add_values_to_be_updated_callback(update_values: UpdateFunctionValues[PHK|SHK, PHV|SHV]) -> Mapping[PHK|SHK, PHV|SHV]:
             # Step 1: Complete the primary values
             primary_values: dict[PHK, PHV] = {}
-            for key, hook in self_ref._primary_hooks.items():
+            for key, hook in self._primary_hooks.items():
                 if key in update_values.submitted:
                     primary_values[key] = update_values.submitted[key] # type: ignore
                 else:
@@ -463,25 +461,25 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
             if compute_missing_primary_values_callback is not None:
                 current_values_only_primary: Mapping[PHK, PHV] = {}
                 for key, value in update_values.current.items():
-                    if key in self_ref._primary_hook_keys:
+                    if key in self._primary_hook_keys:
                         current_values_only_primary[key] = value # type: ignore
                 submitted_values_only_primary: Mapping[PHK, PHV] = {}
                 for key, value in update_values.submitted.items():
-                    if key in self_ref._primary_hook_keys:
+                    if key in self._primary_hook_keys:
                         submitted_values_only_primary[key] = value # type: ignore
 
-                additional_values = compute_missing_primary_values_callback(self_ref, UpdateFunctionValues(current=current_values_only_primary, submitted=submitted_values_only_primary)) # type: ignore
+                additional_values = compute_missing_primary_values_callback(UpdateFunctionValues(current=current_values_only_primary, submitted=submitted_values_only_primary)) # type: ignore
                 # Check this they only contain primary hook keys
                 for key in additional_values.keys():
-                    if key not in self_ref._primary_hook_keys:
+                    if key not in self._primary_hook_keys:
                         raise ValueError(f"Additional values keys must only contain primary hook keys")
 
                 primary_values.update(additional_values) # type: ignore
 
             # Step 3: Generate the secondary values
-            for key in self_ref._secondary_hooks.keys():
-                value = self_ref._secondary_hook_callbacks[key](primary_values)
-                self_ref._secondary_values[key] = value
+            for key in self._secondary_hooks.keys():
+                value = self._secondary_hook_callbacks[key](primary_values)
+                self._secondary_values[key] = value
                 additional_values[key] = value
 
             # Step 4: Return the additional values

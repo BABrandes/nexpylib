@@ -1,6 +1,8 @@
 from typing import Literal, TypeVar, Generic, Optional, Mapping, Any, Callable, Self
 from logging import Logger
 
+import weakref
+
 from nexpy.core.hooks.protocols.hook_protocol import HookProtocol
 from nexpy.core.hooks.implementations.owned_writable_hook import OwnedWritableHook
 from .x_dict_selection_base import XDictSelectionBase
@@ -81,19 +83,19 @@ class XOptionalSelectionDictWithDefault(
             return self._default_value(key)  # type: ignore
         return self._default_value
 
-    def _create_add_values_callback(self) -> Callable[
-        ["XOptionalSelectionDictWithDefault[K, V]", UpdateFunctionValues[Literal["dict", "key", "value"], Any]], 
-        Mapping[Literal["dict", "key", "value"], Any]
+    def _create_add_values_callback(self) -> Callable[[UpdateFunctionValues[Literal["dict", "key", "value"], Any]], Mapping[Literal["dict", "key", "value"], Any]
     ]:
         """
         Create the add_values_to_be_updated_callback for optional + default logic.
         
         Handles None keys AND auto-creates missing keys with default values.
         """
-        def add_values_to_be_updated_callback(
-            self_ref: "XOptionalSelectionDictWithDefault[K, V]",
-            update_values: UpdateFunctionValues[Literal["dict", "key", "value"], Any]
-        ) -> Mapping[Literal["dict", "key", "value"], Any]:
+        self_instance_ref = weakref.ref(self)
+        def add_values_to_be_updated_callback(update_values: UpdateFunctionValues[Literal["dict", "key", "value"], Any]) -> Mapping[Literal["dict", "key", "value"], Any]:
+
+            self_instance = self_instance_ref()
+            if self_instance is None:
+                raise ValueError("Owner has been garbage collected")
             
             match ("dict" in update_values.submitted, "key" in update_values.submitted, "value" in update_values.submitted):
                 case (True, True, True):
@@ -108,7 +110,7 @@ class XOptionalSelectionDictWithDefault(
                         # Auto-create default if key not in dict
                         if update_values.submitted["key"] not in update_values.submitted["dict"]:
                             _dict = dict(update_values.submitted["dict"])
-                            _default_val = self_ref._get_default_value(update_values.submitted["key"])
+                            _default_val = self_instance._get_default_value(update_values.submitted["key"])
                             _dict[update_values.submitted["key"]] = _default_val
                             return {"dict": _dict, "value": _default_val}
                         return {"value": update_values.submitted["dict"][update_values.submitted["key"]]}
@@ -134,7 +136,7 @@ class XOptionalSelectionDictWithDefault(
                         # Auto-create default if key not in dict
                         if update_values.current["key"] not in update_values.submitted["dict"]:
                             _dict = dict(update_values.submitted["dict"])
-                            _default_val = self_ref._get_default_value(update_values.current["key"])
+                            _default_val = self_instance._get_default_value(update_values.current["key"])
                             _dict[update_values.current["key"]] = _default_val
                             return {"dict": _dict, "value": _default_val}
                         return {"value": update_values.submitted["dict"][update_values.current["key"]]}
@@ -156,7 +158,7 @@ class XOptionalSelectionDictWithDefault(
                         # Auto-create default if key not in dict
                         if update_values.submitted["key"] not in update_values.current["dict"]:
                             _dict = dict(update_values.current["dict"])
-                            _default_val = self_ref._get_default_value(update_values.submitted["key"])
+                            _default_val = self_instance._get_default_value(update_values.submitted["key"])
                             _dict[update_values.submitted["key"]] = _default_val
                             return {"dict": _dict, "value": _default_val}
                         return {"value": update_values.current["dict"][update_values.submitted["key"]]}

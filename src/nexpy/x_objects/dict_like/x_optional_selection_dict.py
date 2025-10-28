@@ -37,17 +37,13 @@ class XOptionalSelectionDict(
 
     """
 
-    def _create_add_values_callback(self) -> Callable[
-        ["XOptionalSelectionDict[K, V]", UpdateFunctionValues[Literal["dict", "key", "value"], Any]], 
-        Mapping[Literal["dict", "key", "value"], Any]
-    ]:
+    def _create_add_values_callback(self) -> Callable[[UpdateFunctionValues[Literal["dict", "key", "value"], Any]], Mapping[Literal["dict", "key", "value"], Any]]:
         """
         Create the add_values_to_be_updated_callback for optional selection logic.
         
         This callback handles None keys and ensures value consistency.
         """
         def add_values_to_be_updated_callback(
-            self_ref: "XOptionalSelectionDict[K, V]",
             update_values: UpdateFunctionValues[Literal["dict", "key", "value"], Any]
         ) -> Mapping[Literal["dict", "key", "value"], Any]:
             

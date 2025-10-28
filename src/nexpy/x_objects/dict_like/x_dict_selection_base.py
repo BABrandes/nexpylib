@@ -122,10 +122,7 @@ class XDictSelectionBase(
         )
 
     @abstractmethod
-    def _create_add_values_callback(self) -> Callable[
-        [Any, UpdateFunctionValues[Literal["dict", "key", "value"], Any]], 
-        Mapping[Literal["dict", "key", "value"], Any]
-    ]:
+    def _create_add_values_callback(self) -> Callable[[UpdateFunctionValues[Literal["dict", "key", "value"], Any]], Mapping[Literal["dict", "key", "value"], Any]]:
         """
         Create the add_values_to_be_updated_callback for this X object.
         
@@ -140,10 +137,7 @@ class XDictSelectionBase(
         ...
 
     @abstractmethod
-    def _create_validation_callback(self) -> Callable[
-        [Mapping[Literal["dict", "key", "value"], Any]], 
-        tuple[bool, str]
-    ]:
+    def _create_validation_callback(self) -> Callable[[Mapping[Literal["dict", "key", "value"], Any]], tuple[bool, str]]:
         """
         Create the validate_complete_values_in_isolation_callback for this X object.
         

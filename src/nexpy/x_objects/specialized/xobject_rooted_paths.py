@@ -106,7 +106,6 @@ class XRootedPaths(XBase[str, str|Path|None], Generic[EK]):
         #-------------------------------- Validation function --------------------------------
 
         def validate_complete_values_in_isolation_callback(
-            self_ref: "XRootedPaths[EK]",
             values: Mapping[str, Path|str|None]) -> tuple[bool, str]:
             """
             Check if the values are valid as part of the owner.
@@ -142,8 +141,8 @@ class XRootedPaths(XBase[str, str|Path|None], Generic[EK]):
                         return False, "The root path is not set, so the absolute path must be None"
 
             # Check the custom validator
-            if self_ref._custom_validator is not None:
-                success, msg = self_ref._custom_validator(values)
+            if self._custom_validator is not None:
+                success, msg = self._custom_validator(values)
                 if not success:
                     return False, msg
 
@@ -152,7 +151,6 @@ class XRootedPaths(XBase[str, str|Path|None], Generic[EK]):
         #-------------------------------- Add values to be updated callback --------------------------------
 
         def add_values_to_be_updated_callback(
-            self_ref: Self,
             update_values: UpdateFunctionValues[str, Path|str|None]
         ) -> Mapping[str, Path|str|None]:
             """
@@ -194,8 +192,8 @@ class XRootedPaths(XBase[str, str|Path|None], Generic[EK]):
 
         XBase.__init__( # type: ignore
             self,
-            validate_complete_values_callback=validate_complete_values_in_isolation_callback, # type: ignore
-            compute_missing_values_callback=add_values_to_be_updated_callback, # type: ignore
+            validate_complete_values_callback=validate_complete_values_in_isolation_callback,
+            compute_missing_values_callback=add_values_to_be_updated_callback,
             logger=logger)
 
     ##########################################
@@ -204,7 +202,7 @@ class XRootedPaths(XBase[str, str|Path|None], Generic[EK]):
 
     @property
     def root_path(self) -> Optional[Path]:
-        return self._root_path_hook.value # type: ignore
+        return self._root_path_hook.value
 
     @root_path.setter
     def root_path(self, path: Optional[Path]) -> None:

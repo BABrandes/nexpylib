@@ -18,8 +18,6 @@ from ..core.auxiliary.utils import make_weak_callback
 from .carries_some_hooks_protocol import CarriesSomeHooksProtocol
 from .carries_single_hook_protocol import CarriesSingleHookProtocol
 
-import weakref
-
 HK = TypeVar("HK")
 HV = TypeVar("HV")
 
@@ -103,8 +101,8 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, SerializableProtoc
     def __init__(
         self,
         invalidate_after_update_callback: Optional[Callable[[], tuple[bool, str]]] = None,
-        validate_complete_values_callback: Optional[Callable[[Self, Mapping[HK, HV]], tuple[bool, str]]] = None,
-        compute_missing_values_callback: Optional[Callable[[Self, UpdateFunctionValues[HK, HV]], Mapping[HK, HV]]] = None,
+        validate_complete_values_callback: Optional[Callable[[Mapping[HK, HV]], tuple[bool, str]]] = None,
+        compute_missing_values_callback: Optional[Callable[[UpdateFunctionValues[HK, HV]], Mapping[HK, HV]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER, 
         ) -> None:
@@ -113,8 +111,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, SerializableProtoc
         """
         ListeningMixin.__init__(self)
 
-        # Store weak references to callbacks to avoid circular references
-        self._self_ref = weakref.ref(self)
+        # Store callbacks (nested closures don't need weak references, bound methods would)
         self._invalidate_after_update_callback = make_weak_callback(invalidate_after_update_callback)
         self._validate_complete_values_callback = make_weak_callback(validate_complete_values_callback)
         self._compute_missing_values_callback = make_weak_callback(compute_missing_values_callback)
@@ -178,16 +175,12 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, SerializableProtoc
             A tuple of (success: bool, message: str)
 
         Raises:
-            ValueError: If the owner has been garbage collected
             ValueError: If the validate complete values in isolation callback is not provided
         """
 
 
         if self._validate_complete_values_callback is not None:
-            self_ref: Optional[Self] = self._self_ref() 
-            if self_ref is None:
-                raise ValueError("Owner has been garbage collected")
-            return self._validate_complete_values_callback(self_ref, values)
+            return self._validate_complete_values_callback(values)
         else:
             return True, "No validation in isolation callback provided"
 
@@ -254,10 +247,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, SerializableProtoc
         """
         with self._lock:
             if self._compute_missing_values_callback is not None:
-                self_ref: Optional[Self] = self._self_ref()
-                if self_ref is None:
-                    raise ValueError("Owner has been garbage collected")
-                return self._compute_missing_values_callback(self_ref, values)
+                return self._compute_missing_values_callback(values)
             else:
                 return {}
 
