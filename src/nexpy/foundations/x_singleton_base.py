@@ -88,7 +88,7 @@ class XSingletonBase(XBase[Literal["value"], T], CarriesSingleHookProtocol[T], G
 
         # Create validation callback wrapper for XBase
         # This captures the user's validation callback directly (no need to store it separately)
-        def validate_complete_values_callback_wrapper(_: Self, values: Mapping[Literal["value"], T]) -> tuple[bool, str]:
+        def validate_complete_values_callback_wrapper(values: Mapping[Literal["value"], T]) -> tuple[bool, str]:
             """Validate the complete values using the user's validation method."""
             if "value" not in values:
                 return False, "Value key not found in values"

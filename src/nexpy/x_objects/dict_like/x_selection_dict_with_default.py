@@ -71,17 +71,13 @@ class XSelectionDictWithDefault(
             return self._default_value(key)  # type: ignore
         return self._default_value
 
-    def _create_add_values_callback(self) -> Callable[
-        ["XSelectionDictWithDefault[K, V]", UpdateFunctionValues[Literal["dict", "key", "value"], Any]], 
-        Mapping[Literal["dict", "key", "value"], Any]
-    ]:
+    def _create_add_values_callback(self) -> Callable[[UpdateFunctionValues[Literal["dict", "key", "value"], Any]], Mapping[Literal["dict", "key", "value"], Any]]:
         """
         Create the add_values_to_be_updated_callback for default selection logic.
         
         This callback auto-creates missing keys with default values.
         """
         def add_values_to_be_updated_callback(
-            self_ref: "XSelectionDictWithDefault[K, V]",
             update_values: UpdateFunctionValues[Literal["dict", "key", "value"], Any]
         ) -> Mapping[Literal["dict", "key", "value"], Any]:
             
@@ -122,7 +118,7 @@ class XSelectionDictWithDefault(
                     # Key provided alone - add key to dict with default if not present
                     if update_values.submitted["key"] not in update_values.current["dict"]:
                         _dict = dict(update_values.current["dict"])
-                        _default_val = self_ref._get_default_value(update_values.submitted["key"])
+                        _default_val = self._get_default_value(update_values.submitted["key"])
                         _dict[update_values.submitted["key"]] = _default_val
                         return {"dict": _dict, "value": _default_val}
                     return {"value": update_values.current["dict"][update_values.submitted["key"]]}

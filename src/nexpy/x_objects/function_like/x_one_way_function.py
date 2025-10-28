@@ -62,7 +62,6 @@ class XOneWayFunction(XBase[IHK|OHK, IHV|OHV], Generic[IHK, OHK, IHV, OHV]):
             self._output_hooks[key] = internal_hook_output
 
         def add_values_to_be_updated_callback(
-            self_ref: Self,
             update_values: UpdateFunctionValues[IHK|OHK, IHV|OHV]
         ) -> Mapping[IHK|OHK, IHV|OHV]:
             """

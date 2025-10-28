@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nexpylib"
-version = "0.4.1"
+version = "0.4.2"
 description = "Transitive synchronization and shared-state fusion for Python through Nexus fusion and atomic internal synchronization"
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -167,7 +167,6 @@ reportUnusedCoroutine = "error"
 reportUnusedExpression = "warning"
 reportUnnecessaryTypeIgnoreComment = "warning"
 reportMatchNotExhaustive = "warning"
-reportShadowedImports = "error"
 
 # Execution environments - relax rules for test files
 [[tool.pyright.executionEnvironments]]

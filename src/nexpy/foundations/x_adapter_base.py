@@ -65,7 +65,6 @@ class XAdapterBase(
         """
         
         def _compute_missing_primary_values_callback(
-            self_ref: "XAdapterBase[T1, T2]",
             update_values: UpdateFunctionValues[Literal["left", "right"], T1 | T2]
         ) -> Mapping[Literal["left", "right"], T1 | T2]:
             """
@@ -76,13 +75,13 @@ class XAdapterBase(
             if "left" in submitted and "right" not in submitted:
                 # Left changed, convert to right
                 left_value = submitted["left"]
-                right_value = self_ref._convert_left_to_right(left_value)  # type: ignore
+                right_value = self._convert_left_to_right(left_value)  # type: ignore
                 return {"right": right_value}
                 
             elif "right" in submitted and "left" not in submitted:
                 # Right changed, convert to left
                 right_value = submitted["right"]
-                left_value = self_ref._convert_right_to_left(right_value)  # type: ignore
+                left_value = self._convert_right_to_left(right_value)  # type: ignore
                 return {"left": left_value}
                 
             else:

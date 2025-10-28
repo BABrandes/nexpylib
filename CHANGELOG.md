@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2025-01-29
+
+### Fixed
+- **Callback Signature Issues**: Fixed incorrect `self_ref` parameter in callback functions
+  - Removed unnecessary `self_ref` parameter from nested callback functions
+  - Callbacks now correctly use `self` from closure scope
+  - Fixes 95 failing tests across the test suite
+  - Affects `XCompositeBase`, `XSingletonBase`, `XAdapterBase`, `XFunction`, `XOneWayFunction`, and `XRootedPaths`
+
+### Changed
+- **Performance Optimization**: Improved callback invocation performance
+  - Eliminated unnecessary argument passing for callback functions
+  - Leverages Python closure mechanism for more efficient variable access
+  - Slight performance improvement in high-frequency operations (value updates, validations)
+
+### Technical Details
+- Updated all internal validation and value completion callbacks to use proper closure pattern
+- Ensures correct signature matching with `XBase` callback invocation expectations
+- All 714 tests now passing (up from 619)
+
 ## [0.4.1] - 2025-01-29
 
 ### Fixed

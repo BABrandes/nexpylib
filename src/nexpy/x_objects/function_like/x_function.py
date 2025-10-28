@@ -41,7 +41,6 @@ class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
             self._sync_hooks[key] = sync_hook
 
         def add_values_to_be_updated_callback(
-            self_ref: Self,
             update_values: UpdateFunctionValues[SHK, SHV]
         ) -> Mapping[SHK, SHV]:
             """
@@ -56,14 +55,14 @@ class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
                
             # Create FunctionValues object and call the function
             function_values = FunctionValues(submitted=update_values.submitted, current=update_values.current)
-            success, synced_values = self_ref._completing_function_callable(function_values)
+            success, synced_values = self._completing_function_callable(function_values)
 
             if not success:
                 raise ValueError(f"Function callable returned invalid values for combination {update_values.submitted}")
 
             # Build completed_values by merging: submitted_values, then synced_values, then current values
             completed_values: dict[SHK, SHV] = {}
-            for key in self_ref._sync_hooks.keys():
+            for key in self._sync_hooks.keys():
                 if key in update_values.submitted:
                     completed_values[key] = update_values.submitted[key]
                 elif key in synced_values:
@@ -79,7 +78,7 @@ class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
             # Call the function again with completed values to validate the final state
             try:
                 completed_function_values = FunctionValues(submitted=completed_values, current=completed_values)
-                success, _ = self_ref._completing_function_callable(completed_function_values)
+                success, _ = self._completing_function_callable(completed_function_values)
                 if not success:
                     raise ValueError(f"Function callable returned invalid values for final state {completed_values}")
             except Exception as e:
@@ -92,7 +91,7 @@ class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
             logger=logger,
             invalidate_after_update_callback=None,
             validate_complete_values_callback=None,
-            compute_missing_values_callback=add_values_to_be_updated_callback # type: ignore
+            compute_missing_values_callback=add_values_to_be_updated_callback
         )
 
         # Connect internal hooks to external hooks if provided

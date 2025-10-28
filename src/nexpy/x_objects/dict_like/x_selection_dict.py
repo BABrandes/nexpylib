@@ -31,7 +31,7 @@ class XSelectionDict(XDictSelectionBase[K, V, K, V], XSelectionDictProtocol[K, V
     
     """
 
-    def _create_add_values_callback(self) -> Callable[["XSelectionDict[K, V]", UpdateFunctionValues[Literal["dict", "key", "value"], Any]], Mapping[Literal["dict", "key", "value"], Any]
+    def _create_add_values_callback(self) -> Callable[[UpdateFunctionValues[Literal["dict", "key", "value"], Any]], Mapping[Literal["dict", "key", "value"], Any]
     ]:
         """
         Create the add_values_to_be_updated_callback for selection logic.
@@ -39,7 +39,6 @@ class XSelectionDict(XDictSelectionBase[K, V, K, V], XSelectionDictProtocol[K, V
         This callback ensures that key must always exist in dict.
         """
         def add_values_to_be_updated_callback(
-            self_ref: "XSelectionDict[K, V]",
             update_values: UpdateFunctionValues[Literal["dict", "key", "value"], Any]
         ) -> Mapping[Literal["dict", "key", "value"], Any]:
             
@@ -124,7 +123,7 @@ class XSelectionDict(XDictSelectionBase[K, V, K, V], XSelectionDictProtocol[K, V
 
             # Check that the key is in the dictionary
             if values["key"] not in values["dict"]:
-                raise KeyError(f"Key {values['key']} not in dictionary")
+                return False, f"Key {values['key']} not in dictionary"
 
             # Check that the value is equal to the value in the dictionary
             if values["value"] != values["dict"][values["key"]]:
@@ -162,7 +161,7 @@ class XSelectionDict(XDictSelectionBase[K, V, K, V], XSelectionDictProtocol[K, V
     def key(self) -> K:
         """Get the current key."""
         
-        return self._primary_hooks["key"].value # type: ignore
+        return self._primary_hooks["key"].value
 
     @key.setter
     def key(self, value: K) -> None:
@@ -187,7 +186,7 @@ class XSelectionDict(XDictSelectionBase[K, V, K, V], XSelectionDictProtocol[K, V
     def value(self) -> V:
         """Get the current value."""
         
-        return self._primary_hooks["value"].value # type: ignore
+        return self._primary_hooks["value"].value
     
     @value.setter
     def value(self, value: V) -> None:
