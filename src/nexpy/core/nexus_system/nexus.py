@@ -250,7 +250,8 @@ class Nexus(Generic[T]):
         Merge multiple hook nexuses into a single hook nexus.
 
         - There must not be any overlapping hooks in the input nexuses
-        - The hooks in both nexuses must have the same type of T and be synced to the same value
+        - The hooks must be synced to the same value (already ensured via submit_values)
+        - Compatible types (e.g., set/frozenset) are allowed
         - The hooks in both nexuses must be disjoint, if not something went wrong in the binding system
 
         Args:
@@ -275,13 +276,9 @@ class Nexus(Generic[T]):
                 raise ValueError("The nexus managers must be the same")
         nexus_manager: "NexusManager" = nexuses[0]._nexus_manager
         
-        value_type: Optional[type[T]] = None
-        for hook_nexus in nexuses:
-            for hook in hook_nexus._get_hooks():
-                if value_type is None:
-                    value_type = type(hook._get_value()) # type: ignore
-                elif type(hook._get_value()) != value_type: # type: ignore
-                    raise ValueError("The hooks in the hook nexuses must have the same value type")
+        # Note: We don't check for strict type equality anymore since the values
+        # have already been synchronized via submit_values before merging.
+        # Compatible types like set/frozenset can be merged as they share the same conceptual value.
 
         # Check if any nexuses have overlapping hooks (not disjoint) and collect all hooks
         # Optimize: Use a single set to track all hooks instead of O(n²) pairwise intersection
