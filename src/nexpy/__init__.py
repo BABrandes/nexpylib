@@ -238,6 +238,7 @@ from .x_objects.specialized.xobject_subscriber import XSubscriber
 
 # Adapter objects
 from .x_objects.adapters.x_optional_adapter import XOptionalAdapter
+from .x_objects.adapters.x_optional_placeholder_adapter import XOptionalPlaceholderAdapter
 from .x_objects.adapters.x_int_float_adapter import XIntFloatAdapter
 from .x_objects.adapters.x_set_sequence_adapter import XSetSequenceAdapter
 from .x_objects.adapters.x_sequence_items_adapter import XSequenceItemsAdapter
@@ -282,6 +283,7 @@ __all__ = [
 
     # Adapter objects
     'XOptionalAdapter',
+    'XOptionalPlaceholderAdapter',
     'XIntFloatAdapter',
     'XSetSequenceAdapter',
     'XSequenceItemsAdapter',
@@ -324,8 +326,8 @@ __all__ = [
 try:
     from ._version import __version__, __version_tuple__
 except ImportError:
-    __version__ = "0.5.0"
-    __version_tuple__ = (0, 5, 0)
+    __version__ = "0.6.0"
+    __version_tuple__ = (0, 6, 0)
 
 __author__ = 'Benedikt Axel Brandes'
 __year__ = '2025'

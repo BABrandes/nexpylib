@@ -15,6 +15,31 @@ from ..single_value_like.protocols import XSingleValueProtocol
 T = TypeVar("T")
 
 class XOptionalSelectionSet(XCompositeBase[Literal["selected_option", "available_options"], Literal["number_of_available_options"], Optional[T] | AbstractSet[T], int], XOptionalSelectionOptionProtocol[T], Generic[T]):
+    """
+    Reactive single-selection container where selection can be None.
+    
+    XSetSingleSelectOptional[T] (alias: XOptionalSelectionSet[T]) maintains an optional
+    selected option that, when not None, must be present in available options.
+    The generic type T specifies the option type.
+
+    Type Parameters
+    ---------------
+    T : TypeVar
+        The type of selectable options. Must be hashable.
+        Examples: XSetSingleSelectOptional[str], XSetSingleSelectOptional[int]
+
+    Key Features
+    ------------
+    - **Optional Selection**: Selected option can be None (no selection)
+    - **Validation**: When not None, selection must be in available options
+    - **Reactive**: Changes trigger notifications
+    - **Type-Safe**: Full generic type support with Optional[T]
+
+    See Also
+    --------
+    XSetSingleSelect : Required single selection (cannot be None)
+    XSetMultiSelect : Multiple selection from available options
+    """
 
     def __init__(
         self,
@@ -24,6 +49,50 @@ class XOptionalSelectionSet(XCompositeBase[Literal["selected_option", "available
         custom_validator: Optional[Callable[[Mapping[Literal["selected_option", "available_options", "number_of_available_options"], Optional[T] | AbstractSet[T]| int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
+        """
+        Initialize optional single-selection container.
+
+        The generic type T specifies the option type. Selected option can be None.
+        Use: XSetSingleSelectOptional[str], XSetSingleSelectOptional[MyEnum], etc.
+
+        Parameters
+        ----------
+        selected_option : Optional[T] | Hook[Optional[T]] | XValue[Optional[T]]
+            Initial selected option (None or value in available_options):
+            - Optional[T]: A value or None
+            - Hook[Optional[T]]: External hook to join with
+            - XValue[Optional[T]]: XValue object to join with
+
+        available_options : AbstractSet[T] | Hook[AbstractSet[T]] | XSet[T]
+            Set of available options to select from.
+
+        custom_validator : Callable, optional
+            Additional validation function.
+
+        logger : Logger, optional
+            Logger for debugging.
+
+        nexus_manager : NexusManager, optional
+            Coordination manager.
+
+        Examples
+        --------
+        Optional selection:
+
+        >>> colors = {"red", "green", "blue"}
+        >>> sel = XSetSingleSelectOptional[str](
+        ...     selected_option=None,  # No selection
+        ...     available_options=colors
+        ... )
+        >>> sel.selected_option is None
+        True
+        >>> sel.selected_option = "red"  # Make selection
+        >>> sel.selected_option
+        'red'
+        >>> sel.selected_option = None  # Clear selection
+        >>> sel.selected_option is None
+        True
+        """
 
         #########################################################
         # Get initial values and hooks

@@ -16,11 +16,32 @@ SHV = TypeVar("SHV")
 
 class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
     """
-    X object wrapper for functions.
+    Reactive function coordinator maintaining synchronized variables through custom logic.
     
-    Generic type parameters:
-        SHK: The type of the hook keys
-        SHV: The type of the hook values
+    XFunction[SHK, SHV] maintains a set of variables (hooks) that are synchronized according to
+    a user-defined function. When any variable changes, the function is called to compute
+    derived updates to other variables. Generic types SHK and SHV specify the key and value types.
+
+    Type Parameters
+    ---------------
+    SHK : TypeVar
+        The type of hook keys (variable identifiers).
+        Examples: str, int, Literal["x", "y", "z"]
+    SHV : TypeVar
+        The type of hook values (variable values).
+        Examples: int, float, str, Any
+
+    Key Features
+    ------------
+    - **Custom Logic**: User-defined function determines synchronization behavior
+    - **Reactive**: Automatic recomputation when any variable changes
+    - **Bidirectional**: Function can update multiple variables from any change
+    - **Type-Safe**: Full generic type support for keys and values
+
+    See Also
+    --------
+    XOneWayFunction : One-way function (inputs → output only)
+    XValue : For simple single values
     """
 
     def __init__(
@@ -31,6 +52,75 @@ class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ) -> None:
+        """
+        Initialize a reactive function coordinator.
+
+        The generic types SHK (key type) and SHV (value type) define the variables.
+        Use: XFunction[str, float], XFunction[Literal["x", "y"], int], etc.
+
+        Parameters
+        ----------
+        complete_variables_per_key : Mapping[SHK, Hook[SHV] | SHV]
+            Initial variables as key-value pairs:
+            - SHK: Variable identifier (key)
+            - Hook[SHV] | SHV: Initial value or hook to connect to
+
+        completing_function_callable : Callable[[FunctionValues[SHK, SHV]], tuple[bool, dict[SHK, SHV]]]
+            Function that computes synchronized values:
+            - Input: FunctionValues with .submitted and .current dictionaries
+            - Output: (success: bool, updates: dict[SHK, SHV])
+            - Called when any variable changes
+            - Must return consistent values for validation
+
+        logger : Logger, optional
+            Logger for debugging operations.
+
+        nexus_manager : NexusManager, optional
+            The NexusManager coordinating synchronization.
+
+        Examples
+        --------
+        Rectangle with synchronized width, height, area:
+
+        >>> def rect_sync(values):
+        ...     submitted = values.submitted
+        ...     current = values.current
+        ...     
+        ...     if "width" in submitted and "height" in submitted:
+        ...         return True, {"area": submitted["width"] * submitted["height"]}
+        ...     elif "width" in submitted:
+        ...         return True, {"area": submitted["width"] * current["height"]}
+        ...     elif "height" in submitted:
+        ...         return True, {"area": current["width"] * submitted["height"]}
+        ...     elif "area" in submitted:
+        ...         # Calculate width from area and current height
+        ...         return True, {"width": submitted["area"] / current["height"]}
+        ...     return True, {}
+        >>> 
+        >>> rect = XFunction[str, float](
+        ...     complete_variables_per_key={"width": 10.0, "height": 5.0, "area": 50.0},
+        ...     completing_function_callable=rect_sync
+        ... )
+        >>> rect.get_hook("width").value = 20.0
+        >>> rect.get_hook("area").value  # Automatically updated to 100.0
+        100.0
+
+        Temperature converter:
+
+        >>> def temp_sync(values):
+        ...     if "celsius" in values.submitted:
+        ...         c = values.submitted["celsius"]
+        ...         return True, {"fahrenheit": c * 9/5 + 32}
+        ...     elif "fahrenheit" in values.submitted:
+        ...         f = values.submitted["fahrenheit"]
+        ...         return True, {"celsius": (f - 32) * 5/9}
+        ...     return True, {}
+        >>> 
+        >>> temp = XFunction[str, float](
+        ...     complete_variables_per_key={"celsius": 0.0, "fahrenheit": 32.0},
+        ...     completing_function_callable=temp_sync
+        ... )
+        """
 
 
         self._completing_function_callable = completing_function_callable

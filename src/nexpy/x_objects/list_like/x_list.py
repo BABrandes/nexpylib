@@ -16,9 +16,32 @@ T = TypeVar("T")
 
 class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int], XListProtocol[T], Generic[T]):
     """
-    Acting like a list.
+    Reactive list wrapper providing seamless integration with NexPy's synchronization system.
 
-    The hooks store an Iterable - allowing them to connect to any other iterable. But values requested from this object will be a list.
+    XList[T] is a reactive container for sequences that behaves like a standard Python list
+    but with automatic change notifications, validation, and synchronization capabilities.
+    The generic type parameter T specifies the type of elements in the list.
+
+    Type Parameters
+    ---------------
+    T : TypeVar
+        The type of elements stored in the list.
+        Examples: XList[int], XList[str], XList[MyClass]
+
+    Key Features
+    ------------
+    - **Reactive Updates**: Automatic notification when list contents change
+    - **Sequence Compatibility**: Works with any Sequence type (list, tuple, etc.)
+    - **Hook Fusion**: Join with other XList instances or hooks for synchronization
+    - **Length Tracking**: Automatic secondary hook tracking list length
+    - **Validation**: Optional custom validation for list updates
+    - **Type-Safe**: Full generic type support
+
+    See Also
+    --------
+    XSet : For set-like reactive containers
+    XDict : For dict-like reactive containers
+    XValue : For single-value reactive containers
     """
     def __init__(
         self,
@@ -28,6 +51,70 @@ class XList(XCompositeBase[Literal["value"], Literal["length"], Sequence[T], int
         custom_validator: Optional[Callable[[Mapping[Literal["value", "length"], Any]], tuple[bool, str]]] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
         ) -> None:
+        """
+        Initialize a reactive list container.
+
+        The generic type T specifies the element type. Use square bracket notation to specify:
+        XList[int], XList[str], XList[MyClass], etc.
+
+        Parameters
+        ----------
+        value : Sequence[T] | Hook[Sequence[T]] | XList[T] | None, optional
+            Initial list contents or hook/XList to connect to:
+            - Sequence[T]: Any sequence (list, tuple, etc.) to copy
+            - Hook[Sequence[T]]: External hook to join with
+            - XList[T]: Another XList to join with
+            - None: Create empty list (default)
+
+        logger : Logger, optional
+            Logger instance for debugging operations.
+
+        custom_validator : Callable[[Mapping[str, Any]], tuple[bool, str]], optional
+            Custom validation function for value updates.
+            Receives {"value": Sequence[T], "length": int}.
+            Returns (True, "message") if valid, (False, "error") if invalid.
+
+        nexus_manager : NexusManager, optional
+            The NexusManager coordinating synchronization.
+            Defaults to global DEFAULT_NEXUS_MANAGER.
+
+        Examples
+        --------
+        Create an empty list:
+
+        >>> numbers = XList[int]()
+        >>> numbers.list
+        []
+
+        Initialize with values:
+
+        >>> fruits = XList[str](["apple", "banana", "cherry"])
+        >>> fruits.list
+        ['apple', 'banana', 'cherry']
+
+        Connect two lists:
+
+        >>> source = XList[int]([1, 2, 3])
+        >>> mirror = XList[int](source)  # Joins with source
+        >>> source.list = [4, 5, 6]
+        >>> mirror.list  # Automatically synchronized
+        [4, 5, 6]
+
+        With validation:
+
+        >>> def validate_positive(values):
+        ...     if all(x > 0 for x in values["value"]):
+        ...         return True, "Valid"
+        ...     return False, "All numbers must be positive"
+        >>> positive_nums = XList[int]([1, 2, 3], custom_validator=validate_positive)
+
+        Type-specific lists:
+
+        >>> class Person:
+        ...     def __init__(self, name: str):
+        ...         self.name = name
+        >>> people = XList[Person]([Person("Alice"), Person("Bob")])
+        """
 
 
         if value is None:
