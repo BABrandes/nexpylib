@@ -1,6 +1,7 @@
 from typing import Generic, TypeVar, TYPE_CHECKING, Optional, Literal, Mapping, Any
 from logging import Logger
 import inspect
+import threading
 from threading import RLock
 
 from ....core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
@@ -51,12 +52,12 @@ class HookBase(HookProtocol[T], ListeningMixin, PublisherMixin, Generic[T]):
             from nexpy.core.nexus_system.nexus import Nexus
             if nexus_manager is None:
                 raise ValueError("Nexus manager must be provided if value is given")
-            self._nexus = Nexus[T](value_or_nexus, hooks=set(), logger=logger, nexus_manager=nexus_manager)
+            self._nexus = Nexus[T](value_or_nexus, hooks=set[HookProtocol[T]](), logger=logger, nexus_manager=nexus_manager)
 
         #-------------------------------- Initialize other attributes --------------------------------
 
         self._logger = logger
-        self._lock = RLock()
+        self._lock: threading.RLock = RLock()
 
         ListeningMixin.__init__(self)
         PublisherMixin.__init__(self, preferred_publish_mode=preferred_publish_mode)

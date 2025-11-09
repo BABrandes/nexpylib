@@ -164,7 +164,8 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
             custom_validator: Optional[Callable[[Mapping[PHK|SHK, PHV|SHV]], tuple[bool, str]]] = None,
             output_value_wrapper: Optional[Mapping[PHK|SHK, Callable[[PHV|SHV], PHV|SHV]]] = None,
             logger: Optional[Logger] = None,
-            nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER):
+            nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER,
+            preferred_publish_mode: Literal["async", "sync", "direct", "off"] = "async"):
         """
         Initialize the XCompositeBase with hook-based architecture.
         
@@ -499,7 +500,8 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
             invalidate_after_update_callback=internal_invalidate_callback,
             validate_complete_values_callback=internal_validation_in_isolation_callback,
             compute_missing_values_callback=internal_add_values_to_be_updated_callback,
-            nexus_manager=nexus_manager
+            nexus_manager=nexus_manager,
+            preferred_publish_mode=preferred_publish_mode
         )
 
         #################################################################################################

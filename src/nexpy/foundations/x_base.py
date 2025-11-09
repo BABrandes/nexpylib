@@ -127,6 +127,13 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, PublisherMixin, Se
 
         self._lock = RLock()
 
+    @property
+    def nexus_manager(self) -> NexusManager:
+        """
+        Get the nexus manager that this xobject is using.
+        """
+        return self._nexus_manager
+
     #########################################################
     # Private methods
     #########################################################

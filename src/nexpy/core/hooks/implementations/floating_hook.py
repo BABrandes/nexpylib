@@ -32,7 +32,8 @@ class FloatingHook(
         reaction_callback: Optional[Callable[[], tuple[bool, str]]] = None,
         isolated_validation_callback: Optional[Callable[[T], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER,
+        preferred_publish_mode: Literal["async", "sync", "direct", "off"] = "async",
         ) -> None:
 
         #-------------------------------- Initialization start --------------------------------
@@ -43,7 +44,8 @@ class FloatingHook(
             self=self,
             value_or_nexus=value,
             logger=logger,
-            nexus_manager=nexus_manager)
+            nexus_manager=nexus_manager,
+            preferred_publish_mode=preferred_publish_mode)
 
         HookWithSetterMixin.__init__( # type: ignore
             self=self)

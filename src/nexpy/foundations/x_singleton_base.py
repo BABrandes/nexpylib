@@ -42,7 +42,8 @@ class XSingletonBase(XBase[Literal["value"], T], CarriesSingleHookProtocol[T], G
             validate_value_callback: Optional[Callable[[T], tuple[bool, str]]] = None,
             invalidate_after_update_callback: Optional[Callable[[], None]] = None,
             logger: Optional[Logger] = None,
-            nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER):
+            nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER,
+            preferred_publish_mode: Literal["async", "sync", "direct", "off"] = "async"):
         """
         Initialize the XSingletonBase.
         
@@ -122,7 +123,8 @@ class XSingletonBase(XBase[Literal["value"], T], CarriesSingleHookProtocol[T], G
             invalidate_after_update_callback=xbase_invalidate_after_update_callback_wrapper,
             validate_complete_values_callback=validate_complete_values_callback_wrapper, # type: ignore
             logger=logger,
-            nexus_manager=nexus_manager
+            nexus_manager=nexus_manager,
+            preferred_publish_mode=preferred_publish_mode
         )
 
         # If initialized with a Hook, join to it
