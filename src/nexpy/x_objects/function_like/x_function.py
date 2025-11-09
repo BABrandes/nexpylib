@@ -15,7 +15,13 @@ SHK = TypeVar("SHK")
 SHV = TypeVar("SHV")
 
 class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
-
+    """
+    X object wrapper for functions.
+    
+    Generic type parameters:
+        SHK: The type of the hook keys
+        SHV: The type of the hook values
+    """
 
     def __init__(
         self,
@@ -29,22 +35,29 @@ class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
 
         self._completing_function_callable = completing_function_callable
 
-        # Create sync hooks with initial values
-        self._sync_hooks: dict[SHK, OwnedWritableHook[SHV, Self]] = {}
+        #################################################################################################
+        # Create function hooks
+        #################################################################################################
+
+        self._function_hooks: dict[SHK, OwnedWritableHook[SHV, Self]] = {}
         for key, initial_value in complete_variables_per_key.items():
-            sync_hook: OwnedWritableHook[SHV, Self] = OwnedWritableHook[SHV, Self](
+            function_hook: OwnedWritableHook[SHV, Self] = OwnedWritableHook[SHV, Self](
                 owner=self,
                 value=initial_value.value if isinstance(initial_value, HookProtocol) else initial_value, # type: ignore
                 logger=logger,
                 nexus_manager=nexus_manager
             )
-            self._sync_hooks[key] = sync_hook
+            self._function_hooks[key] = function_hook
 
-        def add_values_to_be_updated_callback(
-            update_values: UpdateFunctionValues[SHK, SHV]
-        ) -> Mapping[SHK, SHV]:
+        #################################################################################################
+        # Initialize XBase
+        #################################################################################################
+
+        #-------------------------------- Add values to be updated callback --------------------------------
+
+        def add_values_to_be_updated_callback(update_values: UpdateFunctionValues[SHK, SHV]) -> Mapping[SHK, SHV]:
             """
-            Add values to be updated by triggering the synchronization function.
+            Add values to be updated by triggering the function.
             This callback is called when any hook value changes.
             
             The function_callable receives a FunctionValues object containing both 
@@ -62,7 +75,7 @@ class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
 
             # Build completed_values by merging: submitted_values, then synced_values, then current values
             completed_values: dict[SHK, SHV] = {}
-            for key in self._sync_hooks.keys():
+            for key in self._function_hooks.keys():
                 if key in update_values.submitted:
                     completed_values[key] = update_values.submitted[key]
                 elif key in synced_values:
@@ -86,6 +99,8 @@ class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
 
             return values_to_be_added
 
+        #-------------------------------- Initialize XBase ---------------------------------------------
+
         XBase.__init__( # type: ignore
             self,
             logger=logger,
@@ -94,18 +109,22 @@ class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
             compute_missing_values_callback=add_values_to_be_updated_callback
         )
 
+        #################################################################################################
+        # Connect internal hooks to external hooks
+        #################################################################################################
+
         # Connect internal hooks to external hooks if provided
         for key, external_hook_or_value in complete_variables_per_key.items():
-            internal_hook = self._sync_hooks[key]
-            if isinstance(external_hook_or_value, HookProtocol):
-                internal_hook.join(external_hook_or_value, "use_caller_value") # type: ignore
+            self._function_hooks[key].join(external_hook_or_value, "use_caller_value") if isinstance(external_hook_or_value, HookProtocol) else None # type: ignore
+
+        #################################################################################################
 
     #########################################################
     # SerializableProtocol implementation
     #########################################################
 
     def get_values_for_serialization(self) -> Mapping[SHK, SHV]:
-        return {key: hook._get_value() for key, hook in self._sync_hooks.items()} # type: ignore
+        return {key: hook._get_value() for key, hook in self._function_hooks.items()} # type: ignore
     
     def set_values_from_serialization(self, values: Mapping[SHK, SHV]) -> None:
         values_to_submit: dict[SHK, SHV] = {}
@@ -126,8 +145,8 @@ class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
         Returns:
             The hook associated with the key.
         """
-        if key in self._sync_hooks:
-            return self._sync_hooks[key]
+        if key in self._function_hooks:
+            return self._function_hooks[key]
         else:
             raise ValueError(f"Key {key} not found in hooks")
 
@@ -141,8 +160,8 @@ class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
             The value of the hook.
         """
 
-        if key in self._sync_hooks:
-            return self._sync_hooks[key]._get_value() # type: ignore
+        if key in self._function_hooks:
+            return self._function_hooks[key]._get_value() # type: ignore
         else:
             raise ValueError(f"Key {key} not found in hooks")
 
@@ -155,7 +174,7 @@ class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
         Returns:
             The set of all hook keys.
         """
-        return set(self._sync_hooks.keys())
+        return set(self._function_hooks.keys())
 
     def _get_key_by_hook_or_nexus(self, hook_or_nexus: HookProtocol[SHV]|Nexus[SHV]) -> SHK:
         """
@@ -166,7 +185,7 @@ class XFunction(XBase[SHK, SHV], Generic[SHK, SHV]):
         Returns:
             The key associated with the hook or nexus.
         """
-        for key, hook in self._sync_hooks.items():
+        for key, hook in self._function_hooks.items():
             if hook is hook_or_nexus:
                 return key
         raise ValueError(f"Hook {hook_or_nexus} not found in hooks")

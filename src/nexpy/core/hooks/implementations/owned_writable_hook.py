@@ -147,4 +147,18 @@ class OwnedWritableHook(HookBase[T], OwnedHookProtocol[T, O], WritableHookProtoc
         with self._lock:
             self._remove_reaction_callback()
 
-    
+    #########################################################
+    # Str and repr methods
+    #########################################################
+
+    def __str__(self) -> str:
+        """
+        Return a string representation of the hook.
+        """
+        return f"OwnedWritableHook(value={self.value}, owner={self.owner})"
+
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the hook.
+        """
+        return f"OwnedWritableHook(value={self.value}, owner={self.owner})"

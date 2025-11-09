@@ -143,3 +143,19 @@ class FloatingHook(
         """
         # Delegate to the mixin's implementation
         return HookWithIsolatedValidationMixin._validate_value_in_isolation(self, value) # type: ignore
+
+    #########################################################
+    # Str and repr methods
+    #########################################################
+
+    def __str__(self) -> str:
+        """
+        Return a string representation of the hook.
+        """
+        return f"FloatingHook(value={self.value})"
+
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the hook.
+        """
+        return f"FloatingHook(value={self.value})"
