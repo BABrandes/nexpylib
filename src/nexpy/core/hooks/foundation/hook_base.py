@@ -3,20 +3,21 @@ from logging import Logger
 import inspect
 from threading import RLock
 
-from ..protocols.hook_protocol import HookProtocol
-from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
+from ....core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ...auxiliary.listening_mixin import ListeningMixin
 from ...nexus_system.submission_error import SubmissionError
+from ...publisher_subscriber.publisher_mixin import PublisherMixin
+from ..protocols.hook_protocol import HookProtocol
 
 if TYPE_CHECKING:
-    from nexpy.core.nexus_system.nexus_manager import NexusManager
-    from nexpy.core.nexus_system.nexus import Nexus
+    from ....core.nexus_system.nexus_manager import NexusManager
+    from ....core.nexus_system.nexus import Nexus
     from ....foundations.carries_single_hook_protocol import CarriesSingleHookProtocol
 
 T = TypeVar("T")
 
 
-class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):  
+class HookBase(HookProtocol[T], ListeningMixin, PublisherMixin, Generic[T]):  
     """
     Base class for minimal hook objects.
     """
@@ -31,6 +32,7 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
         value_or_nexus: T|"Nexus[T]",
         logger: Optional[Logger] = None,
         nexus_manager: Optional["NexusManager"] = _DEFAULT_NEXUS_MANAGER,
+        preferred_publish_mode: Literal["async", "sync", "direct", "off"] = "async",
         ):
 
         #-------------------------------- Initialization start --------------------------------
@@ -57,6 +59,7 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
         self._lock = RLock()
 
         ListeningMixin.__init__(self)
+        PublisherMixin.__init__(self, preferred_publish_mode=preferred_publish_mode)
 
         #-------------------------------- Add hook to nexus --------------------------------
         
