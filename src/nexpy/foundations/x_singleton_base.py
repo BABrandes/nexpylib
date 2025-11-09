@@ -2,7 +2,7 @@ from typing import Callable, Generic, Literal, Mapping, Optional, TypeVar, Self,
 from logging import Logger
 from threading import RLock
 
-from ..core.hooks import HookBase, OwnedWritableHook, HookProtocol, OwnedHookProtocol
+from ..core.hooks import OwnedWritableHook, HookProtocol, OwnedHookProtocol
 from ..core.nexus_system.nexus import Nexus
 from ..core.nexus_system.nexus_manager import NexusManager
 from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
@@ -62,27 +62,20 @@ class XSingletonBase(XBase[Literal["value"], T], CarriesSingleHookProtocol[T], G
 
         # Extract value and optional hook to join
         if isinstance(value_or_hook, CarriesSingleHookProtocol):
-            value: T = value_or_hook._get_single_value() # type: ignore
-            hook: Optional[OwnedHookProtocol[T]] = value_or_hook._get_single_hook() # type: ignore    
+            initial_value: T = value_or_hook._get_single_value() # type: ignore
+            external_hook: Optional[OwnedHookProtocol[T]] = value_or_hook._get_single_hook() # type: ignore    
         elif isinstance(value_or_hook, HookProtocol):
-            value: T = value_or_hook.value # type: ignore
-            hook = value_or_hook # type: ignore
+            initial_value: T = value_or_hook.value # type: ignore
+            external_hook = value_or_hook # type: ignore
         else:
             # Is T
-            value = value_or_hook
-            hook = None
-
-        HookBase.__init__( # type: ignore
-            self=self, # type: ignore
-            value_or_nexus=value,
-            logger=logger,
-            nexus_manager=nexus_manager
-            )
+            initial_value = value_or_hook
+            external_hook = None
 
         # Create the value hook
         self._value_hook = OwnedWritableHook[T, Self](
             self,
-            value, # type: ignore
+            initial_value, # type: ignore
             logger,
             nexus_manager
             )
@@ -121,15 +114,14 @@ class XSingletonBase(XBase[Literal["value"], T], CarriesSingleHookProtocol[T], G
         XBase.__init__( # type: ignore
             self,
             invalidate_after_update_callback=xbase_invalidate_after_update_callback_wrapper,
-            validate_complete_values_callback=validate_complete_values_callback_wrapper, # type: ignore
+            validate_complete_values_callback=validate_complete_values_callback_wrapper,
             logger=logger,
             nexus_manager=nexus_manager,
             preferred_publish_mode=preferred_publish_mode
         )
 
         # If initialized with a Hook, join to it
-        if hook is not None:
-            self._value_hook.join(hook, "use_target_value")
+        self._value_hook.join(external_hook, "use_target_value") if external_hook is not None else None # type: ignore
 
         #-------------------------------- Initialize finished --------------------------------
 

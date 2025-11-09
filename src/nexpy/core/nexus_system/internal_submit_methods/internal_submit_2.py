@@ -6,7 +6,7 @@ from ..nexus import Nexus
 from ...hooks.protocols.hook_protocol import HookProtocol
 from ...nexus_system.update_function_values import UpdateFunctionValues
 from ....foundations.carries_some_hooks_protocol import CarriesSomeHooksProtocol
-from ...auxiliary.listening_protocol import ListeningProtocol
+from ...auxiliary.listenable_protocol import ListenableProtocol
 from ...publisher_subscriber.publisher_protocol import PublisherProtocol
 from .helper_methods import convert_value_for_storage, filter_nexus_and_values_for_owner, complete_nexus_and_values_for_owner
 
@@ -227,7 +227,7 @@ def _execute_notifications_batch(nexus_manager: "NexusManager", components: dict
         if isinstance(hook, PublisherProtocol):
             hook.publish(None, raise_error_mode="warn")
         # Listener notification
-        if isinstance(hook, ListeningProtocol):
+        if isinstance(hook, ListenableProtocol):
             hook._notify_listeners(raise_error_mode="warn") # type: ignore
 
     # --------- Take care of the affected owners ---------
@@ -240,6 +240,6 @@ def _execute_notifications_batch(nexus_manager: "NexusManager", components: dict
         if isinstance(owner, PublisherProtocol):
             owner.publish(None, raise_error_mode="warn")
         # Listener notification
-        if isinstance(owner, ListeningProtocol):
+        if isinstance(owner, ListenableProtocol):
             owner._notify_listeners(raise_error_mode="warn") # type: ignore
 

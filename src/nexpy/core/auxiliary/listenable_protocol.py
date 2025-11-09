@@ -1,9 +1,9 @@
 from typing import Callable, Protocol, runtime_checkable
 
 @runtime_checkable
-class ListeningProtocol(Protocol):
+class ListenableProtocol(Protocol):
     """
-    Protocol defining the interface for all listening objects in the library.
+    Protocol defining the interface for all objects that are listenable.
     """
     ...
 
@@ -16,7 +16,7 @@ class ListeningProtocol(Protocol):
 
     def add_listener(self, *callbacks: Callable[[], None]) -> None:
         """
-        Add one or more listeners to the observable.
+        Add one or more listeners to the listenable.
         """
         ...
 
@@ -28,13 +28,13 @@ class ListeningProtocol(Protocol):
 
     def remove_listener(self, *callbacks: Callable[[], None]) -> None:
         """
-        Remove one or more listeners from the observable.
+        Remove one or more listeners from the listenable.
         """
         ...
 
     def remove_all_listeners(self) -> set[Callable[[], None]]:
         """
-        Remove all listeners from the observable.
+        Remove all listeners from the listenable.
         """
         ...
 

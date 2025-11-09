@@ -18,7 +18,7 @@ class PublisherProtocol(Protocol):
         """
         ...
 
-    def publish(self, mode: Literal["async", "sync", "direct", "off", None], raise_error_mode: Literal["raise", "ignore", "warn"] = "raise") -> None:
+    def publish(self, mode: Literal["async", "sync", "direct", "off", None] = None, raise_error_mode: Literal["raise", "ignore", "warn"] = "raise") -> None:
         """
         Publish an update to all subscribed subscribers asynchronously.
 

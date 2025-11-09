@@ -13,7 +13,7 @@ from ..core.nexus_system.update_function_values import UpdateFunctionValues
 from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ..core.hooks import OwnedHookProtocol, HookProtocol
 from ..core.publisher_subscriber.publisher_mixin import PublisherMixin
-from ..core.auxiliary.listening_mixin import ListeningMixin
+from ..core.auxiliary.listenable_mixin import ListenableMixin
 from ..core.auxiliary.utils import make_weak_callback
 
 from .carries_some_hooks_protocol import CarriesSomeHooksProtocol
@@ -25,7 +25,7 @@ HK = TypeVar("HK")
 HV = TypeVar("HV")
 
 
-class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, PublisherMixin, SerializableProtocol[HK, HV], Generic[HK, HV]):
+class XBase(CarriesSomeHooksProtocol[HK, HV], ListenableMixin, PublisherMixin, SerializableProtocol[HK, HV], Generic[HK, HV]):
     """
     Base class for observables in the new hook-based architecture.
 
@@ -114,7 +114,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, PublisherMixin, Se
         """
         Initialize the XBase.
         """
-        ListeningMixin.__init__(self)
+        ListenableMixin.__init__(self)
         PublisherMixin.__init__(self, preferred_publish_mode=preferred_publish_mode)
 
         # Store callbacks (nested closures don't need weak references, bound methods would)
@@ -284,7 +284,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, PublisherMixin, Se
         if source_hook_key in self._get_hook_keys():
             source_hook: OwnedHookProtocol[HV, Self] = self._get_hook_by_key(source_hook_key)
             if isinstance(target_hook, CarriesSingleHookProtocol):
-                target_hook = target_hook._get_hook_by_key(source_hook_key)
+                target_hook = target_hook._get_hook_by_key(source_hook_key) # type: ignore
             success, msg = source_hook._join(target_hook, initial_sync_mode) # type: ignore
             if not success:
                 raise ValueError(msg)

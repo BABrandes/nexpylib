@@ -11,12 +11,12 @@ from .x_composite_base import XCompositeBase
 T1 = TypeVar("T1")  # First type (e.g., T, float, AbstractSet)
 T2 = TypeVar("T2")  # Second type (e.g., Optional[T], int, Sequence)
 
-class XAdapterBase(
+class XLeftRightAdapterBase(
     XCompositeBase[Literal["left", "right"], Literal[...], T1 | T2, None], 
     Generic[T1, T2]
 ):
     """
-    Base class for adapter X objects that bridge between incompatible types.
+    Base class for left-right adapter X objects that bridge between incompatible types.
 
     Generic type parameters:
         T1: The left-side type

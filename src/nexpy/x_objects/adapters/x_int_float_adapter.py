@@ -1,13 +1,13 @@
 from typing import Optional, Self
 from logging import Logger
 
-from ...foundations.x_adapter_base import XAdapterBase
+from ...foundations.x_left_right_adapter_base import XLeftRightAdapterBase
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ...core.hooks.protocols.hook_protocol import HookProtocol
 from ...core.hooks.implementations.owned_writable_hook import OwnedWritableHook
 
-class XIntFloatAdapter(XAdapterBase[int, float]):
+class XIntFloatAdapter(XLeftRightAdapterBase[int, float]):
     """
     Adapter object that bridges between int and float, validating integer values.
     
@@ -164,7 +164,7 @@ class XIntFloatAdapter(XAdapterBase[int, float]):
             
             if int(initial_float) != initial_int:
                 raise ValueError(f"Values do not match: {initial_float} != {initial_int}")
-                
+
         else:
             raise ValueError("At least one parameter must be provided!")
         

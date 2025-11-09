@@ -10,7 +10,7 @@ from logging import Logger
 
 from ..nexus import Nexus
 from ...hooks.protocols.hook_protocol import HookProtocol
-from ...auxiliary.listening_protocol import ListeningProtocol
+from ...auxiliary.listenable_protocol import ListenableProtocol
 from ...publisher_subscriber.publisher_protocol import PublisherProtocol
 from ....foundations.carries_some_hooks_protocol import CarriesSomeHooksProtocol
 from .helper_methods import convert_value_for_storage, filter_nexus_and_values_for_owner, complete_nexus_and_values_for_owner, complete_nexus_and_values_dict
@@ -155,10 +155,10 @@ def internal_submit_values(
         if isinstance(hook, ReactiveHookProtocol):
             hook._react_to_value_change(raise_error_mode="warn") # type: ignore
         # Publication
-        if isinstance(hook, PublisherProtocol):
+        if isinstance(hook, PublisherProtocol): # type: ignore
             hook.publish(None, raise_error_mode="warn")
         # Listener notification
-        if isinstance(hook, ListeningProtocol):
+        if isinstance(hook, ListenableProtocol): # type: ignore
             hook._notify_listeners(raise_error_mode="warn") # type: ignore
 
     # --------- Take care of the affected owners ---------

@@ -1,4 +1,7 @@
-from typing import Protocol, TypeVar, runtime_checkable, TYPE_CHECKING, Literal, Mapping
+from typing import TypeVar, runtime_checkable, TYPE_CHECKING, Literal, Mapping, Protocol
+
+from ...auxiliary.listenable_protocol import ListenableProtocol
+from ...publisher_subscriber.publisher_protocol import PublisherProtocol
 
 if TYPE_CHECKING:
     from nexpy.core.nexus_system.nexus_manager import NexusManager
@@ -8,7 +11,7 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 @runtime_checkable
-class HookProtocol(Protocol[T]):
+class HookProtocol(ListenableProtocol, PublisherProtocol, Protocol[T]):
     """
     Protocol for hook objects.
     """

@@ -2,7 +2,7 @@ from typing import Optional, Sequence, TypeVar, Callable, Self
 from collections.abc import Set as AbstractSet
 from logging import Logger
 
-from ...foundations.x_adapter_base import XAdapterBase
+from ...foundations.x_left_right_adapter_base import XLeftRightAdapterBase
 from ...core.hooks.protocols.owned_hook_protocol import OwnedHookProtocol
 from ...core.hooks.protocols.hook_protocol import HookProtocol
 from ...core.nexus_system.nexus_manager import NexusManager
@@ -11,7 +11,7 @@ from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # 
 T = TypeVar("T")
 
 
-class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
+class XSetSequenceAdapter(XLeftRightAdapterBase[AbstractSet[T], Sequence[T]]):
     """
     Adapter object that bridges between AbstractSet and Sequence, validating uniqueness.
     
@@ -191,7 +191,7 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
             # Validate consistency
             if set(initial_sequence) != set(initial_set):
                 raise ValueError(f"Values do not match: {initial_set} != {set(initial_sequence)}")
-                
+
         else:
             raise ValueError("At least one parameter must be provided!")
         

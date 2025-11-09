@@ -1,16 +1,16 @@
 from typing import Callable, Literal
 import warnings
 
-from .listening_protocol import ListeningProtocol
+from .listenable_protocol import ListenableProtocol
 
-class ListeningMixin(ListeningProtocol):
+class ListenableMixin(ListenableProtocol):
     """
-    Mixin providing listener management functionality for observables.
+    Mixin providing listener management functionality for objects that are listenable.
     """
 
     def __init__(self) -> None:
         """
-        Initialize the ListeningMixin with an empty set of listeners.
+        Initialize the ListenableMixin with an empty set of listeners.
         """
         super().__init__()
         self._listeners: set[Callable[[], None]] = set()
@@ -27,7 +27,7 @@ class ListeningMixin(ListeningProtocol):
 
     def add_listener(self, *callbacks: Callable[[], None]) -> None:
         """
-        Add one or more listeners to the observable.
+        Add one or more listeners to the listenable.
         """
         # Prevent duplicate listeners
         for callback in callbacks:
@@ -45,7 +45,7 @@ class ListeningMixin(ListeningProtocol):
 
     def remove_listener(self, *callbacks: Callable[[], None]) -> None:
         """
-        Remove one or more listeners from the observable.
+        Remove one or more listeners from the listenable.
         """
         for callback in callbacks:
             try:
@@ -56,7 +56,7 @@ class ListeningMixin(ListeningProtocol):
 
     def remove_all_listeners(self) -> set[Callable[[], None]]:
         """
-        Remove all listeners from the observable.
+        Remove all listeners from the listenable.
         """
         removed_listeners = self._listeners
         self._listeners = set()
@@ -100,10 +100,10 @@ class ListeningMixin(ListeningProtocol):
             True if the callback is registered, False otherwise
             
         Example:
-            >>> obs = MyObservable(10)
+            >>> listenable = MyListenable(10)
             >>> callback = lambda: print("Hello")
-            >>> print(obs.is_listening_to(callback))  # False
-            >>> obs.add_listeners(callback)
-            >>> print(obs.is_listening_to(callback))  # True
+            >>> print(listenable.is_listening_to(callback))  # False
+            >>> listenable.add_listeners(callback)
+            >>> print(listenable.is_listening_to(callback))  # True
         """
         return callback in self._listeners
