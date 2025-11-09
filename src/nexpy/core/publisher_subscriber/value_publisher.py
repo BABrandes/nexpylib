@@ -44,14 +44,14 @@ Example:
 from typing import Generic, Literal, TypeVar, Optional
 from logging import Logger
 
-from ..auxiliary.listening_mixin import ListeningMixin
-from ..auxiliary.listening_protocol import ListeningProtocol
+from ..auxiliary.listenable_mixin import ListenableMixin
+from ..auxiliary.listenable_protocol import ListenableProtocol
 from .publisher_mixin import PublisherMixin
 from .publisher_protocol import PublisherProtocol
 
 T = TypeVar("T")
 
-class ValuePublisher(PublisherMixin, PublisherProtocol, ListeningMixin, ListeningProtocol, Generic[T]):
+class ValuePublisher(PublisherMixin, PublisherProtocol, ListenableMixin, ListenableProtocol, Generic[T]):
     """
     A Publisher that holds a value and publishes automatically on value changes.
     
@@ -179,7 +179,7 @@ class ValuePublisher(PublisherMixin, PublisherProtocol, ListeningMixin, Listenin
                 # Custom objects
                 user = ValuePublisher(User(name="Alice"))
         """
-        ListeningMixin.__init__(self)
+        ListenableMixin.__init__(self)
         PublisherMixin.__init__(
             self,
             preferred_publish_mode=preferred_publish_mode,

@@ -68,8 +68,8 @@ For normal usage of the library, import from the main package:
 """
 
 from .nexus_system.nexus import Nexus
-from .auxiliary.listening_mixin import ListeningMixin
-from .auxiliary.listening_protocol import ListeningProtocol
+from .auxiliary.listenable_mixin import ListenableMixin
+from .auxiliary.listenable_protocol import ListenableProtocol
 from .nexus_system.nexus_manager import NexusManager
 from .publisher_subscriber.subscriber import Subscriber
 from .nexus_system.submission_error import SubmissionError
@@ -89,9 +89,9 @@ from .hooks import (
 
 __all__ = [
     'Nexus',
-    'ListeningMixin',
-    'ListeningProtocol',
     'NexusManager',
+    'ListenableMixin',
+    'ListenableProtocol',
     'Subscriber',
     'SubmissionError',
     'HookProtocol',

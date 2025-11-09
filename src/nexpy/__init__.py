@@ -240,6 +240,7 @@ from .x_objects.specialized.xobject_subscriber import XSubscriber
 from .x_objects.adapters.x_optional_adapter import XOptionalAdapter
 from .x_objects.adapters.x_int_float_adapter import XIntFloatAdapter
 from .x_objects.adapters.x_set_sequence_adapter import XSetSequenceAdapter
+from .x_objects.adapters.x_sequence_items_adapter import XSequenceItemsAdapter
 
 # Hook protocols
 from nexpy.core.hooks.protocols.hook_protocol import HookProtocol as Hook
@@ -283,7 +284,8 @@ __all__ = [
     'XOptionalAdapter',
     'XIntFloatAdapter',
     'XSetSequenceAdapter',
-    
+    'XSequenceItemsAdapter',
+
     # Specialized objects
     'XSubscriber',
     'XRootedPaths',
@@ -322,8 +324,8 @@ __all__ = [
 try:
     from ._version import __version__, __version_tuple__
 except ImportError:
-    __version__ = "0.4.2"
-    __version_tuple__ = (0, 4, 2)
+    __version__ = "0.5.0"
+    __version_tuple__ = (0, 5, 0)
 
 __author__ = 'Benedikt Axel Brandes'
 __year__ = '2025'

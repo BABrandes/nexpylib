@@ -2,7 +2,7 @@ from typing import Optional, Sequence, TypeVar, Callable, Self
 from collections.abc import Set as AbstractSet
 from logging import Logger
 
-from ...foundations.x_adapter_base import XAdapterBase
+from ...foundations.x_left_right_adapter_base import XLeftRightAdapterBase
 from ...core.hooks.protocols.owned_hook_protocol import OwnedHookProtocol
 from ...core.hooks.protocols.hook_protocol import HookProtocol
 from ...core.nexus_system.nexus_manager import NexusManager
@@ -11,7 +11,7 @@ from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # 
 T = TypeVar("T")
 
 
-class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
+class XSetSequenceAdapter(XLeftRightAdapterBase[AbstractSet[T], Sequence[T]]):
     """
     Adapter object that bridges between AbstractSet and Sequence, validating uniqueness.
     
@@ -140,16 +140,17 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
         # Store the sort callable
         self._sort_callable = sort_callable
         
-        # Collect the external hooks
-        external_hook_set: Optional[HookProtocol[AbstractSet[T]]] = None
-        external_hook_sequence: Optional[HookProtocol[Sequence[T]]] = None
+        #################################################################################################
+        # Collect external hooks
+        #################################################################################################
+
+        external_hook_set: Optional[HookProtocol[AbstractSet[T]]] = hook_set_or_value if isinstance(hook_set_or_value, HookProtocol) else None
+        external_hook_sequence: Optional[HookProtocol[Sequence[T]]] = hook_sequence if isinstance(hook_sequence, HookProtocol) else None
         
-        if isinstance(hook_set_or_value, HookProtocol):
-            external_hook_set = hook_set_or_value
-        if isinstance(hook_sequence, HookProtocol):
-            external_hook_sequence = hook_sequence
-        
-        # Determine initial value
+        #################################################################################################
+        # Determine initial values
+        #################################################################################################
+
         initial_set: AbstractSet[T]
         initial_sequence: Sequence[T]
         
@@ -190,10 +191,14 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
             # Validate consistency
             if set(initial_sequence) != set(initial_set):
                 raise ValueError(f"Values do not match: {initial_set} != {set(initial_sequence)}")
+
         else:
             raise ValueError("At least one parameter must be provided!")
         
+        #################################################################################################
         # Initialize parent with both hooks
+        #################################################################################################
+
         initial_hook_values = {
             "left": external_hook_set if external_hook_set is not None else initial_set,
             "right": external_hook_sequence if external_hook_sequence is not None else initial_sequence,
@@ -204,6 +209,8 @@ class XSetSequenceAdapter(XAdapterBase[AbstractSet[T], Sequence[T]]):
             logger=logger,
             nexus_manager=nexus_manager
         )
+
+        #################################################################################################
     
     #########################################################################
     # Adapter base implementation

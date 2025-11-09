@@ -10,10 +10,9 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from nexpy import FloatingHook, XValue, XList
+from nexpy import FloatingHook
 from nexpy.core.nexus_system.nexus_manager import NexusManager
 from test_base import ObservableTestCase
-import pytest
 
 
 class TestAdaptiveSubmission(ObservableTestCase):

@@ -19,7 +19,15 @@ OHV = TypeVar("OHV")  # Output Hook Values
 
 
 class XOneWayFunction(XBase[IHK|OHK, IHV|OHV], Generic[IHK, OHK, IHV, OHV]):
+    """
+    X object wrapper for one-way functions.
 
+    Generic type parameters:
+        IHK: The type of the input hook keys
+        OHK: The type of the output hook keys
+        IHV: The type of the input hook values
+        OHV: The type of the output hook values
+    """
 
     def __init__(
         self,
@@ -36,7 +44,10 @@ class XOneWayFunction(XBase[IHK|OHK, IHV|OHV], Generic[IHK, OHK, IHV, OHV]):
         self._input_hooks: dict[IHK, OwnedWritableHook[IHV, Self]] = {}
         self._output_hooks: dict[OHK, OwnedReadOnlyHook[OHV, Self]] = {}
 
-        # Create input hooks for all keys, connecting to external hooks when provided
+        #################################################################################################
+        # Create input hooks
+        #################################################################################################
+
         for key, external_hook_or_value in input_variables_per_key.items():
             # Create internal hook
             initial_value_input: IHV = external_hook_or_value.value if isinstance(external_hook_or_value, HookProtocol) else external_hook_or_value # type: ignore
@@ -48,8 +59,12 @@ class XOneWayFunction(XBase[IHK|OHK, IHV|OHV], Generic[IHK, OHK, IHV, OHV]):
             )
             self._input_hooks[key] = internal_hook_input
 
-        # Create output hooks for all keys
-        output_values: dict[OHK, OHV] = self._one_way_function_callable(self.get_input_values()) # type: ignore
+        #################################################################################################
+        # Create output hooks
+        #################################################################################################
+
+        input_values: Mapping[IHK, IHV] = {key: hook.value for key, hook in self._input_hooks.items()}
+        output_values: dict[OHK, OHV] = self._one_way_function_callable(input_values) # type: ignore
         for key in function_output_hook_keys:
             if key not in output_values:
                 raise ValueError(f"Function callable must return all output keys. Missing key: {key}")
@@ -60,6 +75,12 @@ class XOneWayFunction(XBase[IHK|OHK, IHV|OHV], Generic[IHK, OHK, IHV, OHV]):
                 nexus_manager=nexus_manager
             )
             self._output_hooks[key] = internal_hook_output
+
+        #################################################################################################
+        # Initialize XBase
+        #################################################################################################
+
+        #-------------------------------- Add values to be updated callback -----------------------------
 
         def add_values_to_be_updated_callback(
             update_values: UpdateFunctionValues[IHK|OHK, IHV|OHV]
@@ -100,19 +121,25 @@ class XOneWayFunction(XBase[IHK|OHK, IHV|OHV], Generic[IHK, OHK, IHV, OHV]):
 
             return values_to_be_added
 
+        #-------------------------------- Initialize XBase ---------------------------------------------
+
         XBase.__init__( # type: ignore
             self,
             logger=logger,
             invalidate_after_update_callback=None,
             validate_complete_values_callback=None,
-            compute_missing_values_callback=add_values_to_be_updated_callback # type: ignore
+            compute_missing_values_callback=add_values_to_be_updated_callback
         )
+
+        #################################################################################################
+        # Connect internal input hooks to external hooks
+        #################################################################################################
 
         # Connect internal input hooks to external hooks if provided
         for key, external_hook_or_value in input_variables_per_key.items():
-            internal_hook_input = self._input_hooks[key]
-            if isinstance(external_hook_or_value, HookProtocol):
-                internal_hook_input.join(external_hook_or_value, "use_caller_value") # type: ignore
+            self._input_hooks[key].join(external_hook_or_value, "use_caller_value") if isinstance(external_hook_or_value, HookProtocol) else None # type: ignore
+
+        #################################################################################################
 
     #########################################################
     # SerializableProtocol implementation
@@ -184,7 +211,7 @@ class XOneWayFunction(XBase[IHK|OHK, IHV|OHV], Generic[IHK, OHK, IHV, OHV]):
             The set of keys for the hooks
         """
 
-        return set[IHK|OHK](self._input_hooks.keys()) | set[IHK|OHK](self._output_hooks.keys())
+        return set(self._input_hooks.keys()) | set(self._output_hooks.keys())
 
     def _get_key_by_hook_or_nexus(self, hook_or_nexus: OwnedWritableHook[IHV, Self]|OwnedReadOnlyHook[OHV, Self]|Nexus[IHV|OHV]) -> IHK|OHK: # type: ignore
         """

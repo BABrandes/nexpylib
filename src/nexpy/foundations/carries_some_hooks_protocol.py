@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, TypeVar, Optional, Mapping, Protocol, Literal,
 from logging import Logger
 from collections.abc import Hashable
 
-from ..core.auxiliary.listening_protocol import ListeningProtocol
 from ..core.nexus_system.update_function_values import UpdateFunctionValues
 from ..core.nexus_system.nexus import Nexus
 
@@ -14,7 +13,7 @@ if TYPE_CHECKING:
 HK = TypeVar("HK")
 HV = TypeVar("HV")
 
-class CarriesSomeHooksProtocol(ListeningProtocol, Hashable, Protocol[HK, HV]):
+class CarriesSomeHooksProtocol(Hashable, Protocol[HK, HV]):
     """
     Protocol for objects that carry a set of hooks.
 

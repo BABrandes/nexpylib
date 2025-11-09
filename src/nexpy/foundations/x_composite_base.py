@@ -164,7 +164,8 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
             custom_validator: Optional[Callable[[Mapping[PHK|SHK, PHV|SHV]], tuple[bool, str]]] = None,
             output_value_wrapper: Optional[Mapping[PHK|SHK, Callable[[PHV|SHV], PHV|SHV]]] = None,
             logger: Optional[Logger] = None,
-            nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER):
+            nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER,
+            preferred_publish_mode: Literal["async", "sync", "direct", "off"] = "async"):
         """
         Initialize the XCompositeBase with hook-based architecture.
         
@@ -387,7 +388,9 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
         - Logs errors from invalidate_after_update_custom_callback but doesn't raise them
         """
 
-        #-------------------------------- Initialization start --------------------------------
+        #################################################################################################
+        # Initialization start
+        #################################################################################################
 
         # Initialize fields
         self._primary_hooks: dict[PHK, OwnedWritableHook[PHV, Self]] = {}
@@ -412,7 +415,11 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
             for key, wrapper in output_value_wrapper.items():
                 self._output_value_wrappers[key] = wrapper
 
-        #--------------------------------Initialize BaseCarriesHooks--------------------------------
+        #################################################################################################
+        # Initialize BaseCarriesHooks
+        #################################################################################################
+
+        # -------------------------------- Prepare callbacks --------------------------------
 
         def internal_invalidate_callback() -> tuple[bool, str]:
             if invalidate_after_update_callback is not None:
@@ -484,32 +491,44 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
 
             # Step 4: Return the additional values
             return additional_values
+
+        # --------------------- Initialize XBase --------------------------------
         
         XBase.__init__( # type: ignore
             self,
             logger=logger,
             invalidate_after_update_callback=internal_invalidate_callback,
-            validate_complete_values_callback=internal_validation_in_isolation_callback, # type: ignore
-            compute_missing_values_callback=internal_add_values_to_be_updated_callback, # type: ignore
-            nexus_manager=nexus_manager
+            validate_complete_values_callback=internal_validation_in_isolation_callback,
+            compute_missing_values_callback=internal_add_values_to_be_updated_callback,
+            nexus_manager=nexus_manager,
+            preferred_publish_mode=preferred_publish_mode
         )
 
-        #-------------------------------- Set inital end --------------------------------
+        #################################################################################################
+        # Set inital values
+        #################################################################################################
+
+        # -------------------------------- Primary values and hooks --------------------------------
 
         initial_primary_hook_values: dict[PHK, PHV] = {}
         for key, value in initial_hook_values.items():
 
+            # Resolve the initial value and the external hook
             if isinstance(value, HookProtocol):
                 initial_value: PHV = value._get_value() # type: ignore
+                external_hook: Optional[HookProtocol[PHV]] = value # type: ignore
             else:
                 initial_value = value
+                external_hook = None
 
+            # Create the initial value and the internal hook
             initial_primary_hook_values[key] = initial_value
-            hook = OwnedWritableHook[PHV, Self](self, initial_value, logger, nexus_manager) # type: ignore
-            self._primary_hooks[key] = hook
+            self._primary_hooks[key] = OwnedWritableHook[PHV, Self](self, initial_value, logger, nexus_manager) # type: ignore
             
-            if isinstance(value, OwnedHookProtocol):
-                value._join(hook, "use_target_value") # type: ignore
+            # Join the external hook to the internal hook
+            external_hook._join(self._primary_hooks[key], "use_target_value") if external_hook is not None else None # type: ignore
+
+        # -------------------------------- Secondary values and hooks --------------------------------
 
         self._secondary_hook_callbacks: dict[SHK, Callable[[Mapping[PHK, PHV]], SHV]] = {}
         if compute_secondary_values_callback is not None:
@@ -520,7 +539,7 @@ class XCompositeBase(XBase[PHK|SHK, PHV|SHV], Generic[PHK, SHK, PHV, SHV]):
                 secondary_hook = OwnedReadOnlyHook[SHV, Self](self, value, logger, nexus_manager)
                 self._secondary_hooks[key] = secondary_hook
 
-        #-------------------------------- Initialize finished --------------------------------
+        #################################################################################################
 
     #########################################################################
     # CarriesSomeHooksBase methods implementation

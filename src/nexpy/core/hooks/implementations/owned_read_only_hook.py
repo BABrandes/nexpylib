@@ -22,7 +22,8 @@ class OwnedReadOnlyHook(HookBase[T], OwnedHookProtocol[T, O], ReactiveHookProtoc
         owner: O,
         value: T,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER,
+        preferred_publish_mode: Literal["async", "sync", "direct", "off"] = "async",
     ) -> None:
 
         #-------------------------------- Initialization start --------------------------------
@@ -33,7 +34,8 @@ class OwnedReadOnlyHook(HookBase[T], OwnedHookProtocol[T, O], ReactiveHookProtoc
             self=self,
             value_or_nexus=value,
             logger=logger,
-            nexus_manager=nexus_manager)
+            nexus_manager=nexus_manager,
+            preferred_publish_mode=preferred_publish_mode)
 
         HookWithReactionMixin.__init__( # type: ignore
             self=self,
@@ -106,3 +108,19 @@ class OwnedReadOnlyHook(HookBase[T], OwnedHookProtocol[T, O], ReactiveHookProtoc
         """
         with self._lock:
             self._remove_reaction_callback()
+
+    #########################################################
+    # Str and repr methods
+    #########################################################
+
+    def __str__(self) -> str:
+        """
+        Return a string representation of the hook.
+        """
+        return f"OwnedReadOnlyHook(value={self.value}, owner={self.owner})"
+
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the hook.
+        """
+        return f"OwnedReadOnlyHook(value={self.value}, owner={self.owner})"

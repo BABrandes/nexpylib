@@ -9,7 +9,7 @@ Components:
 - XBase: Core base class for all X objects
 - XSingletonBase: Base class for single-value X objects
 - XCompositeBase: Base class for multi-hook X objects
-- XAdapterBase: Base class for type adapter X objects
+- XLeftRightAdapterBase: Base class for left/right adapter X objects
 - CarriesSomeHooksProtocol: Protocol for objects with multiple hooks
 - CarriesSingleHookProtocol: Protocol for objects with a single hook
 - XObjectSerializableMixin: Mixin for serialization support
@@ -18,7 +18,7 @@ Components:
 from .x_base import XBase
 from .x_singleton_base import XSingletonBase
 from .x_composite_base import XCompositeBase
-from .x_adapter_base import XAdapterBase
+from .x_left_right_adapter_base import XLeftRightAdapterBase
 from .carries_some_hooks_protocol import CarriesSomeHooksProtocol
 from .carries_single_hook_protocol import CarriesSingleHookProtocol
 from .serializable_protocol import SerializableProtocol
@@ -27,7 +27,7 @@ __all__ = [
     'XBase',
     'XSingletonBase', 
     'XCompositeBase',
-    'XAdapterBase',
+    'XLeftRightAdapterBase',
     'CarriesSomeHooksProtocol',
     'CarriesSingleHookProtocol',
     'SerializableProtocol',

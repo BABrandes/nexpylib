@@ -25,7 +25,8 @@ class OwnedWritableHook(HookBase[T], OwnedHookProtocol[T, O], WritableHookProtoc
         owner: O,
         value: T,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER,
+        preferred_publish_mode: Literal["async", "sync", "direct", "off"] = "async",
     ) -> None:
 
         #-------------------------------- Initialization start --------------------------------
@@ -36,7 +37,8 @@ class OwnedWritableHook(HookBase[T], OwnedHookProtocol[T, O], WritableHookProtoc
             self=self,
             value_or_nexus=value,
             logger=logger,
-            nexus_manager=nexus_manager)
+            nexus_manager=nexus_manager,
+            preferred_publish_mode=preferred_publish_mode)
 
         HookWithSetterMixin.__init__( # type: ignore
             self=self)
@@ -147,4 +149,18 @@ class OwnedWritableHook(HookBase[T], OwnedHookProtocol[T, O], WritableHookProtoc
         with self._lock:
             self._remove_reaction_callback()
 
-    
+    #########################################################
+    # Str and repr methods
+    #########################################################
+
+    def __str__(self) -> str:
+        """
+        Return a string representation of the hook.
+        """
+        return f"OwnedWritableHook(value={self.value}, owner={self.owner})"
+
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the hook.
+        """
+        return f"OwnedWritableHook(value={self.value}, owner={self.owner})"

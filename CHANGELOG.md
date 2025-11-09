@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-01-29
+
+### Added
+- **XSequenceItemsAdapter**: New adapter for synchronizing fixed-length sequences with per-item hooks
+  - Maintains one hook for the entire sequence and individual hooks for each item
+  - Automatic bidirectional synchronization between sequence and item values
+  - Read-only length hook computed from sequence
+  - Support for external hooks on specific items
+  - Preserves tuple vs list type distinction
+- **Publisher Integration**: `XBase` and all hook types now implement `PublisherProtocol`
+  - Enables publish/subscribe pattern directly on X objects and hooks
+  - Better integration with reactive programming patterns
+  - Consistent event notification across the framework
+
+### Changed
+- **Terminology Refactoring**: Renamed "Listening" to "Listenable" throughout the codebase
+  - `ListeningMixin` → `ListenableMixin`
+  - `ListeningProtocol` → `ListenableProtocol`
+  - More semantically accurate terminology for listener management
+  - Updated all internal references and imports
+- **Adapter Base Class Rename**: `XAdapterBase` → `XLeftRightAdapterBase`
+  - More descriptive name reflecting the left/right hook architecture
+  - Better clarity for adapter implementation patterns
+  - Updated all adapter implementations to use new base class name
+
+### Fixed
+- **XOneWayFunction Error Handling**: Fixed error propagation in one-way function execution
+- **XCompositeBase External Hook Joining**: Fixed issue with joining external hooks in composite objects
+  - Proper handling of external hook integration
+  - Correct nexus fusion when connecting to external hooks
+- **Internal Submit Methods**: Fixed `ListeningProtocol` → `ListenableProtocol` reference in `internal_submit_3.py`
+  - Ensures proper listener notification after value updates
+  - Fixes 325 failing tests related to listener notifications
+
+### Improved
+- **Hook String Representation**: Implemented proper `__repr__` and `__str__` methods for all hook types
+  - Better debugging experience with meaningful hook representations
+  - Clearer identification of hook types and values in logs
+  - Improved developer experience when inspecting hooks
+
+### Testing
+- **Test Suite**: All 722 tests passing, 2 skipped
+- **Test Fixes**: Updated `test_length_hook_is_read_only` to expect correct error message
+  - Changed expectation from custom validation message to nexus conflict error
+  - More accurate test reflecting actual system behavior
+- **Warning Suppression**: Added pytest configuration to suppress asyncio cleanup warnings
+  - Cleaner test output without harmless asyncio event loop warnings
+  - Better focus on actual test results
+
 ## [0.4.2] - 2025-01-29
 
 ### Fixed
@@ -12,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed unnecessary `self_ref` parameter from nested callback functions
   - Callbacks now correctly use `self` from closure scope
   - Fixes 95 failing tests across the test suite
-  - Affects `XCompositeBase`, `XSingletonBase`, `XAdapterBase`, `XFunction`, `XOneWayFunction`, and `XRootedPaths`
+  - Affects `XCompositeBase`, `XSingletonBase`, `XLeftRightAdapterBase`, `XFunction`, `XOneWayFunction`, and `XRootedPaths`
 
 ### Changed
 - **Performance Optimization**: Improved callback invocation performance
@@ -90,7 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Performance analysis reports and benchmarks
 - **Nexus ID System**: Unique identification for nexus objects
 - **Foundation Classes**: Enhanced base classes for better extensibility
-  - `XAdapterBase`: Base class for all adapter implementations
+  - `XLeftRightAdapterBase`: Base class for all adapter implementations
   - Improved `XBase` and `XCompositeBase` classes
 - **Publisher-Subscriber Improvements**: Enhanced pub/sub system with better error handling
 

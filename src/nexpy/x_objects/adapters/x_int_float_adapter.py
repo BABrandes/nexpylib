@@ -1,13 +1,13 @@
 from typing import Optional, Self
 from logging import Logger
 
-from ...foundations.x_adapter_base import XAdapterBase
+from ...foundations.x_left_right_adapter_base import XLeftRightAdapterBase
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ...core.hooks.protocols.hook_protocol import HookProtocol
 from ...core.hooks.implementations.owned_writable_hook import OwnedWritableHook
 
-class XIntFloatAdapter(XAdapterBase[int, float]):
+class XIntFloatAdapter(XLeftRightAdapterBase[int, float]):
     """
     Adapter object that bridges between int and float, validating integer values.
     
@@ -116,16 +116,18 @@ class XIntFloatAdapter(XAdapterBase[int, float]):
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ):
-        # Collect the external hooks
-        external_hook_int: Optional[HookProtocol[int]] = None
-        external_hook_float: Optional[HookProtocol[float]] = None
+
+        #################################################################################################
+        # Collect external hooks
+        #################################################################################################
+
+        external_hook_int: Optional[HookProtocol[int]] = hook_int_or_value if isinstance(hook_int_or_value, HookProtocol) else None
+        external_hook_float: Optional[HookProtocol[float]] = hook_float if isinstance(hook_float, HookProtocol) else None
         
-        if isinstance(hook_int_or_value, HookProtocol):
-            external_hook_int = hook_int_or_value
-        if isinstance(hook_float, HookProtocol):
-            external_hook_float = hook_float
-        
-        # Determine initial value
+        #################################################################################################
+        # Determine initial values
+        #################################################################################################
+
         initial_int: int
         initial_float: float
         
@@ -162,10 +164,14 @@ class XIntFloatAdapter(XAdapterBase[int, float]):
             
             if int(initial_float) != initial_int:
                 raise ValueError(f"Values do not match: {initial_float} != {initial_int}")
+
         else:
             raise ValueError("At least one parameter must be provided!")
         
+        #################################################################################################
         # Initialize parent with both hooks
+        #################################################################################################
+
         initial_hook_values = {
             "left": external_hook_int if external_hook_int is not None else initial_int,
             "right": external_hook_float if external_hook_float is not None else initial_float,
@@ -176,6 +182,8 @@ class XIntFloatAdapter(XAdapterBase[int, float]):
             logger=logger,
             nexus_manager=nexus_manager
         )
+
+        #################################################################################################
     
     #########################################################################
     # Adapter base implementation

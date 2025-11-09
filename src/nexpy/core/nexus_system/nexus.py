@@ -72,7 +72,7 @@ class Nexus(Generic[T]):
     def __init__(
         self,
         value: T,
-        hooks: set["HookProtocol[T]"] = set(),
+        hooks: set["HookProtocol[T]"] = set["HookProtocol[T]"](), # type: ignore
         logger: Optional[logging.Logger] = None,
         nexus_manager: Optional["NexusManager"] = None
         ) -> None:
@@ -119,7 +119,7 @@ class Nexus(Generic[T]):
         self._creation_time: float = time.time()
         
         self._nexus_manager: "NexusManager" = nexus_manager
-        self._hooks: set[weakref.ref["HookProtocol[T]"]] = {weakref.ref(hook) for hook in hooks} # type: ignore
+        self._hooks: set[weakref.ref["HookProtocol[T]"]] = {weakref.ref(hook) for hook in hooks}
         self._stored_value: T = value
         self._previous_stored_value: T = value
         self._logger: Optional[logging.Logger] = logger
@@ -127,7 +127,7 @@ class Nexus(Generic[T]):
         self._submit_touched_hooks: set["HookProtocol[T]"] = set()
         
         # Track hook count for performance optimization
-        self._hook_count: int = len(hooks) # type: ignore
+        self._hook_count: int = len(hooks)
 
         # Register this nexus with the manager for tracking
         self._nexus_manager._register_nexus(self) # type: ignore

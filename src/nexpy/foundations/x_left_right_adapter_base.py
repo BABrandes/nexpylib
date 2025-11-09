@@ -11,12 +11,12 @@ from .x_composite_base import XCompositeBase
 T1 = TypeVar("T1")  # First type (e.g., T, float, AbstractSet)
 T2 = TypeVar("T2")  # Second type (e.g., Optional[T], int, Sequence)
 
-class XAdapterBase(
+class XLeftRightAdapterBase(
     XCompositeBase[Literal["left", "right"], Literal[...], T1 | T2, None], 
     Generic[T1, T2]
 ):
     """
-    Base class for adapter X objects that bridge between incompatible types.
+    Base class for left-right adapter X objects that bridge between incompatible types.
 
     Generic type parameters:
         T1: The left-side type
@@ -53,8 +53,9 @@ class XAdapterBase(
         initial_hook_values: Mapping[Literal["left", "right"], T1 | T2],
         *,
         logger: Optional[Logger] = None,
-        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
-    ):
+        nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER,
+        preferred_publish_mode: Literal["async", "sync", "direct", "off"] = "async",
+    ) -> None:
         """
         Initialize the adapter base.
         
@@ -63,7 +64,13 @@ class XAdapterBase(
             logger: Optional logger for debugging
             nexus_manager: Nexus manager for coordination
         """
-        
+
+        #################################################################################################
+        # Initialize XCompositeBase
+        #################################################################################################
+
+        # -------------------------------- Prepare callbacks --------------------------------
+
         def _compute_missing_primary_values_callback(
             update_values: UpdateFunctionValues[Literal["left", "right"], T1 | T2]
         ) -> Mapping[Literal["left", "right"], T1 | T2]:
@@ -116,6 +123,8 @@ class XAdapterBase(
             
             return True, "Values are valid and consistent"
         
+        # --------------------- Initialize XCompositeBase --------------------------------
+
         super().__init__(
             initial_hook_values=initial_hook_values,
             compute_missing_primary_values_callback=_compute_missing_primary_values_callback,
@@ -124,8 +133,11 @@ class XAdapterBase(
             invalidate_after_update_callback=None,
             custom_validator=None,
             logger=logger,
-            nexus_manager=nexus_manager
+            nexus_manager=nexus_manager,
+            preferred_publish_mode=preferred_publish_mode
         )
+
+        #################################################################################################
     
     #########################################################################
     # Abstract methods for subclasses to implement

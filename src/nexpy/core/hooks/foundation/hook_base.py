@@ -1,22 +1,29 @@
-from typing import Generic, TypeVar, TYPE_CHECKING, Optional, Literal, Mapping, Any
+from typing import Generic, TypeVar, TYPE_CHECKING, Optional, Literal, Mapping, Any, Callable, Union
 from logging import Logger
 import inspect
+import threading
 from threading import RLock
 
-from ..protocols.hook_protocol import HookProtocol
-from nexpy.core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
-from ...auxiliary.listening_mixin import ListeningMixin
+from ....core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
 from ...nexus_system.submission_error import SubmissionError
+from ...auxiliary.listenable_mixin import ListenableMixin
+from ...publisher_subscriber.publisher_mixin import PublisherMixin
+from ..protocols.hook_protocol import HookProtocol
 
 if TYPE_CHECKING:
-    from nexpy.core.nexus_system.nexus_manager import NexusManager
-    from nexpy.core.nexus_system.nexus import Nexus
+    from ....core.nexus_system.nexus_manager import NexusManager
+    from ....core.nexus_system.nexus import Nexus
     from ....foundations.carries_single_hook_protocol import CarriesSingleHookProtocol
+    from ...publisher_subscriber.subscriber import Subscriber
+else:  # pragma: no cover - for type checking only
+    Subscriber = Any
+
+SubscriberLike = Union["Subscriber", Callable[[], None]]
 
 T = TypeVar("T")
 
 
-class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):  
+class HookBase(HookProtocol[T], ListenableMixin, PublisherMixin, Generic[T]):  
     """
     Base class for minimal hook objects.
     """
@@ -31,6 +38,7 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
         value_or_nexus: T|"Nexus[T]",
         logger: Optional[Logger] = None,
         nexus_manager: Optional["NexusManager"] = _DEFAULT_NEXUS_MANAGER,
+        preferred_publish_mode: Literal["async", "sync", "direct", "off"] = "async",
         ):
 
         #-------------------------------- Initialization start --------------------------------
@@ -49,14 +57,15 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
             from nexpy.core.nexus_system.nexus import Nexus
             if nexus_manager is None:
                 raise ValueError("Nexus manager must be provided if value is given")
-            self._nexus = Nexus[T](value_or_nexus, hooks=set(), logger=logger, nexus_manager=nexus_manager)
+            self._nexus = Nexus[T](value_or_nexus, hooks=set[HookProtocol[T]](), logger=logger, nexus_manager=nexus_manager)
 
         #-------------------------------- Initialize other attributes --------------------------------
 
         self._logger = logger
-        self._lock = RLock()
+        self._lock: threading.RLock = RLock()
 
-        ListeningMixin.__init__(self)
+        ListenableMixin.__init__(self)
+        PublisherMixin.__init__(self, preferred_publish_mode=preferred_publish_mode, logger=logger)
 
         #-------------------------------- Add hook to nexus --------------------------------
         
@@ -171,6 +180,46 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
             return self._is_joined()
 
     #########################################################
+    # PublisherProtocol forwarding methods (resolving linter errors, could be removed...)
+    #########################################################
+
+    def add_subscriber(self, subscriber: SubscriberLike) -> None:
+        """
+        Add a subscriber or callback to receive publications from this hook.
+        """
+        PublisherMixin.add_subscriber(self, subscriber)
+
+    def remove_subscriber(self, subscriber: SubscriberLike) -> None:
+        """
+        Remove a subscriber or callback from this hook.
+        """
+        PublisherMixin.remove_subscriber(self, subscriber)
+
+    def publish(
+        self,
+        mode: Literal["async", "sync", "direct", "off", None] = None,
+        raise_error_mode: Literal["raise", "ignore", "warn"] = "raise",
+    ) -> None:
+        """
+        Publish an update to all subscribed listeners.
+        """
+        PublisherMixin.publish(self, mode=mode, raise_error_mode=raise_error_mode)
+
+    @property
+    def preferred_publish_mode(self) -> Literal["async", "sync", "direct", "off"]:
+        """
+        Get the preferred publish mode for this hook.
+        """
+        return PublisherMixin.preferred_publish_mode.fget(self)  # type: ignore[misc]
+
+    @preferred_publish_mode.setter
+    def preferred_publish_mode(self, mode: Literal["async", "sync", "direct", "off"]) -> None:
+        """
+        Set the preferred publish mode for this hook.
+        """
+        PublisherMixin.preferred_publish_mode.fset(self, mode)  # type: ignore[misc]
+
+    #########################################################
     # Protocol private methods
     #########################################################
 
@@ -220,7 +269,7 @@ class HookBase(HookProtocol[T], ListeningMixin, Generic[T]):
         from nexpy.core.nexus_system.nexus import Nexus
         from nexpy.foundations.carries_single_hook_protocol import CarriesSingleHookProtocol
 
-        if target_hook is None: # type: ignore
+        if target_hook is None:
             raise ValueError("Cannot connect to None hook")
 
         if isinstance(target_hook, CarriesSingleHookProtocol):

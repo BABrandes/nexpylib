@@ -5,24 +5,27 @@ from logging import Logger
 from abc import abstractmethod
 from threading import RLock
 
-from nexpy.core.auxiliary.listening_mixin import ListeningMixin
-from .serializable_protocol import SerializableProtocol
+
 
 from ..core.nexus_system.nexus_manager import NexusManager
 from ..core.nexus_system.nexus import Nexus
 from ..core.nexus_system.update_function_values import UpdateFunctionValues
-from ..core.hooks import OwnedHookProtocol, HookProtocol
 from ..core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
+from ..core.hooks import OwnedHookProtocol, HookProtocol
+from ..core.publisher_subscriber.publisher_mixin import PublisherMixin
+from ..core.auxiliary.listenable_mixin import ListenableMixin
 from ..core.auxiliary.utils import make_weak_callback
 
 from .carries_some_hooks_protocol import CarriesSomeHooksProtocol
 from .carries_single_hook_protocol import CarriesSingleHookProtocol
 
+from .serializable_protocol import SerializableProtocol
+
 HK = TypeVar("HK")
 HV = TypeVar("HV")
 
 
-class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, SerializableProtocol[HK, HV], Generic[HK, HV]):
+class XBase(CarriesSomeHooksProtocol[HK, HV], ListenableMixin, PublisherMixin, SerializableProtocol[HK, HV], Generic[HK, HV]):
     """
     Base class for observables in the new hook-based architecture.
 
@@ -100,16 +103,19 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, SerializableProtoc
 
     def __init__(
         self,
+        *,
         invalidate_after_update_callback: Optional[Callable[[], tuple[bool, str]]] = None,
         validate_complete_values_callback: Optional[Callable[[Mapping[HK, HV]], tuple[bool, str]]] = None,
         compute_missing_values_callback: Optional[Callable[[UpdateFunctionValues[HK, HV]], Mapping[HK, HV]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER, 
+        preferred_publish_mode: Literal["async", "sync", "direct", "off"] = "async",
         ) -> None:
         """
         Initialize the XBase.
         """
-        ListeningMixin.__init__(self)
+        ListenableMixin.__init__(self)
+        PublisherMixin.__init__(self, preferred_publish_mode=preferred_publish_mode)
 
         # Store callbacks (nested closures don't need weak references, bound methods would)
         self._invalidate_after_update_callback = make_weak_callback(invalidate_after_update_callback)
@@ -120,6 +126,13 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, SerializableProtoc
         self._uuid: uuid.UUID = uuid.uuid4()
 
         self._lock = RLock()
+
+    @property
+    def nexus_manager(self) -> NexusManager:
+        """
+        Get the nexus manager that this xobject is using.
+        """
+        return self._nexus_manager
 
     #########################################################
     # Private methods
@@ -271,7 +284,7 @@ class XBase(CarriesSomeHooksProtocol[HK, HV], ListeningMixin, SerializableProtoc
         if source_hook_key in self._get_hook_keys():
             source_hook: OwnedHookProtocol[HV, Self] = self._get_hook_by_key(source_hook_key)
             if isinstance(target_hook, CarriesSingleHookProtocol):
-                target_hook = target_hook._get_hook_by_key(source_hook_key)
+                target_hook = target_hook._get_hook_by_key(source_hook_key) # type: ignore
             success, msg = source_hook._join(target_hook, initial_sync_mode) # type: ignore
             if not success:
                 raise ValueError(msg)

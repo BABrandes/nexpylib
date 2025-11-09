@@ -1,7 +1,7 @@
 from typing import Generic, TypeVar, Optional, Self
 from logging import Logger
 
-from ...foundations.x_adapter_base import XAdapterBase
+from ...foundations.x_left_right_adapter_base import XLeftRightAdapterBase
 from ...core.hooks.protocols.hook_protocol import HookProtocol
 from ...core.nexus_system.nexus_manager import NexusManager
 from ...core.nexus_system.default_nexus_manager import _DEFAULT_NEXUS_MANAGER # type: ignore
@@ -9,7 +9,7 @@ from ...core.hooks.implementations.owned_writable_hook import OwnedWritableHook
 
 T = TypeVar("T")
 
-class XOptionalAdapter(XAdapterBase[T, Optional[T]], Generic[T]):
+class XOptionalAdapter(XLeftRightAdapterBase[T, Optional[T]], Generic[T]):
     """
     Adapter object that bridges between T and Optional[T], blocking None values.
     
@@ -124,15 +124,17 @@ class XOptionalAdapter(XAdapterBase[T, Optional[T]], Generic[T]):
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ):
-        # Collect the external hooks
-        external_hook_t: Optional[HookProtocol[T]] = None
-        external_hook_optional: Optional[HookProtocol[Optional[T]]] = None
+        #################################################################################################
+        # Collect external hooks
+        #################################################################################################
+
+        external_hook_t: Optional[HookProtocol[T]] = hook_t_or_value if isinstance(hook_t_or_value, HookProtocol) else None # type: ignore
+        external_hook_optional: Optional[HookProtocol[Optional[T]]] = hook_optional if isinstance(hook_optional, HookProtocol) else None
         
-        if isinstance(hook_t_or_value, HookProtocol):
-            external_hook_t = hook_t_or_value  # type: ignore
-        if isinstance(hook_optional, HookProtocol):
-            external_hook_optional = hook_optional
-        
+        #################################################################################################
+        # Determine initial values
+        #################################################################################################
+
         # Determine initial value
         if hook_optional is not None and hook_t_or_value is None:
             if hook_optional.value is None:
@@ -164,10 +166,14 @@ class XOptionalAdapter(XAdapterBase[T, Optional[T]], Generic[T]):
                 if hook_t_or_value is None:
                     raise ValueError("Cannot initialize with None value")
                 initial_value = hook_t_or_value
+
         else:
             raise ValueError("At least one parameter must be provided!")
         
+        #################################################################################################
         # Initialize parent with both hooks
+        #################################################################################################
+
         initial_hook_values = { # type: ignore
             "left": external_hook_t if external_hook_t is not None else initial_value,
             "right": external_hook_optional if external_hook_optional is not None else initial_value,
@@ -178,6 +184,8 @@ class XOptionalAdapter(XAdapterBase[T, Optional[T]], Generic[T]):
             logger=logger,
             nexus_manager=nexus_manager
         )
+
+        #################################################################################################
     
     #########################################################################
     # Adapter base implementation

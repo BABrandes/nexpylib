@@ -16,20 +16,11 @@ Available Adapters:
 from .x_optional_adapter import XOptionalAdapter
 from .x_int_float_adapter import XIntFloatAdapter
 from .x_set_sequence_adapter import XSetSequenceAdapter
-
-# Backward compatibility aliases
-XOptionalTransfer = XOptionalAdapter
-XFloatIntTransfer = XIntFloatAdapter
-XSetSequenceTransfer = XSetSequenceAdapter
-XBlockNone = XOptionalAdapter
+from .x_sequence_items_adapter import XSequenceItemsAdapter
 
 __all__ = [
     'XOptionalAdapter',
     'XIntFloatAdapter',
     'XSetSequenceAdapter',
-    # Backward compatibility
-    'XOptionalTransfer',
-    'XFloatIntTransfer',
-    'XSetSequenceTransfer',
-    'XBlockNone',
+    'XSequenceItemsAdapter',
 ]
