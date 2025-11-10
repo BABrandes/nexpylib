@@ -16,9 +16,32 @@ T = TypeVar("T")
    
 class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], int], XSetProtocol[T], Set[T], Generic[T]):
     """
-    Acting like a set.
+    Reactive set wrapper providing seamless integration with NexPy's synchronization system.
 
-    The hooks store an Iterable - allowing them to connect to any other iterable. But values requested from this object will be a set.
+    XSet[T] is a reactive container for sets that behaves like a standard Python set
+    but with automatic change notifications, validation, and synchronization capabilities.
+    The generic type parameter T specifies the type of elements in the set.
+
+    Type Parameters
+    ---------------
+    T : TypeVar
+        The type of elements stored in the set. Must be hashable.
+        Examples: XSet[int], XSet[str], XSet[MyHashableClass]
+
+    Key Features
+    ------------
+    - **Reactive Updates**: Automatic notification when set contents change
+    - **Set Operations**: Supports standard set operations (union, intersection, etc.)
+    - **Hook Fusion**: Join with other XSet instances or hooks for synchronization
+    - **Length Tracking**: Automatic secondary hook tracking set size
+    - **Validation**: Optional custom validation for set updates
+    - **Type-Safe**: Full generic type support
+
+    See Also
+    --------
+    XList : For list-like reactive containers
+    XDict : For dict-like reactive containers
+    XValue : For single-value reactive containers
     """
 
     def __init__(
@@ -28,6 +51,72 @@ class XSet(XCompositeBase[Literal["value"], Literal["length"], AbstractSet[T], i
         custom_validator: Optional[Callable[[Mapping[Literal["value", "length"], AbstractSet[T] | int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
+        """
+        Initialize a reactive set container.
+
+        The generic type T specifies the element type (must be hashable). 
+        Use square bracket notation: XSet[int], XSet[str], XSet[MyClass], etc.
+
+        Parameters
+        ----------
+        value : AbstractSet[T] | Hook[AbstractSet[T]] | XSet[T] | None, optional
+            Initial set contents or hook/XSet to connect to:
+            - AbstractSet[T]: Any set, frozenset, or set-like object to copy
+            - Hook[AbstractSet[T]]: External hook to join with
+            - XSet[T]: Another XSet to join with
+            - None: Create empty set (default)
+
+        custom_validator : Callable[[Mapping[str, AbstractSet[T] | int]], tuple[bool, str]], optional
+            Custom validation function for value updates.
+            Receives {"value": AbstractSet[T], "length": int}.
+            Returns (True, "message") if valid, (False, "error") if invalid.
+
+        logger : Logger, optional
+            Logger instance for debugging operations.
+
+        nexus_manager : NexusManager, optional
+            The NexusManager coordinating synchronization.
+            Defaults to global DEFAULT_NEXUS_MANAGER.
+
+        Examples
+        --------
+        Create an empty set:
+
+        >>> tags = XSet[str]()
+        >>> tags.set
+        set()
+
+        Initialize with values:
+
+        >>> numbers = XSet[int]({1, 2, 3, 4})
+        >>> numbers.set
+        {1, 2, 3, 4}
+
+        Connect two sets:
+
+        >>> source = XSet[str]({"red", "green", "blue"})
+        >>> mirror = XSet[str](source)  # Joins with source
+        >>> source.add("yellow")
+        >>> mirror.set  # Automatically synchronized
+        {'red', 'green', 'blue', 'yellow'}
+
+        With validation (enforce non-empty):
+
+        >>> def validate_not_empty(values):
+        ...     if len(values["value"]) > 0:
+        ...         return True, "Valid"
+        ...     return False, "Set must not be empty"
+        >>> required_tags = XSet[str]({"initial"}, custom_validator=validate_not_empty)
+
+        Type-specific sets:
+
+        >>> class ID:
+        ...     def __init__(self, value: int):
+        ...         self.value = value
+        ...     def __hash__(self):
+        ...         return hash(self.value)
+        >>> ids = XSet[ID]({ID(1), ID(2), ID(3)})
+        """
 
         if value is None:
             initial_value: AbstractSet[T] = set()

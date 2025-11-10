@@ -15,7 +15,30 @@ from .protocols import XMultiSelectionOptionsProtocol, XSetProtocol
 T = TypeVar("T")
 
 class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_options"], Literal["number_of_selected_options", "number_of_available_options"], AbstractSet[T], int], XMultiSelectionOptionsProtocol[T], Generic[T]):
+    """
+    Reactive multiple-selection container with validation against available options.
+    
+    XSetMultiSelect[T] (alias: XMultiSelectionSet[T]) maintains a set of selected options
+    that must be a subset of available options. The generic type T specifies the option type.
 
+    Type Parameters
+    ---------------
+    T : TypeVar
+        The type of selectable options. Must be hashable.
+        Examples: XSetMultiSelect[str], XSetMultiSelect[int]
+
+    Key Features
+    ------------
+    - **Multiple Selection**: Select zero or more options simultaneously
+    - **Validation**: selected_options ⊆ available_options
+    - **Reactive**: Changes trigger notifications
+    - **Type-Safe**: Full generic type support
+
+    See Also
+    --------
+    XSetSingleSelect : Required single selection
+    XSetSingleSelectOptional : Optional single selection
+    """
 
     def __init__(
         self,
@@ -25,6 +48,44 @@ class XMultiSelectionSet(XCompositeBase[Literal["selected_options", "available_o
         custom_validator: Optional[Callable[[Mapping[Literal["selected_options", "available_options", "number_of_selected_options", "number_of_available_options"], AbstractSet[T] | int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
+        """
+        Initialize multiple-selection container.
+
+        The generic type T specifies the option type (must be hashable).
+        Use: XSetMultiSelect[str], XSetMultiSelect[MyEnum], etc.
+
+        Parameters
+        ----------
+        selected_options : AbstractSet[T] | Hook[AbstractSet[T]] | XSet[T]
+            Initial selected options (must be subset of available_options).
+
+        available_options : AbstractSet[T] | Hook[AbstractSet[T]] | XSet[T]
+            Set of available options to select from.
+
+        custom_validator : Callable, optional
+            Additional validation function.
+
+        logger : Logger, optional
+            Logger for debugging.
+
+        nexus_manager : NexusManager, optional
+            Coordination manager.
+
+        Examples
+        --------
+        Multiple selection:
+
+        >>> colors = {"red", "green", "blue", "yellow"}
+        >>> sel = XSetMultiSelect[str](
+        ...     selected_options={"red", "blue"},
+        ...     available_options=colors
+        ... )
+        >>> sel.selected_options
+        {'red', 'blue'}
+        >>> sel.add_selected("green")
+        >>> sel.selected_options
+        {'red', 'blue', 'green'}
+        """
 
         #########################################################
         # Get initial values and hooks

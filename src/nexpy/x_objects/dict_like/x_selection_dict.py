@@ -12,8 +12,21 @@ V = TypeVar("V")
 
 class XSelectionDict(XDictSelectionBase[K, V, K, V], XSelectionDictProtocol[K, V], Generic[K, V]):
     """
- 
-    Valid Key Combinations:
+    Reactive dictionary with required key selection and synchronized value access.
+    
+    XDictSelect[K, V] (alias: XSelectionDict[K, V]) maintains a dictionary, selected key,
+    and corresponding value, all synchronized reactively. The key must always exist in
+    the dictionary. Generic types K and V specify key and value types.
+
+    Type Parameters
+    ---------------
+    K : TypeVar
+        The type of dictionary keys. Must be hashable.
+    V : TypeVar
+        The type of dictionary values.
+
+    Valid States
+    ------------
     ┌─────────────────┬──────────────────────────┬──────────────────────────┐
     │                 │    if key in dict        │  if key not in dict      │
     ├─────────────────┼──────────────────────────┼──────────────────────────┤
@@ -24,11 +37,17 @@ class XSelectionDict(XDictSelectionBase[K, V, K, V], XSelectionDictProtocol[K, V
     │ None            │         error            │         error            │
     └─────────────────┴──────────────────────────┴──────────────────────────┘
     
-    The X object ensures that these three components stay synchronized:
-    - When dict or key changes, value is automatically updated
-    - When value changes, the dictionary is updated at the current key
-    - When key changes, value is updated to match the new key
-    
+    Synchronization
+    ---------------
+    - When dict or key changes → value is automatically updated
+    - When value changes → dictionary is updated at current key
+    - When key changes → value is updated to match new key
+
+    See Also
+    --------
+    XDictSelectOptional : Optional key selection (can be None)
+    XDictSelectDefault : Required key with default value
+    XSetSingleSelect : Set-based selection (no value mapping)
     """
 
     def _create_add_values_callback(self) -> Callable[[UpdateFunctionValues[Literal["dict", "key", "value"], Any]], Mapping[Literal["dict", "key", "value"], Any]

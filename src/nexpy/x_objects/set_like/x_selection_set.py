@@ -18,6 +18,33 @@ from ..single_value_like.protocols import XSingleValueProtocol
 T = TypeVar("T")
 
 class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options"], Literal["number_of_available_options"], T | AbstractSet[T], int], XSelectionOptionsProtocol[T], Generic[T]):
+    """
+    Reactive single-selection container with validation against available options.
+    
+    XSetSingleSelect[T] (alias: XSelectionSet[T]) maintains a single selected option that must
+    be present in a set of available options. Changes to either selection or available options
+    are validated and reactive. The generic type T specifies the option type.
+
+    Type Parameters
+    ---------------
+    T : TypeVar
+        The type of selectable options. Must be hashable.
+        Examples: XSetSingleSelect[str], XSetSingleSelect[int], XSetSingleSelect[MyEnum]
+
+    Key Features
+    ------------
+    - **Required Selection**: Selected option must always be present in available options
+    - **Validation**: Automatic validation that selection ∈ available options
+    - **Reactive**: Changes to selection or available options trigger notifications
+    - **Hook Fusion**: Connect to other X objects or hooks
+    - **Type-Safe**: Full generic type support
+
+    See Also
+    --------
+    XSetSingleSelectOptional : Single selection that can be None
+    XSetMultiSelect : Multiple selection from available options
+    XDictSelect : Dictionary-based single selection
+    """
 
     def __init__(
         self,
@@ -27,6 +54,90 @@ class XSelectionSet(XCompositeBase[Literal["selected_option", "available_options
         custom_validator: Optional[Callable[[Mapping[Literal["selected_option", "available_options", "number_of_available_options"], T | AbstractSet[T] | int]], tuple[bool, str]]] = None,
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER) -> None:
+        """
+        Initialize a single-selection container with available options.
+
+        The generic type T specifies the option type (must be hashable).
+        Use square bracket notation: XSetSingleSelect[str], XSetSingleSelect[MyEnum], etc.
+
+        Parameters
+        ----------
+        selected_option : T | Hook[T] | XValue[T]
+            Initial selected option (must be in available_options):
+            - T: A value to select
+            - Hook[T]: External hook to join with for selection
+            - XValue[T]: XValue object to join with for selection
+
+        available_options : AbstractSet[T] | Hook[AbstractSet[T]] | XSet[T], optional
+            Set of available options to select from:
+            - AbstractSet[T]: A set/frozenset of options
+            - Hook[AbstractSet[T]]: External hook to join with for available options
+            - XSet[T]: XSet object to join with for available options
+            - Required parameter
+
+        custom_validator : Callable[[Mapping[str, Any]], tuple[bool, str]], optional
+            Additional custom validation function.
+            Receives {"selected_option": T, "available_options": AbstractSet[T]}.
+            Returns (True, "message") if valid, (False, "error") if invalid.
+
+        logger : Logger, optional
+            Logger instance for debugging operations.
+
+        nexus_manager : NexusManager, optional
+            The NexusManager coordinating synchronization.
+
+        Raises
+        ------
+        SubmissionError
+            If selected_option is not in available_options.
+
+        Examples
+        --------
+        Basic single selection from colors:
+
+        >>> colors = {"red", "green", "blue"}
+        >>> selection = XSetSingleSelect[str](
+        ...     selected_option="red",
+        ...     available_options=colors
+        ... )
+        >>> selection.selected_option
+        'red'
+
+        Change selection:
+
+        >>> selection.selected_option = "blue"
+        >>> selection.selected_option
+        'blue'
+
+        Invalid selection raises error:
+
+        >>> selection.selected_option = "yellow"  # Not in available_options
+        Traceback (most recent call last):
+            ...
+        SubmissionError: ...
+
+        Dynamic available options:
+
+        >>> options = XSet[int]({1, 2, 3})
+        >>> sel = XSetSingleSelect[int](
+        ...     selected_option=1,
+        ...     available_options=options
+        ... )
+        >>> options.add(4)
+        >>> sel.selected_option = 4  # Now valid
+
+        Enum-based selection:
+
+        >>> from enum import Enum
+        >>> class Status(Enum):
+        ...     PENDING = 1
+        ...     APPROVED = 2
+        ...     REJECTED = 3
+        >>> status_sel = XSetSingleSelect[Status](
+        ...     selected_option=Status.PENDING,
+        ...     available_options={Status.PENDING, Status.APPROVED, Status.REJECTED}
+        ... )
+        """
 
         #########################################################
         # Get initial values and hooks

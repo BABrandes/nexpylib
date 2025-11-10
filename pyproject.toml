@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nexpylib"
-version = "0.5.0"
+version = "0.6.0"
 description = "Transitive synchronization and shared-state fusion for Python through Nexus fusion and atomic internal synchronization"
 readme = "README.md"
 license = {text = "Apache-2.0"}

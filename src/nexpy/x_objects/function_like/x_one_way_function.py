@@ -20,13 +20,35 @@ OHV = TypeVar("OHV")  # Output Hook Values
 
 class XOneWayFunction(XBase[IHK|OHK, IHV|OHV], Generic[IHK, OHK, IHV, OHV]):
     """
-    X object wrapper for one-way functions.
+    Reactive one-way function computing outputs from inputs.
 
-    Generic type parameters:
-        IHK: The type of the input hook keys
-        OHK: The type of the output hook keys
-        IHV: The type of the input hook values
-        OHV: The type of the output hook values
+    XOneWayFunction[IHK, OHK, IHV, OHV] maintains input variables and computes output
+    variables using a pure function. When inputs change, outputs are automatically
+    recomputed. Outputs are read-only. Four generic types specify the structure.
+
+    Type Parameters
+    ---------------
+    IHK : TypeVar
+        Type of input hook keys (input variable identifiers).
+    OHK : TypeVar
+        Type of output hook keys (output variable identifiers).
+    IHV : TypeVar
+        Type of input hook values (input data types).
+    OHV : TypeVar
+        Type of output hook values (output data types).
+
+    Key Features
+    ------------
+    - **One-Way**: Inputs → Outputs (outputs cannot be modified directly)
+    - **Pure Function**: Outputs computed from inputs only
+    - **Reactive**: Automatic recomputation when inputs change
+    - **Read-Only Outputs**: Output hooks cannot be written to
+    - **Type-Safe**: Full generic type support for keys and values
+
+    See Also
+    --------
+    XFunction : Bidirectional function with arbitrary synchronization logic
+    XValue : For simple single values
     """
 
     def __init__(
@@ -38,6 +60,82 @@ class XOneWayFunction(XBase[IHK|OHK, IHV|OHV], Generic[IHK, OHK, IHV, OHV]):
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ) -> None:
+        """
+        Initialize a one-way reactive function.
+
+        The four generic types define the structure:
+        - IHK, IHV: Input key and value types
+        - OHK, OHV: Output key and value types
+        Use: XOneWayFunction[str, str, float, float], etc.
+
+        Parameters
+        ----------
+        input_variables_per_key : Mapping[IHK, Hook[IHV] | IHV]
+            Input variables as key-value pairs.
+            These are writable and trigger function recomputation.
+
+        one_way_function_callable : Callable[[Mapping[IHK, IHV]], Mapping[OHK, OHV]]
+            Pure function computing outputs from inputs:
+            - Input: Current input values as Mapping[IHK, IHV]
+            - Output: Computed output values as Mapping[OHK, OHV]
+            - Must return all output keys specified
+            - Called when any input changes
+
+        function_output_hook_keys : set[OHK]
+            Set of output variable keys the function produces.
+            All keys must be present in function's return value.
+
+        logger : Logger, optional
+            Logger for debugging operations.
+
+        nexus_manager : NexusManager, optional
+            The NexusManager coordinating synchronization.
+
+        Examples
+        --------
+        Simple arithmetic (x, y → sum, product):
+
+        >>> def compute(inputs):
+        ...     x = inputs["x"]
+        ...     y = inputs["y"]
+        ...     return {"sum": x + y, "product": x * y}
+        >>> 
+        >>> calc = XOneWayFunction[str, str, float, float](
+        ...     input_variables_per_key={"x": 3.0, "y": 4.0},
+        ...     one_way_function_callable=compute,
+        ...     function_output_hook_keys={"sum", "product"}
+        ... )
+        >>> calc.get_input_hook("x").value = 10.0
+        >>> calc.get_output_hook("sum").value  # Automatically updated
+        14.0
+        >>> calc.get_output_hook("product").value
+        40.0
+
+        Statistics (values → mean, std):
+
+        >>> import statistics
+        >>> def stats(inputs):
+        ...     values = inputs["values"]
+        ...     return {
+        ...         "mean": statistics.mean(values),
+        ...         "stdev": statistics.stdev(values) if len(values) > 1 else 0.0
+        ...     }
+        >>> 
+        >>> analyzer = XOneWayFunction[str, str, list[float], float](
+        ...     input_variables_per_key={"values": [1.0, 2.0, 3.0, 4.0, 5.0]},
+        ...     one_way_function_callable=stats,
+        ...     function_output_hook_keys={"mean", "stdev"}
+        ... )
+        >>> analyzer.get_output_hook("mean").value
+        3.0
+
+        Note: Output hooks are read-only:
+
+        >>> calc.get_output_hook("sum").value = 999.0  # Error!
+        Traceback (most recent call last):
+            ...
+        AttributeError: ...
+        """
 
         self._one_way_function_callable: Callable[[Mapping[IHK, IHV]], Mapping[OHK, OHV]] = one_way_function_callable
 

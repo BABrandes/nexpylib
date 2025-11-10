@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-11-09
+
+### Added
+- **XOptionalPlaceholderAdapter**: New adapter for bridging between Optional[T] and placeholder-based T
+  - Converts None values to a configurable placeholder value and vice versa
+  - Perfect for GUI widgets that cannot handle None but need to represent "no value" states
+  - Validates that placeholder value is not submitted to optional side (prevents ambiguity)
+  - Bidirectional synchronization: None ↔ placeholder, regular values pass through
+  - Full test suite with 33 comprehensive tests covering all use cases
+  - Examples: dropdown placeholders, numeric sentinel values, color picker defaults
+
+### Improved
+- **Comprehensive `__init__` Documentation**: Major documentation overhaul for all X objects
+  - Added detailed `__init__` docstrings highlighting generic type parameters
+  - **Core Containers**: XList[T], XSet[T], XDict[K, V] with clear generic type explanations
+  - **Selection Types**: XSetSingleSelect[T], XSetSingleSelectOptional[T], XSetMultiSelect[T]
+  - **Dict Selections**: XDictSelect[K, V] and variants with state validation tables
+  - **Function Types**: XFunction[SHK, SHV] and XOneWayFunction[IHK, OHK, IHV, OHV] with comprehensive examples
+  - **Adapter Types**: Enhanced documentation for XOptionalAdapter[T], XIntFloatAdapter, XSetSequenceAdapter[T]
+  - Each docstring now includes:
+    - Prominent "Type Parameters" section with examples
+    - Clear usage examples showing generic type syntax (e.g., `XList[int]`, `XDict[str, float]`)
+    - Real-world code examples demonstrating practical usage
+    - Cross-references to related classes
+  - Better IDE autocomplete experience with inline documentation
+
+### Documentation
+- **Generic Types**: All X object `__init__` methods now clearly document generic type parameters
+- **Usage Examples**: Added practical code examples for each X object showing type specification
+- **Type Safety**: Emphasized type-safe usage patterns throughout documentation
+- **Developer Experience**: Improved documentation visibility in IDEs and code editors
+
 ## [0.5.0] - 2025-01-29
 
 ### Added

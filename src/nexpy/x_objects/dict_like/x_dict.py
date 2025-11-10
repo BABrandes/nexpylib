@@ -16,6 +16,36 @@ K = TypeVar("K")
 V = TypeVar("V")
     
 class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"], Mapping[K, V], int|set[K]|list[V]], XDictProtocol[K, V], Generic[K, V]):
+    """
+    Reactive dictionary wrapper providing seamless integration with NexPy's synchronization system.
+
+    XDict[K, V] is a reactive container for dictionaries that behaves like a standard Python dict
+    but with automatic change notifications, validation, and synchronization capabilities.
+    The generic type parameters K and V specify the types of keys and values.
+
+    Type Parameters
+    ---------------
+    K : TypeVar
+        The type of dictionary keys. Must be hashable.
+        Examples: str, int, tuple[str, int]
+    V : TypeVar
+        The type of dictionary values. Can be any type.
+        Examples: int, str, list[int], MyClass
+
+    Key Features
+    ------------
+    - **Reactive Updates**: Automatic notification when dictionary contents change
+    - **Secondary Hooks**: Automatic tracking of length, keys, and values
+    - **Hook Fusion**: Join with other XDict instances or hooks for synchronization
+    - **Validation**: Optional custom validation for dictionary updates
+    - **Type-Safe**: Full generic type support
+
+    See Also
+    --------
+    XList : For list-like reactive containers
+    XSet : For set-like reactive containers
+    XValue : For single-value reactive containers
+    """
 
     def __init__(
         self,
@@ -24,6 +54,77 @@ class XDict(XCompositeBase[Literal["dict"], Literal["length", "keys", "values"],
         logger: Optional[Logger] = None,
         nexus_manager: NexusManager = _DEFAULT_NEXUS_MANAGER
     ) -> None:
+        """
+        Initialize a reactive dictionary container.
+
+        The generic types K and V specify key and value types.
+        Use square bracket notation: XDict[str, int], XDict[int, list[str]], etc.
+
+        Parameters
+        ----------
+        observable_or_hook_or_value : Mapping[K, V] | Hook[Mapping[K, V]] | XDict[K, V] | None, optional
+            Initial dictionary contents or hook/XDict to connect to:
+            - Mapping[K, V]: Any dict or mapping to copy
+            - Hook[Mapping[K, V]]: External hook to join with
+            - XDict[K, V]: Another XDict to join with
+            - None: Create empty dict (default)
+
+        logger : Logger, optional
+            Logger instance for debugging operations.
+
+        nexus_manager : NexusManager, optional
+            The NexusManager coordinating synchronization.
+            Defaults to global DEFAULT_NEXUS_MANAGER.
+
+        Examples
+        --------
+        Create an empty dict:
+
+        >>> config = XDict[str, int]()
+        >>> config.dict
+        {}
+
+        Initialize with values:
+
+        >>> scores = XDict[str, int]({"Alice": 100, "Bob": 85})
+        >>> scores.dict
+        {'Alice': 100, 'Bob': 85}
+
+        Connect two dicts:
+
+        >>> source = XDict[str, float]({"x": 1.0, "y": 2.0})
+        >>> mirror = XDict[str, float](source)  # Joins with source
+        >>> source.dict = {"x": 3.0, "y": 4.0, "z": 5.0}
+        >>> mirror.dict  # Automatically synchronized
+        {'x': 3.0, 'y': 4.0, 'z': 5.0}
+
+        Type-specific dicts:
+
+        >>> class UserID:
+        ...     def __init__(self, id: int):
+        ...         self.id = id
+        ...     def __hash__(self):
+        ...         return hash(self.id)
+        >>> class User:
+        ...     def __init__(self, name: str):
+        ...         self.name = name
+        >>> users = XDict[UserID, User]({UserID(1): User("Alice")})
+
+        Multiple generic types:
+
+        >>> # String keys, list of integers as values
+        >>> data = XDict[str, list[int]]({
+        ...     "group_a": [1, 2, 3],
+        ...     "group_b": [4, 5, 6]
+        ... })
+
+        Access secondary hooks:
+
+        >>> config = XDict[str, int]({"a": 1, "b": 2})
+        >>> config.length  # 2
+        >>> config.keys_hook.value  # {'a', 'b'}
+        >>> config.values_hook.value  # [1, 2]
+        """
 
         if observable_or_hook_or_value is None:
             initial_dict_value: Mapping[K, V] = {}
